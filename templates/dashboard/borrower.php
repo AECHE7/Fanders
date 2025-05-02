@@ -1,115 +1,147 @@
 <?php
 /**
  * Borrower dashboard template for the Library Management System
+ * Notion-inspired design
  */
 ?>
 
+<!-- Dashboard Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="notion-page-title mb-0">Dashboard</h1>
+    <div class="d-flex gap-2">
+        <a href="<?= APP_URL ?>/public/books/index.php" class="btn btn-sm btn-outline-secondary px-3">Available Books</a>
+        <a href="<?= APP_URL ?>/public/transactions/index.php" class="btn btn-sm btn-outline-secondary px-3">My Loans</a>
+    </div>
+</div>
+
 <!-- Stats Overview -->
-<div class="row mt-4">
+<div class="row g-4 mb-5">
     <div class="col-md-3">
-        <div class="card dashboard-stats">
-            <div class="card-body">
-                <h5 class="card-title">Books Borrowed</h5>
-                <p class="stat-value"><?= $stats['total_borrowed'] ?? 0 ?></p>
-                <p class="card-text">Total borrowed books</p>
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i data-feather="book" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <h6 class="card-subtitle text-muted mb-0">Books Borrowed</h6>
+                </div>
+                <p class="stat-value mb-0"><?= $stats['total_borrowed'] ?? 0 ?></p>
+                <p class="card-text text-muted small">Total borrowed books</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card dashboard-stats">
-            <div class="card-body">
-                <h5 class="card-title">Currently Borrowed</h5>
-                <p class="stat-value"><?= $stats['current_borrowed'] ?? 0 ?></p>
-                <p class="card-text">Books currently in possession</p>
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i data-feather="book-open" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <h6 class="card-subtitle text-muted mb-0">Currently Borrowed</h6>
+                </div>
+                <p class="stat-value mb-0"><?= $stats['current_borrowed'] ?? 0 ?></p>
+                <p class="card-text text-muted small">Books currently in possession</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card dashboard-stats">
-            <div class="card-body">
-                <h5 class="card-title">Overdue Books</h5>
-                <p class="stat-value"><?= $stats['overdue_count'] ?? 0 ?></p>
-                <p class="card-text">Books past due date</p>
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i data-feather="alert-circle" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <h6 class="card-subtitle text-muted mb-0">Overdue Books</h6>
+                </div>
+                <p class="stat-value mb-0"><?= $stats['overdue_count'] ?? 0 ?></p>
+                <p class="card-text text-muted small">Books past due date</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card dashboard-stats">
-            <div class="card-body">
-                <h5 class="card-title">Penalties Due</h5>
-                <p class="stat-value">₱<?= number_format($stats['total_penalties'] ?? 0, 2) ?></p>
-                <p class="card-text">Unpaid penalty fees</p>
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                        <i data-feather="dollar-sign" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <h6 class="card-subtitle text-muted mb-0">Penalties Due</h6>
+                </div>
+                <p class="stat-value mb-0">₱<?= number_format($stats['total_penalties'] ?? 0, 2) ?></p>
+                <p class="card-text text-muted small">Unpaid penalty fees</p>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Currently Borrowed Books -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">Currently Borrowed Books</h5>
-            </div>
-            <div class="card-body">
-                <?php if (isset($activeLoans) && !empty($activeLoans)): ?>
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Book Title</th>
-                                <th>Author</th>
-                                <th>Borrowed On</th>
-                                <th>Due Date</th>
-                                <th>Status</th>
-                                <th>Days Left</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($activeLoans as $loan): ?>
-                                <?php 
-                                    $dueDate = new DateTime($loan['due_date']);
-                                    $today = new DateTime();
-                                    $interval = $today->diff($dueDate);
-                                    $daysLeft = $interval->format("%r%a"); // Includes the sign
-                                    
-                                    $statusClass = 'success';
-                                    $statusText = 'On Time';
-                                    
-                                    if ($daysLeft < 0) {
-                                        $statusClass = 'danger';
-                                        $statusText = 'Overdue by ' . abs($daysLeft) . ' days';
-                                    } elseif ($daysLeft <= 2) {
-                                        $statusClass = 'warning';
-                                        $statusText = 'Due Soon';
-                                    }
-                                ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($loan['book_title']) ?></td>
-                                    <td><?= htmlspecialchars($loan['book_author']) ?></td>
-                                    <td><?= date('M d, Y', strtotime($loan['borrow_date'])) ?></td>
-                                    <td><?= date('M d, Y', strtotime($loan['due_date'])) ?></td>
-                                    <td><span class="badge bg-<?= $statusClass ?>"><?= $statusText ?></span></td>
-                                    <td>
-                                        <?php if ($daysLeft < 0): ?>
-                                            <span class="text-danger">Overdue</span>
-                                        <?php else: ?>
-                                            <?= $daysLeft ?> days
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php else: ?>
-                <p class="text-muted">You don't have any books borrowed at the moment.</p>
-                <?php endif; ?>
-            </div>
-            <div class="card-footer">
-                <a href="<?= APP_URL ?>/public/books/index.php" class="btn btn-primary">Browse Books</a>
-            </div>
+<div class="card border-0 shadow-sm mb-5">
+    <div class="card-header bg-transparent py-3 border-bottom">
+        <h5 class="card-title mb-0">Currently Borrowed Books</h5>
+    </div>
+    <div class="card-body p-0">
+        <?php if (isset($activeLoans) && !empty($activeLoans)): ?>
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Book Title</th>
+                        <th>Author</th>
+                        <th>Borrowed On</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Days Left</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($activeLoans as $loan): ?>
+                        <?php 
+                            $dueDate = new DateTime($loan['due_date']);
+                            $today = new DateTime();
+                            $interval = $today->diff($dueDate);
+                            $daysLeft = $interval->format("%r%a"); // Includes the sign
+                            
+                            $statusClass = 'success';
+                            $statusText = 'On Time';
+                            
+                            if ($daysLeft < 0) {
+                                $statusClass = 'danger';
+                                $statusText = 'Overdue by ' . abs($daysLeft) . ' days';
+                            } elseif ($daysLeft <= 2) {
+                                $statusClass = 'warning';
+                                $statusText = 'Due Soon';
+                            }
+                        ?>
+                        <tr>
+                            <td class="ps-4"><?= htmlspecialchars($loan['book_title']) ?></td>
+                            <td><?= htmlspecialchars($loan['book_author']) ?></td>
+                            <td><?= date('M d, Y', strtotime($loan['borrow_date'])) ?></td>
+                            <td><?= date('M d, Y', strtotime($loan['due_date'])) ?></td>
+                            <td><span class="badge bg-<?= $statusClass ?>"><?= $statusText ?></span></td>
+                            <td>
+                                <?php if ($daysLeft < 0): ?>
+                                    <span class="text-danger">Overdue</span>
+                                <?php else: ?>
+                                    <?= $daysLeft ?> days
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
+        <?php else: ?>
+        <div class="text-center p-4 text-muted">
+            <i data-feather="book-open" style="width: 24px; height: 24px;" class="mb-2"></i>
+            <p>You don't have any books borrowed at the moment.</p>
+        </div>
+        <?php endif; ?>
+    </div>
+    <div class="card-footer bg-transparent border-top d-flex justify-content-between align-items-center py-3">
+        <span class="text-muted small">You can borrow up to <?= BORROWER_MAX_BOOKS ?> books at a time</span>
+        <a href="<?= APP_URL ?>/public/books/index.php" class="btn btn-primary btn-sm px-3">
+            <i data-feather="search" class="me-1" style="width: 14px; height: 14px;"></i> Browse Books
+        </a>
     </div>
 </div>
 
