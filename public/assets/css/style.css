@@ -305,6 +305,164 @@ pre {
     margin-bottom: 16px;
 }
 
+/* Notion-style Forms */
+.notion-form {
+    max-width: 100%;
+    padding: 10px 0;
+}
+
+.notion-form-header {
+    margin-bottom: 24px;
+}
+
+.notion-form-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: var(--notion-text);
+}
+
+.notion-form-group {
+    margin-bottom: 20px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.notion-form-group.is-focused {
+    transform: translateX(5px);
+}
+
+.notion-form-control {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--notion-text);
+    background-color: var(--notion-bg);
+    background-clip: padding-box;
+    border: 1px solid var(--notion-border);
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.notion-form-control:focus {
+    border-color: var(--notion-blue);
+    box-shadow: 0 0 0 2px rgba(11, 118, 239, 0.2);
+    outline: 0;
+}
+
+.notion-form-control::placeholder {
+    color: rgba(55, 53, 47, 0.4);
+}
+
+.notion-form-select {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--notion-text);
+    background-color: var(--notion-bg);
+    border: 1px solid var(--notion-border);
+    border-radius: 4px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+    transition: all 0.2s;
+}
+
+.notion-form-select:focus {
+    border-color: var(--notion-blue);
+    box-shadow: 0 0 0 2px rgba(11, 118, 239, 0.2);
+    outline: 0;
+}
+
+textarea.notion-form-control {
+    min-height: 120px;
+}
+
+/* Interactive form states */
+.notion-form .was-validated .notion-form-control:invalid,
+.notion-form .notion-form-control.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23dc3545' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+.notion-form .was-validated .notion-form-control:valid,
+.notion-form .notion-form-control.is-valid {
+    border-color: #198754;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23198754' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+/* Custom interactive field styles */
+.notion-form-toggle {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 24px;
+}
+
+.notion-form-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.notion-form-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.notion-form-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .notion-form-toggle-slider {
+    background-color: var(--notion-blue);
+}
+
+input:focus + .notion-form-toggle-slider {
+    box-shadow: 0 0 1px var(--notion-blue);
+}
+
+input:checked + .notion-form-toggle-slider:before {
+    transform: translateX(16px);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .card-body {
@@ -313,5 +471,10 @@ pre {
     
     .notion-page-title {
         font-size: 2rem;
+    }
+    
+    .notion-form-control, 
+    .notion-form-select {
+        font-size: 16px; /* Better for mobile touch */
     }
 }

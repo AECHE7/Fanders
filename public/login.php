@@ -127,40 +127,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         <?php endif; ?>
                         
-                        <form action="<?= $_SERVER['PHP_SELF'] ?>" method="post">
+                        <form action="<?= $_SERVER['PHP_SELF'] ?>" method="post" class="notion-form needs-validation" novalidate>
                             <?= $csrf->getTokenField() ?>
                             
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
-                                <div class="input-group mb-2">
-                                    <span class="input-group-text bg-white text-muted border-end-0">
-                                        <i data-feather="user" style="width: 18px; height: 18px;"></i>
-                                    </span>
-                                    <input type="text" class="form-control border-start-0 ps-0" id="username" name="username" value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>" required autofocus placeholder="Enter your username">
+                            <div class="notion-form-group mb-4">
+                                <label for="username" class="notion-form-label">Username</label>
+                                <div class="d-flex align-items-center notion-form-control-wrapper">
+                                    <div class="rounded d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; background-color: #edf2fc;">
+                                        <i data-feather="user" style="width: 14px; height: 14px; color: #0b76ef;"></i>
+                                    </div>
+                                    <input type="text" class="notion-form-control" id="username" name="username" value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>" required autofocus placeholder="Enter your username">
                                 </div>
+                                <div class="invalid-feedback">Please enter your username.</div>
+                            </div>
+                            
+                            <div class="notion-form-group mb-4">
+                                <label for="password" class="notion-form-label">Password</label>
+                                <div class="d-flex align-items-center position-relative notion-form-control-wrapper">
+                                    <div class="rounded d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; background-color: #f7ecff;">
+                                        <i data-feather="lock" style="width: 14px; height: 14px; color: #9d71ea;"></i>
+                                    </div>
+                                    <input type="password" class="notion-form-control" id="password" name="password" required placeholder="Enter your password">
+                                    <button type="button" class="btn btn-link password-toggle position-absolute end-0 me-2" style="z-index: 5; background: none; border: none; padding: 0;">
+                                        <i data-feather="eye" style="width: 16px; height: 16px; color: #6b7280;"></i>
+                                    </button>
+                                </div>
+                                <div class="invalid-feedback">Please enter your password.</div>
                             </div>
                             
                             <div class="mb-4">
-                                <div class="d-flex justify-content-between">
-                                    <label for="password" class="form-label">Password</label>
-                                </div>
-                                <div class="input-group mb-2">
-                                    <span class="input-group-text bg-white text-muted border-end-0">
-                                        <i data-feather="lock" style="width: 18px; height: 18px;"></i>
-                                    </span>
-                                    <input type="password" class="form-control border-start-0 ps-0" id="password" name="password" required placeholder="Enter your password">
-                                </div>
-                            </div>
-                            
-                            <div class="form-check mb-4">
-                                <input class="form-check-input" type="checkbox" value="1" id="rememberMe" name="remember_me">
-                                <label class="form-check-label" for="rememberMe">
-                                    Remember me
+                                <label class="notion-form-toggle">
+                                    <input type="checkbox" value="1" id="rememberMe" name="remember_me">
+                                    <span class="notion-form-toggle-slider"></span>
+                                    <span class="ms-2 position-relative" style="top: -6px;">Remember me</span>
                                 </label>
                             </div>
                             
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary py-2">Sign in</button>
+                                <button type="submit" class="btn btn-primary py-2 px-4 login-pulse-button">
+                                    <i data-feather="log-in" class="me-2" style="width: 16px; height: 16px;"></i> Sign in
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -185,43 +191,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
     <script src="<?= APP_URL ?>/assets/js/main.js"></script>
+    <style>
+        /* Login-specific styles */
+        .login-pulse-button {
+            position: relative;
+            overflow: hidden;
+            transform: translate3d(0, 0, 0);
+        }
+        
+        .login-pulse-button:after {
+            content: "";
+            display: block;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle, #fff 10%, transparent 10.01%);
+            background-repeat: no-repeat;
+            background-position: 50%;
+            transform: scale(10, 10);
+            opacity: 0;
+            transition: transform .5s, opacity 1s;
+        }
+        
+        .login-pulse-button:active:after {
+            transform: scale(0, 0);
+            opacity: .3;
+            transition: 0s;
+        }
+        
+        .notion-form-control-wrapper {
+            position: relative;
+            border: 1px solid var(--notion-border);
+            border-radius: 4px;
+            background-color: var(--notion-bg);
+            transition: all 0.2s;
+            padding: 0 8px;
+        }
+        
+        .notion-form-control-wrapper:focus-within {
+            border-color: var(--notion-blue);
+            box-shadow: 0 0 0 2px rgba(11, 118, 239, 0.2);
+        }
+        
+        .notion-form-control-wrapper .notion-form-control {
+            border: none;
+            box-shadow: none;
+            background: transparent;
+            flex: 1;
+        }
+        
+        .notion-form-control-wrapper .notion-form-control:focus {
+            outline: none;
+            box-shadow: none;
+        }
+    </style>
+
     <script>
         // Initialize feather icons
         feather.replace();
         
-        // Simple password visibility toggle
         document.addEventListener('DOMContentLoaded', function() {
-            const showPasswordToggle = document.createElement('button');
-            showPasswordToggle.type = 'button';
-            showPasswordToggle.className = 'btn btn-link position-absolute end-0 top-50 translate-middle-y text-muted';
-            showPasswordToggle.style.zIndex = '5';
-            showPasswordToggle.innerHTML = '<i data-feather="eye" style="width: 16px; height: 16px;"></i>';
-            showPasswordToggle.title = 'Show password';
+            // Form validation
+            const form = document.querySelector('.notion-form');
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                });
+            }
             
-            // Add the button to the password input's parent
-            const passwordGroup = document.querySelector('#password').closest('.input-group');
-            passwordGroup.style.position = 'relative';
-            passwordGroup.appendChild(showPasswordToggle);
-            
-            // Initialize the feather icon in the button
-            feather.replace();
-            
-            // Toggle password visibility
-            let passwordVisible = false;
-            showPasswordToggle.addEventListener('click', function() {
-                const passwordInput = document.querySelector('#password');
-                if (passwordVisible) {
-                    passwordInput.type = 'password';
-                    this.innerHTML = '<i data-feather="eye" style="width: 16px; height: 16px;"></i>';
-                    this.title = 'Show password';
-                } else {
-                    passwordInput.type = 'text';
-                    this.innerHTML = '<i data-feather="eye-off" style="width: 16px; height: 16px;"></i>';
-                    this.title = 'Hide password';
-                }
-                passwordVisible = !passwordVisible;
-                feather.replace();
+            // Interactive field focusing effects
+            const notionFormControls = document.querySelectorAll('.notion-form-control');
+            notionFormControls.forEach(control => {
+                // Add focus class to parent
+                control.addEventListener('focus', function() {
+                    this.closest('.notion-form-group').classList.add('is-focused');
+                });
+                
+                // Remove focus class on blur
+                control.addEventListener('blur', function() {
+                    this.closest('.notion-form-group').classList.remove('is-focused');
+                });
             });
+            
+            // Password toggle functionality
+            const passwordToggle = document.querySelector('.password-toggle');
+            const passwordInput = document.querySelector('#password');
+            
+            if (passwordToggle && passwordInput) {
+                let passwordVisible = false;
+                
+                passwordToggle.addEventListener('click', function() {
+                    if (passwordVisible) {
+                        passwordInput.type = 'password';
+                        this.innerHTML = '<i data-feather="eye" style="width: 16px; height: 16px; color: #6b7280;"></i>';
+                        this.title = 'Show password';
+                    } else {
+                        passwordInput.type = 'text';
+                        this.innerHTML = '<i data-feather="eye-off" style="width: 16px; height: 16px; color: #6b7280;"></i>';
+                        this.title = 'Hide password';
+                    }
+                    passwordVisible = !passwordVisible;
+                    feather.replace();
+                });
+            }
         });
     </script>
 </body>
