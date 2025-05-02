@@ -25,6 +25,12 @@ $navItems = [
         'url' => APP_URL . '/public/books/index.php',
         'roles' => [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_BORROWER]
     ],
+    'bookshelf' => [
+        'icon' => 'book-open',
+        'title' => 'Bookshelf View',
+        'url' => APP_URL . '/public/books/bookshelf.php',
+        'roles' => [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_BORROWER]
+    ],
     'users' => [
         'icon' => 'users',
         'title' => 'Users',
