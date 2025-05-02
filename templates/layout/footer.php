@@ -28,6 +28,7 @@
             const APP_URL = "<?= APP_URL ?>";
         </script>
         <script src="<?= APP_URL ?>/assets/js/main.js"></script>
+        <script src="<?= APP_URL ?>/assets/js/interactive.js"></script>
         <script>
             // Initialize feather icons
             feather.replace();

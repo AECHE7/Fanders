@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/bookshelf.css">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/interactions.css">
     <!-- Favicon -->
     <link rel="shortcut icon" href="<?= APP_URL ?>/assets/favicon.ico" type="image/x-icon">
 </head>

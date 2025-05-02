@@ -41,7 +41,7 @@
         <h5 class="mb-0 me-2">📈 Library Statistics</h5>
         <div class="notion-divider flex-grow-1"></div>
     </div>
-    <div class="row g-4">
+    <div class="row g-4 dashboard-stats-container">
         <div class="col-md-3">
             <div class="p-4 rounded" style="background-color: #F5F4FF;">
                 <div class="d-flex mb-3 align-items-center">
@@ -110,12 +110,12 @@
 </div>
 
 <!-- Quick Action Section with Notion-style colored blocks -->
-<div class="mb-5">
+<div class="mb-5 animate-on-scroll">
     <div class="d-flex align-items-center mb-3">
         <h5 class="mb-0 me-2">📌 Quick Actions</h5>
         <div class="notion-divider flex-grow-1"></div>
     </div>
-    <div class="row g-3">
+    <div class="row g-3 stagger-fade-in">
         <div class="col-md-3">
             <a href="<?= APP_URL ?>/public/books/add.php" class="text-decoration-none">
                 <div class="card border-0 h-100" style="background-color: #f7ecff;">
@@ -187,12 +187,12 @@
     </div>
 </div>
 
-<div class="mb-5">
+<div class="mb-5 animate-on-scroll">
     <div class="d-flex align-items-center mb-3">
         <h5 class="mb-0 me-2">🔍 Recent Activity</h5>
         <div class="notion-divider flex-grow-1"></div>
     </div>
-    <div class="row g-4">
+    <div class="row g-4 stagger-fade-in">
     <!-- Recently Added Books -->
     <div class="col-md-6">
         <div class="card border-0 shadow-sm h-100">
@@ -210,21 +210,21 @@
                     <table class="table mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-4">Title</th>
-                                <th>Author</th>
-                                <th>Added On</th>
+                                <th class="ps-4" data-sort="title">Title</th>
+                                <th data-sort="author">Author</th>
+                                <th data-sort="date">Added On</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($recentlyAddedBooks as $book): ?>
                             <tr>
-                                <td class="ps-4">
+                                <td class="ps-4" data-key="title">
                                     <a href="<?= APP_URL ?>/public/books/view.php?id=<?= $book['id'] ?>" class="text-decoration-none">
                                         <?= htmlspecialchars($book['title']) ?>
                                     </a>
                                 </td>
-                                <td><?= htmlspecialchars($book['author']) ?></td>
-                                <td><?= date('M d, Y', strtotime($book['created_at'])) ?></td>
+                                <td data-key="author"><?= htmlspecialchars($book['author']) ?></td>
+                                <td data-key="date"><?= date('M d, Y', strtotime($book['created_at'])) ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
