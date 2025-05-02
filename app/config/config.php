@@ -13,7 +13,7 @@ define('DB_TYPE', 'pgsql'); // Changed to PostgreSQL
 
 // Application configuration
 define('APP_NAME', 'Library Management System');
-define('APP_URL', 'http://localhost:5000');
+define('APP_URL', 'https://' . getenv('REPL_SLUG') . '.' . getenv('REPL_OWNER') . '.repl.co');
 define('SESSION_LIFETIME', 1800); // 30 minutes in seconds
 define('BASE_PATH', dirname(dirname(__DIR__)));
 
