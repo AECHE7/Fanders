@@ -1,265 +1,337 @@
-/* Bookshelf Visualization Styles */
+/**
+ * Bookshelf CSS - Skeuomorphic book visualization
+ */
 
-/* Container for the entire bookshelf */
+/* Bookshelf container */
 .bookshelf-container {
-    margin-bottom: 40px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
+    min-height: 600px;
+    position: relative;
 }
 
-/* Individual bookshelf styling */
-.bookshelf {
-    position: relative;
-    height: 260px;
-    margin-bottom: 60px;
-    perspective: 1000px;
+/* Bookshelf filters */
+.bookshelf-filters {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* The shelf surface */
-.shelf {
+/* Bookshelf row - wood texture */
+.bookshelf-row {
+    height: 220px;
+    background-color: #8B4513;
+    background-image: linear-gradient(90deg, rgba(139, 69, 19, 0.8) 0%, rgba(160, 82, 45, 0.8) 50%, rgba(139, 69, 19, 0.8) 100%);
+    border-radius: 5px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    margin-bottom: 30px;
     position: relative;
-    height: 240px;
-    background-color: #f9f7f5;
-    border-radius: 2px;
+    padding: 10px;
     display: flex;
     align-items: flex-end;
-    justify-content: flex-start;
-    padding: 0 15px;
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
-    overflow: visible;
+    overflow-x: auto;
+    scrollbar-width: thin;
 }
 
-/* Edge of the shelf */
-.shelf-edge {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    background: linear-gradient(to bottom, #d9c8a5, #b3a386);
-    transform: translateY(20px);
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    transform-style: preserve-3d;
-}
-
-/* Shadow beneath the shelf */
-.shelf-shadow {
-    position: absolute;
-    bottom: 0;
-    left: 5%;
-    right: 5%;
-    height: 10px;
-    background: rgba(0, 0, 0, 0.15);
-    transform: translateY(30px);
-    filter: blur(5px);
-    border-radius: 50%;
-}
-
-/* Book styling */
-.book {
-    position: relative;
-    width: 40px;
-    height: 200px;
-    margin: 0 15px;
-    bottom: 0;
-    cursor: pointer;
-    transform-style: preserve-3d;
-    transform-origin: center bottom;
-    transition: transform 0.5s ease;
-    z-index: 1;
-}
-
-/* Create 3D book effect with transforms */
-.book-spine {
+/* Wood grain effect */
+.bookshelf-row::before {
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="none" stroke="rgba(0,0,0,0.05)" stroke-width="1" stroke-dasharray="1,3" /></svg>');
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+/* Bottom shelf support */
+.bookshelf-row::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 20px;
+    right: 20px;
+    height: 15px;
+    background-color: #5D4037;
+    border-radius: 0 0 5px 5px;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.15);
+}
+
+/* Book item */
+.book {
+    flex: 0 0 auto;
+    height: 180px;
     width: 40px;
+    margin: 0 5px;
+    border-radius: 2px 0 0 2px;
+    box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.2);
+    transform-origin: bottom center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    cursor: pointer;
+    background: linear-gradient(to right, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 5%, rgba(0,0,0,0) 95%, rgba(0,0,0,0.1) 100%);
+}
+
+/* Book spine design */
+.book-spine {
     height: 100%;
-    background-color: #4285F4;
-    border-radius: 3px 0 0 3px;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
-    padding: 5px;
-    transform: translateZ(0px);
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    justify-content: space-between;
+    padding: 15px 0;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
 }
 
 /* Book title on spine */
 .book-title {
-    color: white;
-    font-size: 11px;
-    font-weight: bold;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
+    text-orientation: mixed;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 10px;
+    font-weight: 600;
     text-align: center;
-    margin-bottom: 10px;
-    text-overflow: ellipsis;
-    overflow: hidden;
     max-height: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+    padding: 0 2px;
 }
 
-/* Book author on spine */
+/* Author text on spine */
 .book-author {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 9px;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
-    text-align: center;
-    text-overflow: ellipsis;
-    overflow: hidden;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 8px;
     max-height: 60px;
-}
-
-/* Side of the book */
-.book-side {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 10px;
-    height: 100%;
-    background-color: #e0e0e0;
-    transform: rotateY(90deg) translateZ(20px);
-    border-radius: 0 3px 3px 0;
-}
-
-/* Front cover of the book */
-.book-cover {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 300%;
-    height: 100%;
-    background: linear-gradient(45deg, #ffffff 0%, #f9f9f9 100%);
-    border-radius: 3px;
-    transform: rotateY(-90deg) translateX(-100%) translateZ(0px);
-    padding: 20px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 5px;
 }
 
-/* Book cover title */
-.book-cover-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-/* Book cover author */
-.book-cover-author {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 15px;
-}
-
-/* Book cover footer info */
-.book-cover-footer {
-    margin-top: auto;
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: #999;
-}
-
-/* Book ISBN on cover */
-.book-isbn {
-    font-family: monospace;
-}
-
-/* Book year on cover */
-.book-year {
-    font-style: italic;
-}
-
-/* Hover effects for books */
+/* Book hover effect */
 .book:hover {
-    transform: rotateX(-5deg) rotateY(-20deg) translateY(-10px);
+    transform: translateY(-15px) rotate(5deg);
+    box-shadow: -5px 10px 10px rgba(0, 0, 0, 0.3);
     z-index: 10;
 }
 
-.book:hover .book-cover {
+/* Book available indicator */
+.book-available {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #4CAF50;
+}
+
+.book-unavailable {
+    background-color: #F44336;
+}
+
+/* Book detail popup */
+.book-detail {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 350px;
+    background-color: white;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 20px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.book-detail.active {
     opacity: 1;
+    visibility: visible;
 }
 
-/* Empty bookshelf styling */
-.empty-bookshelf {
-    height: 240px;
+/* Book detail header */
+.book-detail-header {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.book-detail-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.book-detail-author {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Book detail content */
+.book-detail-content {
+    margin-bottom: 15px;
+}
+
+.book-detail-info {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.book-detail-label {
+    font-weight: 500;
+    color: #555;
+}
+
+.book-detail-value {
+    color: #333;
+}
+
+.book-detail-description {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #444;
+    max-height: 150px;
+    overflow-y: auto;
+    padding-right: 5px;
+    margin-top: 10px;
+}
+
+/* Book detail footer */
+.book-detail-footer {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+}
+
+.book-detail-footer .btn {
+    font-size: 0.85rem;
+}
+
+/* Category label for bookshelf rows */
+.bookshelf-category {
+    position: absolute;
+    left: 10px;
+    top: -25px;
+    background-color: #fff;
+    padding: 5px 15px;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9rem;
+    z-index: 5;
+}
+
+/* Overlay for popup background */
+.book-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 900;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.book-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Empty shelf message */
+.empty-shelf {
+    display: flex;
     justify-content: center;
     align-items: center;
-}
-
-/* Modal book spine styling */
-.book-modal-cover {
-    perspective: 1000px;
-}
-
-.book-modal-spine {
-    width: 60px;
     height: 180px;
-    background-color: #4285F4;
-    border-radius: 3px;
-    display: inline-flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    transform: rotateY(-15deg);
-    transition: transform 0.5s ease;
-    cursor: pointer;
+    width: 100%;
+    color: rgba(255,255,255,0.7);
+    font-style: italic;
 }
 
-.book-modal-spine:hover {
-    transform: rotateY(-30deg);
-}
-
-.book-modal-title {
-    color: white;
-    font-size: 14px;
-    font-weight: bold;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    text-align: center;
-    margin: 10px 0;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    max-height: 140px;
-}
+/* Book color variations */
+.book-color-1 { background-color: #4285F4; }
+.book-color-2 { background-color: #34A853; }
+.book-color-3 { background-color: #FBBC05; }
+.book-color-4 { background-color: #EA4335; }
+.book-color-5 { background-color: #8E44AD; }
+.book-color-6 { background-color: #16A085; }
+.book-color-7 { background-color: #D35400; }
+.book-color-8 { background-color: #2C3E50; }
+.book-color-9 { background-color: #7F8C8D; }
+.book-color-10 { background-color: #27AE60; }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .bookshelf-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .bookshelf-controls > div {
-        margin-bottom: 10px;
-        margin-right: 0;
-    }
-    
-    .bookshelf-controls .search-box {
-        width: 100%;
+    .bookshelf-row {
+        height: 180px;
     }
     
     .book {
-        margin: 0 8px;
+        height: 150px;
         width: 30px;
     }
     
-    .book-spine {
-        width: 30px;
+    .book-title {
+        font-size: 8px;
     }
     
-    .book-title,
     .book-author {
-        font-size: 9px;
+        font-size: 6px;
+    }
+    
+    .book-detail {
+        width: 90%;
+        max-width: 350px;
     }
 }
+
+/* Animation for books loading */
+@keyframes bookAppear {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.book {
+    animation: bookAppear 0.5s ease forwards;
+}
+
+.book:nth-child(1) { animation-delay: 0.1s; }
+.book:nth-child(2) { animation-delay: 0.2s; }
+.book:nth-child(3) { animation-delay: 0.3s; }
+.book:nth-child(4) { animation-delay: 0.4s; }
+.book:nth-child(5) { animation-delay: 0.5s; }
+.book:nth-child(6) { animation-delay: 0.6s; }
+.book:nth-child(7) { animation-delay: 0.7s; }
+.book:nth-child(8) { animation-delay: 0.8s; }
+.book:nth-child(9) { animation-delay: 0.9s; }
+.book:nth-child(10) { animation-delay: 1.0s; }
+.book:nth-child(n+11) { animation-delay: 1.1s; }
