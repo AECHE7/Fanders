@@ -2,6 +2,7 @@
 
 /* Global Styles */
 :root {
+    /* Light Theme (default) */
     --notion-bg: #ffffff;
     --notion-text: #37352f;
     --notion-light-gray: #f7f6f3;
@@ -12,6 +13,43 @@
     --notion-border: rgba(55, 53, 47, 0.09);
     --notion-shadow: rgba(15, 15, 15, 0.05);
     --notion-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    
+    /* Alert colors */
+    --alert-success-bg: #e6f7ee;
+    --alert-success-text: #0c6b58;
+    --alert-danger-bg: #fdeded;
+    --alert-danger-text: #cc0000;
+    --alert-warning-bg: #fff7e6;
+    --alert-warning-text: #b65e00;
+    --alert-info-bg: var(--notion-light-blue);
+    --alert-info-text: var(--notion-blue);
+}
+
+/* Dark Theme */
+[data-theme="dark"] {
+    --notion-bg: #191919;
+    --notion-text: #e6e6e6;
+    --notion-light-gray: #2f3437;
+    --notion-gray: #373a3d;
+    --notion-light-blue: #1a2734;
+    --notion-blue: #2e9fff;
+    --notion-hover-bg: #2f3437;
+    --notion-border: rgba(255, 255, 255, 0.13);
+    --notion-shadow: rgba(0, 0, 0, 0.3);
+    
+    /* Alert colors - dark theme */
+    --alert-success-bg: #0e3d30;
+    --alert-success-text: #7ce0bf;
+    --alert-danger-bg: #3e1a1a;
+    --alert-danger-text: #ff9b9b;
+    --alert-warning-bg: #3d2e18;
+    --alert-warning-text: #ffd178;
+    --alert-info-bg: var(--notion-light-blue);
+    --alert-info-text: var(--notion-blue);
+}
+
+html {
+    transition: color 0.3s ease, background-color 0.3s ease;
 }
 
 body {
@@ -20,6 +58,7 @@ body {
     color: var(--notion-text);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    transition: color 0.3s ease, background-color 0.3s ease;
 }
 
 /* Header styles */
@@ -48,6 +87,25 @@ body {
 .sidebar {
     background-color: var(--notion-bg);
     border-right: 1px solid var(--notion-border);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: var(--notion-bg);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--notion-gray);
+    border-radius: 6px;
 }
 
 .sidebar .nav-link {
@@ -219,23 +277,23 @@ footer {
 }
 
 .alert-success {
-    background-color: #e6f7ee;
-    color: #0c6b58;
+    background-color: var(--alert-success-bg);
+    color: var(--alert-success-text);
 }
 
 .alert-danger {
-    background-color: #fdeded;
-    color: #cc0000;
+    background-color: var(--alert-danger-bg);
+    color: var(--alert-danger-text);
 }
 
 .alert-warning {
-    background-color: #fff7e6;
-    color: #b65e00;
+    background-color: var(--alert-warning-bg);
+    color: var(--alert-warning-text);
 }
 
 .alert-info {
-    background-color: var(--notion-light-blue);
-    color: var(--notion-blue);
+    background-color: var(--alert-info-bg);
+    color: var(--alert-info-text);
 }
 
 /* Badge styling */

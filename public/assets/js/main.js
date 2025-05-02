@@ -2,10 +2,68 @@
  * Main JavaScript file for Library Management System
  */
 
+// Theme management functions
+function setTheme(themeName) {
+    localStorage.setItem('theme', themeName);
+    document.documentElement.setAttribute('data-theme', themeName);
+}
+
+function toggleTheme() {
+    if (localStorage.getItem('theme') === 'dark') {
+        setTheme('light');
+        document.getElementById('theme-icon').setAttribute('data-feather', 'moon');
+    } else {
+        setTheme('dark');
+        document.getElementById('theme-icon').setAttribute('data-feather', 'sun');
+    }
+    // Re-initialize feather icons to update the theme icon
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+}
+
+// Initialize theme from local storage
+function initTheme() {
+    const themeSwitch = document.getElementById('theme-switch');
+    if (!themeSwitch) return;
+    
+    if (localStorage.getItem('theme') === 'dark') {
+        setTheme('dark');
+        themeSwitch.checked = true;
+        document.getElementById('theme-icon').setAttribute('data-feather', 'sun');
+    } else {
+        setTheme('light');
+        themeSwitch.checked = false;
+        document.getElementById('theme-icon').setAttribute('data-feather', 'moon');
+    }
+    
+    // Re-initialize feather icons to update the theme icon
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize feather icons
     if (typeof feather !== 'undefined') {
         feather.replace();
+    }
+    
+    // Initialize theme
+    initTheme();
+    
+    // Theme switch event listener
+    const themeSwitch = document.getElementById('theme-switch');
+    if (themeSwitch) {
+        themeSwitch.addEventListener('change', toggleTheme);
+    }
+    
+    // Fix sidebar on scroll
+    const sidebar = document.getElementById('sidebarMenu');
+    if (sidebar) {
+        sidebar.classList.add('sticky-top');
+        sidebar.style.maxHeight = '100vh';
+        sidebar.style.overflowY = 'auto';
     }
     
     // Auto dismiss alerts after 5 seconds
