@@ -7,28 +7,17 @@
 // Include configuration
 require_once '../../app/config/config.php';
 
-// Include all required files
-function autoload($className) {
-    // Define the directories to look in
-    $directories = [
-        'app/core/',
-        'app/models/',
-        'app/services/',
-        'app/utilities/'
-    ];
-    
-    // Try to find the class file
-    foreach ($directories as $directory) {
-        $file = BASE_PATH . '/' . $directory . $className . '.php';
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
-    }
-}
-
-// Register autoloader
-spl_autoload_register('autoload');
+// Include required classes
+require_once '../../app/core/Session.php';
+require_once '../../app/services/AuthService.php';
+require_once '../../app/utilities/PasswordHash.php';
+require_once '../../app/core/Database.php';
+require_once '../../app/core/BaseModel.php';
+require_once '../../app/core/BaseService.php';
+require_once '../../app/models/UserModel.php';
+require_once '../../app/models/BookModel.php';
+require_once '../../app/models/CategoryModel.php';
+require_once '../../app/services/BookService.php';
 
 // Initialize session management
 $session = new Session();
