@@ -1,88 +1,92 @@
-<!-- Sidebar -->
-<nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-    <div class="position-sticky pt-3">
-        <div class="text-center mb-3 d-none d-md-block">
-            <h5><?= APP_NAME ?></h5>
+<?php
+/**
+ * Navbar template for the Library Management System
+ */
+
+// Get current user and role
+$currentUser = $auth->getCurrentUser();
+$userRole = $currentUser['role_id'];
+$roleName = $currentUser['role_name'];
+?>
+
+<header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
+    <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="<?= APP_URL ?>/public/dashboard.php"><?= APP_NAME ?></a>
+    <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="navbar-nav">
+        <div class="nav-item text-nowrap">
+            <span class="nav-link px-3 text-white">Welcome, <?= htmlspecialchars($currentUser['first_name']) ?> (<?= $roleName ?>)</span>
         </div>
-        
-        <div class="text-center mb-3">
-            <div class="user-profile">
-                <?php if (isset($user)): ?>
-                    <div class="mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather feather-user-circle"><path d="M5.52 19c.64-2.2 1.84-3 3.22-3h6.52c1.38 0 2.58.8 3.22 3"/><circle cx="12" cy="10" r="3"/><circle cx="12" cy="12" r="10"/></svg>
-                    </div>
-                    <h6 class="mb-0"><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></h6>
-                    <small class="text-muted"><?= htmlspecialchars($user['role_name']) ?></small>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <hr>
-        
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link <?= basename($_SERVER['PHP_SELF']) == 'dashboard.php' ? 'active' : '' ?>" href="<?= APP_URL ?>/public/dashboard.php">
-                    <span data-feather="home"></span>
-                    Dashboard
-                </a>
-            </li>
-            
-            <li class="nav-item">
-                <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], '/books/') !== false ? 'active' : '' ?>" href="<?= APP_URL ?>/public/books/index.php">
-                    <span data-feather="book"></span>
-                    Books
-                </a>
-            </li>
-            
-            <?php if ($userRole == ROLE_SUPER_ADMIN): ?>
-                <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], '/admins/') !== false ? 'active' : '' ?>" href="<?= APP_URL ?>/public/admins/index.php">
-                        <span data-feather="users"></span>
-                        Administrators
-                    </a>
-                </li>
-            <?php endif; ?>
-            
-            <?php if ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN): ?>
-                <li class="nav-item">
-                    <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], '/users/') !== false ? 'active' : '' ?>" href="<?= APP_URL ?>/public/users/index.php">
-                        <span data-feather="user"></span>
-                        <?= $userRole == ROLE_ADMIN ? 'Borrowers' : 'Users' ?>
-                    </a>
-                </li>
-            <?php endif; ?>
-            
-            <li class="nav-item">
-                <a class="nav-link <?= strpos($_SERVER['PHP_SELF'], '/transactions/') !== false ? 'active' : '' ?>" href="<?= APP_URL ?>/public/transactions/index.php">
-                    <span data-feather="repeat"></span>
-                    <?= $userRole == ROLE_BORROWER ? 'My Loans' : 'Transactions' ?>
-                </a>
-            </li>
-            
-            <?php if ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN): ?>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle <?= strpos($_SERVER['PHP_SELF'], '/reports/') !== false ? 'active' : '' ?>" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <span data-feather="file-text"></span>
-                        Reports
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
-                        <li><a class="dropdown-item" href="<?= APP_URL ?>/public/reports/books.php">Books Report</a></li>
-                        <li><a class="dropdown-item" href="<?= APP_URL ?>/public/reports/users.php">Users Report</a></li>
-                        <li><a class="dropdown-item" href="<?= APP_URL ?>/public/reports/transactions.php">Transactions Report</a></li>
-                    </ul>
-                </li>
-            <?php endif; ?>
-        </ul>
-        
-        <hr>
-        
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link" href="<?= APP_URL ?>/public/logout.php">
-                    <span data-feather="log-out"></span>
-                    Logout
-                </a>
-            </li>
-        </ul>
     </div>
-</nav>
+</header>
+
+<div class="container-fluid">
+    <div class="row">
+        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= APP_URL ?>/public/dashboard.php">
+                            <i data-feather="home"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    
+                    <?php if ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= APP_URL ?>/public/books/index.php">
+                            <i data-feather="book"></i>
+                            Books
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    
+                    <?php if ($userRole == ROLE_BORROWER): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= APP_URL ?>/public/books/index.php">
+                            <i data-feather="book-open"></i>
+                            Available Books
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    
+                    <?php if ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= APP_URL ?>/public/users/index.php">
+                            <i data-feather="users"></i>
+                            Users
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= APP_URL ?>/public/transactions/index.php">
+                            <i data-feather="repeat"></i>
+                            <?= ($userRole == ROLE_BORROWER) ? 'My Loans' : 'Transactions' ?>
+                        </a>
+                    </li>
+                    
+                    <?php if ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= APP_URL ?>/public/reports/books.php">
+                            <i data-feather="file-text"></i>
+                            Reports
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                </ul>
+                
+                <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                    <span>Account</span>
+                </h6>
+                <ul class="nav flex-column mb-2">
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= APP_URL ?>/public/logout.php">
+                            <i data-feather="log-out"></i>
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
