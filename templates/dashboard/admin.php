@@ -1,255 +1,250 @@
-<?php 
-// Admin/Super Admin Dashboard Template
+<?php
+/**
+ * Admin/Super Admin dashboard template for the Library Management System
+ */
 ?>
 
-<!-- Stats Cards -->
-<div class="row">
-    <?php if ($userRole == ROLE_SUPER_ADMIN): ?>
-        <div class="col-md-3 mb-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted">Total Users</h6>
-                            <h2 class="mb-0"><?= $stats['total_users'] ?></h2>
-                        </div>
-                        <div class="text-primary">
-                            <span data-feather="users" style="width: 40px; height: 40px;"></span>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <small class="text-muted">Active: <?= $stats['active_users'] ?></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    <?php else: ?>
-        <div class="col-md-3 mb-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="text-muted">Total Borrowers</h6>
-                            <h2 class="mb-0"><?= $stats['total_borrowers'] ?></h2>
-                        </div>
-                        <div class="text-primary">
-                            <span data-feather="users" style="width: 40px; height: 40px;"></span>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <small class="text-muted">Active: <?= $stats['active_borrowers'] ?></small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
+<!-- Stats Overview -->
+<div class="row mt-4">
+    <div class="col-md-3">
+        <div class="card dashboard-stats">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted">Total Books</h6>
-                        <h2 class="mb-0"><?= $stats['total_books'] ?></h2>
-                    </div>
-                    <div class="text-success">
-                        <span data-feather="book" style="width: 40px; height: 40px;"></span>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <small class="text-muted">Available: <?= $stats['available_books'] ?></small>
-                </div>
+                <h5 class="card-title">Total Books</h5>
+                <p class="stat-value"><?= $stats['total_books'] ?? 0 ?></p>
+                <p class="card-text">Books in the library</p>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
+    <div class="col-md-3">
+        <div class="card dashboard-stats">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted">Borrowed Books</h6>
-                        <h2 class="mb-0"><?= $stats['borrowed_books'] ?></h2>
-                    </div>
-                    <div class="text-warning">
-                        <span data-feather="repeat" style="width: 40px; height: 40px;"></span>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <small class="text-muted">Overdue: <?= $stats['overdue_books'] ?></small>
-                </div>
+                <h5 class="card-title">Available Books</h5>
+                <p class="stat-value"><?= $stats['available_books'] ?? 0 ?></p>
+                <p class="card-text">Books available for borrowing</p>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-3 mb-4">
-        <div class="card h-100">
+    <div class="col-md-3">
+        <div class="card dashboard-stats">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted">Total Penalties</h6>
-                        <h2 class="mb-0">₱<?= number_format($stats['total_penalties'], 2) ?></h2>
-                    </div>
-                    <div class="text-danger">
-                        <span data-feather="alert-triangle" style="width: 40px; height: 40px;"></span>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <small class="text-muted">Unpaid: ₱<?= number_format($stats['unpaid_penalties'], 2) ?></small>
+                <h5 class="card-title">Active Borrowers</h5>
+                <p class="stat-value"><?= $stats['active_borrowers'] ?? 0 ?></p>
+                <p class="card-text">Registered borrowers</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card dashboard-stats">
+            <div class="card-body">
+                <h5 class="card-title">Active Loans</h5>
+                <p class="stat-value"><?= $stats['active_loans'] ?? 0 ?></p>
+                <p class="card-text">Currently borrowed books</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Action Buttons -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="<?= APP_URL ?>/public/books/add.php" class="btn btn-primary">
+                        <i data-feather="plus-circle"></i> Add New Book
+                    </a>
+                    <a href="<?= APP_URL ?>/public/users/add.php" class="btn btn-success">
+                        <i data-feather="user-plus"></i> Add New User
+                    </a>
+                    <a href="<?= APP_URL ?>/public/transactions/borrow.php" class="btn btn-info">
+                        <i data-feather="log-in"></i> Issue Book
+                    </a>
+                    <a href="<?= APP_URL ?>/public/transactions/return.php" class="btn btn-warning">
+                        <i data-feather="log-out"></i> Return Book
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Overdue Books -->
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Overdue Books</h5>
-        <a href="<?= APP_URL ?>/public/transactions/index.php?status=overdue" class="btn btn-sm btn-outline-primary">View All</a>
-    </div>
-    <div class="card-body">
-        <?php if (isset($overdueLoans) && count($overdueLoans) > 0): ?>
-            <div class="table-responsive">
-                <table class="table table-striped table-sm">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Book Title</th>
-                            <th>Borrower</th>
-                            <th>Due Date</th>
-                            <th>Days Overdue</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($overdueLoans as $loan): ?>
+<!-- Recent Activities -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Recently Added Books</h5>
+            </div>
+            <div class="card-body">
+                <?php if (isset($recentlyAddedBooks) && !empty($recentlyAddedBooks)): ?>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
                             <tr>
-                                <td><?= $loan['id'] ?></td>
-                                <td><?= htmlspecialchars($loan['book_title']) ?></td>
-                                <td><?= htmlspecialchars($loan['first_name'] . ' ' . $loan['last_name']) ?></td>
-                                <td><?= date('Y-m-d', strtotime($loan['due_date'])) ?></td>
-                                <td><span class="badge bg-danger"><?= $loan['days_overdue'] ?> days</span></td>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Added On</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($recentlyAddedBooks as $book): ?>
+                            <tr>
                                 <td>
-                                    <a href="<?= APP_URL ?>/public/transactions/return.php?id=<?= $loan['id'] ?>" class="btn btn-sm btn-primary">Return</a>
+                                    <a href="<?= APP_URL ?>/public/books/view.php?id=<?= $book['id'] ?>">
+                                        <?= htmlspecialchars($book['title']) ?>
+                                    </a>
+                                </td>
+                                <td><?= htmlspecialchars($book['author']) ?></td>
+                                <td><?= date('M d, Y', strtotime($book['created_at'])) ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php else: ?>
+                <p class="text-muted">No books have been added recently.</p>
+                <?php endif; ?>
+            </div>
+            <div class="card-footer">
+                <a href="<?= APP_URL ?>/public/books/index.php" class="btn btn-sm btn-outline-primary">View All Books</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Books Due for Return Today</h5>
+            </div>
+            <div class="card-body">
+                <?php if (isset($dueTodayLoans) && !empty($dueTodayLoans)): ?>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Book Title</th>
+                                <th>Borrower</th>
+                                <th>Due Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($dueTodayLoans as $loan): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($loan['book_title']) ?></td>
+                                <td><?= htmlspecialchars($loan['borrower_name']) ?></td>
+                                <td><?= date('M d, Y', strtotime($loan['due_date'])) ?></td>
+                                <td>
+                                    <a href="<?= APP_URL ?>/public/transactions/return.php?id=<?= $loan['id'] ?>" class="btn btn-sm btn-warning">
+                                        <i data-feather="check-circle"></i> Return
+                                    </a>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php else: ?>
+                <p class="text-muted">No books are due for return today.</p>
+                <?php endif; ?>
             </div>
-        <?php else: ?>
-            <p class="text-muted mb-0">No overdue books at the moment.</p>
-        <?php endif; ?>
+            <div class="card-footer">
+                <a href="<?= APP_URL ?>/public/transactions/index.php" class="btn btn-sm btn-outline-primary">View All Transactions</a>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Recent Activity -->
-<div class="row">
-    <!-- Recently Added Books -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Recently Added Books</h5>
-                <a href="<?= APP_URL ?>/public/books/index.php" class="btn btn-sm btn-outline-primary">View All</a>
+<!-- Additional Stats for Super Admin -->
+<?php if ($userRole == ROLE_SUPER_ADMIN): ?>
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">System Users</h5>
             </div>
             <div class="card-body">
-                <?php if (isset($recentlyAddedBooks) && count($recentlyAddedBooks) > 0): ?>
-                    <div class="list-group">
-                        <?php foreach ($recentlyAddedBooks as $book): ?>
-                            <a href="<?= APP_URL ?>/public/books/view.php?id=<?= $book['id'] ?>" class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1"><?= htmlspecialchars($book['title']) ?></h6>
-                                    <small class="text-muted"><?= date('M d', strtotime($book['created_at'])) ?></small>
-                                </div>
-                                <p class="mb-1"><?= htmlspecialchars($book['author']) ?></p>
-                                <small class="text-muted">
-                                    <?= htmlspecialchars($book['category_name']) ?> • 
-                                    <?= $book['available_copies'] ?>/<?= $book['total_copies'] ?> copies available
-                                </small>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <p class="text-muted mb-0">No books added recently.</p>
-                <?php endif; ?>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Role</th>
+                                <th>Count</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Super Admin</td>
+                                <td><?= $stats['super_admin_count'] ?? 0 ?></td>
+                                <td>
+                                    <a href="<?= APP_URL ?>/public/users/index.php?role=1" class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Admin</td>
+                                <td><?= $stats['admin_count'] ?? 0 ?></td>
+                                <td>
+                                    <a href="<?= APP_URL ?>/public/users/index.php?role=2" class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Borrower</td>
+                                <td><?= $stats['borrower_count'] ?? 0 ?></td>
+                                <td>
+                                    <a href="<?= APP_URL ?>/public/users/index.php?role=3" class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="<?= APP_URL ?>/public/users/add.php" class="btn btn-sm btn-success">Add New User</a>
             </div>
         </div>
     </div>
     
-    <!-- Recent Transactions -->
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Recent Transactions</h5>
-                <a href="<?= APP_URL ?>/public/transactions/index.php" class="btn btn-sm btn-outline-primary">View All</a>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Most Popular Books</h5>
             </div>
             <div class="card-body">
-                <?php if (isset($activeLoans) && count($activeLoans) > 0): ?>
-                    <div class="list-group">
-                        <?php 
-                        $shownLoans = 0;
-                        foreach ($activeLoans as $loan): 
-                            if ($shownLoans >= 5) break;
-                        ?>
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1"><?= htmlspecialchars($loan['book_title']) ?></h6>
-                                    <small>
-                                        <?php if ($loan['status_label'] == 'Overdue'): ?>
-                                            <span class="badge bg-danger">Overdue</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-primary">Borrowed</span>
-                                        <?php endif; ?>
-                                    </small>
-                                </div>
-                                <p class="mb-1">Borrower: <?= htmlspecialchars($loan['first_name'] . ' ' . $loan['last_name']) ?></p>
-                                <small class="text-muted">
-                                    Due: <?= date('M d, Y', strtotime($loan['due_date'])) ?> • 
-                                    <?php if ($loan['days_remaining'] < 0): ?>
-                                        <span class="text-danger"><?= abs($loan['days_remaining']) ?> days overdue</span>
-                                    <?php else: ?>
-                                        <?= $loan['days_remaining'] ?> days remaining
-                                    <?php endif; ?>
-                                </small>
-                            </div>
-                        <?php 
-                            $shownLoans++;
-                        endforeach; 
-                        ?>
-                    </div>
+                <?php if (isset($mostBorrowedBooks) && !empty($mostBorrowedBooks)): ?>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Times Borrowed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($mostBorrowedBooks as $book): ?>
+                            <tr>
+                                <td>
+                                    <a href="<?= APP_URL ?>/public/books/view.php?id=<?= $book['id'] ?>">
+                                        <?= htmlspecialchars($book['title']) ?>
+                                    </a>
+                                </td>
+                                <td><?= htmlspecialchars($book['author']) ?></td>
+                                <td><?= $book['borrow_count'] ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
                 <?php else: ?>
-                    <p class="text-muted mb-0">No active loans at the moment.</p>
+                <p class="text-muted">No borrowing data available yet.</p>
                 <?php endif; ?>
+            </div>
+            <div class="card-footer">
+                <a href="<?= APP_URL ?>/public/reports/books.php" class="btn btn-sm btn-outline-primary">View Book Reports</a>
             </div>
         </div>
     </div>
 </div>
-
-<?php if ($userRole == ROLE_SUPER_ADMIN): ?>
-    <!-- User Distribution -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">User Distribution by Role</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <?php if (isset($stats['users_by_role'])): ?>
-                    <?php foreach ($stats['users_by_role'] as $role => $count): ?>
-                        <div class="col-md-4 mb-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title"><?= $role ?></h5>
-                                    <h2 class="mb-0"><?= $count ?></h2>
-                                    <small class="text-muted">
-                                        <?= round(($count / $stats['total_users']) * 100, 1) ?>% of total users
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
 <?php endif; ?>
