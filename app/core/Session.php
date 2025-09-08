@@ -9,18 +9,16 @@ class Session {
      * Constructor
      */
     public function __construct() {
-        // Set session cookie parameters
-        session_set_cookie_params([
-            'lifetime' => $this->sessionLifetime,
-            'path' => '/',
-            'domain' => '',
-            'secure' => false, // Set to true in production with HTTPS
-            'httponly' => true,
-            'samesite' => 'Strict'
-        ]);
-        
-        // Start the session if not already started
+        // Only set session cookie parameters if session is not already started
         if (session_status() === PHP_SESSION_NONE) {
+            session_set_cookie_params([
+                'lifetime' => $this->sessionLifetime,
+                'path' => '/',
+                'domain' => '',
+                'secure' => false, // Set to true in production with HTTPS
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]);
             session_start();
         }
         

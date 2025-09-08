@@ -7,7 +7,6 @@ class Database {
     private $dbName = DB_NAME;
     private $username = DB_USER;
     private $password = DB_PASS;
-    private $port = DB_PORT;
     private $dbType = DB_TYPE;
     private $pdo;
     private $error;
@@ -17,7 +16,7 @@ class Database {
      * Constructor - establishes database connection
      */
     private function __construct() {
-        $dsn = "{$this->dbType}:host={$this->host};port={$this->port};dbname={$this->dbName}";
+        $dsn = "{$this->dbType}:host={$this->host};dbname={$this->dbName}";
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

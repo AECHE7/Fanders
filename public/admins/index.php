@@ -136,7 +136,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div>
     
     <!-- Admins List -->
-    <?php include_once BASE_PATH . '/templates/admins/list.php'; ?>
+    <?php 
+    $users = $admins; // Assign admins to $users for template compatibility
+    include_once BASE_PATH . '/templates/users/list.php'; 
+    ?>
 </main>
 
 <?php

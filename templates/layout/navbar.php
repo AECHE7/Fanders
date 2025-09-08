@@ -130,30 +130,5 @@ $navItems = [
                     </div>
                 </div>
                 
-                <!-- Settings Section at Bottom -->
-                <div class="position-absolute bottom-0 start-0 w-100 p-3 border-top">
-                    <!-- Theme Switch -->
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0 me-2">
-                            <i data-feather="moon" id="theme-icon" style="width: 18px; height: 18px;"></i>
-                        </div>
-                        <div class="flex-grow-1 small d-flex justify-content-between align-items-center">
-                            <span>Dark Mode</span>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="theme-switch">
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Settings Link -->
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0 me-2">
-                            <i data-feather="settings" style="width: 18px; height: 18px;"></i>
-                        </div>
-                        <div class="flex-grow-1 small text-muted d-flex justify-content-between align-items-center">
-                            <span>Settings</span>
-                            <span class="small text-muted"><?= date('Y') ?></span>
-                        </div>
-                    </div>
-                </div>
             </div>
         </nav>

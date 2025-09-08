@@ -76,7 +76,7 @@ $createTransactionsTable = "
         borrower_id INTEGER NOT NULL REFERENCES users(id),
         book_id INTEGER NOT NULL REFERENCES books(id),
         borrow_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        due_date TIMESTAMP NOT NULL,
+        due_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         return_date TIMESTAMP NULL,
         status VARCHAR(20) NOT NULL DEFAULT 'borrowed',
         issued_by INTEGER NOT NULL REFERENCES users(id),
@@ -127,9 +127,8 @@ try {
     $defaultPassword = $hasher->hash('admin123');
     
     $createSuperAdmin = "
-        INSERT INTO users (username, password, first_name, last_name, email, role_id) 
+        INSERT IGNORE INTO users (username, password, first_name, last_name, email, role_id) 
         VALUES ('admin', :password, 'System', 'Administrator', 'admin@library.com', :role_id)
-        ON CONFLICT (username) DO NOTHING
     ";
     
     $stmt = $pdo->prepare($createSuperAdmin);
@@ -152,7 +151,7 @@ try {
         ['Reference', 'Dictionaries, encyclopedias, and other reference materials']
     ];
     
-    $insertCategory = "INSERT INTO categories (name, description) VALUES (:name, :description) ON CONFLICT (name) DO NOTHING";
+    $insertCategory = "INSERT IGNORE INTO categories (name, description) VALUES (:name, :description)";
     $stmt = $pdo->prepare($insertCategory);
     
     foreach ($defaultCategories as $category) {
@@ -170,7 +169,9 @@ try {
     echo "You can now login with username 'admin' and password 'admin123'\n";
     
 } catch (PDOException $e) {
-    // Rollback transaction on error
-    $pdo->rollBack();
+    // Rollback transaction on error if transaction is active
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
     echo "Database initialization failed: " . $e->getMessage() . "\n";
 }

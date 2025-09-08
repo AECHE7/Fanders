@@ -2,6 +2,8 @@
 /**
  * AuthService - Handles authentication, login, logout, and session management
  */
+require_once __DIR__ . '/../core/BaseService.php';
+
 class AuthService extends BaseService {
     private $userModel;
     private $session;

@@ -536,3 +536,9 @@ input:checked + .notion-form-toggle-slider:before {
         font-size: 16px; /* Better for mobile touch */
     }
 }
+
+#sidebarMenu .border-top{
+    transform:translatex(4px) translatey(123px);
+    width:59% !important;
+   }
+   

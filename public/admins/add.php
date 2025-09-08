@@ -152,7 +152,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <!-- Admin Form -->
     <div class="card">
         <div class="card-body">
-            <?php include_once BASE_PATH . '/templates/admins/form.php'; ?>
+                <?php 
+                $newUser = $newAdmin; // Alias for form compatibility
+                include_once BASE_PATH . '/templates/users/form.php'; 
+                ?>
         </div>
     </div>
 </main>

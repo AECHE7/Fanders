@@ -323,7 +323,7 @@
                                         Super Admin
                                     </div>
                                 </td>
-                                <td><?= $stats['super_admin_count'] ?? 0 ?></td>
+                                <td><?= $stats['super_admin_count'] ?></td>
                                 <td>
                                     <a href="<?= APP_URL ?>/public/users/index.php?role=1" class="btn btn-sm btn-outline-primary">View</a>
                                 </td>
@@ -335,7 +335,7 @@
                                         Admin
                                     </div>
                                 </td>
-                                <td><?= $stats['admin_count'] ?? 0 ?></td>
+                                <td><?= $stats['admin_count']?></td>
                                 <td>
                                     <a href="<?= APP_URL ?>/public/users/index.php?role=2" class="btn btn-sm btn-outline-primary">View</a>
                                 </td>
@@ -347,7 +347,7 @@
                                         Borrower
                                     </div>
                                 </td>
-                                <td><?= $stats['borrower_count'] ?? 0 ?></td>
+                                <td><?= $stats['borrower_count'] ?></td>
                                 <td>
                                     <a href="<?= APP_URL ?>/public/users/index.php?role=3" class="btn btn-sm btn-outline-primary">View</a>
                                 </td>
