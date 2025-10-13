@@ -58,7 +58,7 @@ if ($auth->checkSessionTimeout()) {
 }
 
 // Check if user has permission to add books (Super Admin or Admin)
-if (!$auth->hasRole([ROLE_SUPER_ADMIN, ROLE_ADMIN])) {
+if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -71,17 +71,15 @@ $user = $auth->getCurrentUser();
 // Initialize book service
 $bookService = new BookService();
 
-// Get all categories for the dropdown
-$categories = $bookService->getAllCategories();
+// Get all categories for the dropdown using CategoryModel
+$categoryModel = new CategoryModel();
+$categories = $categoryModel->getAllForSelect(); // Returns [id => name, ...]
 
 // Process form submission
 $book = [
     'title' => '',
     'author' => '',
-    'isbn' => '',
-    'description' => '',
-    'publication_year' => '',
-    'publisher' => '',
+    'published_year' => '',
     'category_id' => '',
     'total_copies' => 1,
     'available_copies' => 1
@@ -94,14 +92,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$csrf->validateRequest()) {
         $error = 'Invalid form submission. Please try again.';
     } else {
-        // Get form data
+        // Get form data - fields matching ONLY those in the DB schema
         $book = [
             'title' => isset($_POST['title']) ? trim($_POST['title']) : '',
             'author' => isset($_POST['author']) ? trim($_POST['author']) : '',
-            'isbn' => isset($_POST['isbn']) ? trim($_POST['isbn']) : '',
-            'description' => isset($_POST['description']) ? trim($_POST['description']) : '',
-            'publication_year' => isset($_POST['publication_year']) ? trim($_POST['publication_year']) : '',
-            'publisher' => isset($_POST['publisher']) ? trim($_POST['publisher']) : '',
+            'published_year' => isset($_POST['published_year']) ? trim($_POST['published_year']) : '',
             'category_id' => isset($_POST['category_id']) ? (int)$_POST['category_id'] : '',
             'total_copies' => isset($_POST['total_copies']) ? (int)$_POST['total_copies'] : 1,
             'available_copies' => isset($_POST['available_copies']) ? (int)$_POST['available_copies'] : 1

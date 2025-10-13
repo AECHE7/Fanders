@@ -38,6 +38,10 @@ $session = new Session();
 // Initialize authentication service
 $auth = new AuthService();
 
+// Initialize CSRF protection
+$csrf = new CSRF();
+$csrfToken = $csrf->generateToken();
+
 // Check if user is logged in
 if (!$auth->isLoggedIn()) {
     // Redirect to login page
@@ -56,10 +60,10 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
 // Check if user has permission to view users list (Super Admin or Admin)
-if (!$auth->hasRole([ROLE_SUPER_ADMIN, ROLE_ADMIN])) {
+if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -70,23 +74,22 @@ if (!$auth->hasRole([ROLE_SUPER_ADMIN, ROLE_ADMIN])) {
 $userService = new UserService();
 
 // Process filter
-$roleFilter = isset($_GET['role']) ? (int)$_GET['role'] : 0;
-$statusFilter = isset($_GET['status']) ? (int)$_GET['status'] : -1;
+$roleFilter = isset($_GET['role']) ? $_GET['role'] : '';
+$statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
 
 // Get users based on filters
-if ($userRole == ROLE_SUPER_ADMIN) {
-    // Super admin can see all users
-    $users = $userService->getAllUsersWithRoleNames();
-} else {
-    // Admin can only see borrowers
-    $users = $userService->getAllBorrowers();
-}
+$allowedRoles = [
+    UserModel::$ROLE_STUDENT,
+    UserModel::$ROLE_STAFF,
+    UserModel::$ROLE_OTHER
+];
+$users = $userService->getAllUsersWithRoleNames($allowedRoles);
 
 // Apply role filter if specified
-if ($roleFilter > 0 && $userRole == ROLE_SUPER_ADMIN) {
+if (!empty($roleFilter) && $userRole == 'super-admin') {
     $filteredUsers = [];
     foreach ($users as $u) {
-        if ($u['role_id'] == $roleFilter) {
+        if ($u['role'] == $roleFilter) {
             $filteredUsers[] = $u;
         }
     }
@@ -94,40 +97,53 @@ if ($roleFilter > 0 && $userRole == ROLE_SUPER_ADMIN) {
 }
 
 // Apply status filter if specified
-if ($statusFilter !== -1) {
+if (!empty($statusFilter) &&  $userRole == 'super-admin') {
     $filteredUsers = [];
     foreach ($users as $u) {
-        if ($u['is_active'] == $statusFilter) {
+        if ($u['status'] == $statusFilter) {
             $filteredUsers[] = $u;
         }
     }
     $users = $filteredUsers;
 }
 
+// Handle delete user form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete') {
+    if (!$csrf->validateRequest()) {
+        $session->setFlash('error', 'Invalid CSRF token.');
+        header('Location: ' . $_SERVER['PHP_SELF']);
+        exit;
+    }
+    $deleteUserId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($deleteUserId > 0) {
+        if ($userService->deleteUser($deleteUserId)) {
+            $session->setFlash('success', 'User deleted successfully.');
+        } else {
+            $session->setFlash('error', $userService->getErrorMessage());
+        }
+    } else {
+        $session->setFlash('error', 'Invalid user ID.');
+    }
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit;
+}
+
 // Include header
 include_once BASE_PATH . '/templates/layout/header.php';
 
-// Include navbar
+// Pass CSRF token to template
+// $csrfToken is available for templates/users/list.php
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Users</h1>
+        <h1 class="h2">Manage Users</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <?php if ($userRole == ROLE_SUPER_ADMIN): ?>
+                <?php if ($userRole == 'super-admin' || $userRole == 'admin'): ?>
                     <a href="<?= APP_URL ?>/public/users/add.php" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="user-plus"></i> Add User
-                    </a>
-                    <a href="<?= APP_URL ?>/public/admins/add.php" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="user-plus"></i> Add Admin
-                    </a>
-                <?php endif; ?>
-                
-                <?php if ($userRole == ROLE_ADMIN): ?>
-                    <a href="<?= APP_URL ?>/public/users/add.php" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="user-plus"></i> Add Borrower
+                        <i data-feather="user-plus"></i> Add Borrower Account
                     </a>
                 <?php endif; ?>
                 
@@ -154,24 +170,27 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <div class="row mb-3">
         <div class="col-md-12">
             <form action="<?= $_SERVER['PHP_SELF'] ?>" method="get" class="row g-3">
-                <?php if ($userRole == ROLE_SUPER_ADMIN): ?>
+                <!-- <?php if ($userRole == 'super-admin'): ?>
                 <div class="col-md-4">
                     <label for="role" class="form-label">Role</label>
                     <select name="role" id="role" class="form-select">
-                        <option value="0" <?= $roleFilter == 0 ? 'selected' : '' ?>>All Roles</option>
-                        <option value="<?= ROLE_SUPER_ADMIN ?>" <?= $roleFilter == ROLE_SUPER_ADMIN ? 'selected' : '' ?>>Super Admin</option>
-                        <option value="<?= ROLE_ADMIN ?>" <?= $roleFilter == ROLE_ADMIN ? 'selected' : '' ?>>Admin</option>
-                        <option value="<?= ROLE_BORROWER ?>" <?= $roleFilter == ROLE_BORROWER ? 'selected' : '' ?>>Borrower</option>
+                        <option value="" <?= $roleFilter == '' ? 'selected' : '' ?>>All Roles</option>
+                        <option value="super-admin" <?= $roleFilter == 'super-admin' ? 'selected' : '' ?>>Super Admin</option>
+                        <option value="admin" <?= $roleFilter == 'admin' ? 'selected' : '' ?>>Admin</option>
+                        <option value="student" <?= $roleFilter == 'student' ? 'selected' : '' ?>>Student</option>
+                        <option value="staff" <?= $roleFilter == 'staff' ? 'selected' : '' ?>>Staff</option>
+                        <option value="other" <?= $roleFilter == 'other' ? 'selected' : '' ?>>Other</option>
                     </select>
                 </div>
-                <?php endif; ?>
+                <?php endif; ?> -->
+
                 
                 <div class="col-md-4">
                     <label for="status" class="form-label">Status</label>
                     <select name="status" id="status" class="form-select">
-                        <option value="-1" <?= $statusFilter == -1 ? 'selected' : '' ?>>All Statuses</option>
-                        <option value="1" <?= $statusFilter == 1 ? 'selected' : '' ?>>Active</option>
-                        <option value="0" <?= $statusFilter == 0 ? 'selected' : '' ?>>Inactive</option>
+                        <option value="" <?= $statusFilter == '' ? 'selected' : '' ?>>All Statuses</option>
+                        <option value="active" <?= $statusFilter == 'active' ? 'selected' : '' ?>>Active</option>
+                        <option value="inactive" <?= $statusFilter == 'inactive' ? 'selected' : '' ?>>Inactive</option>
                     </select>
                 </div>
                 

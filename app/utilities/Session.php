@@ -12,68 +12,32 @@ class Session {
         }
     }
 
-    /**
-     * Set session variable
-     * 
-     * @param string $key
-     * @param mixed $value
-     * @return void
-     */
     public function set($key, $value) {
         $_SESSION[$key] = $value;
     }
 
-    /**
-     * Get session variable
-     * 
-     * @param string $key
-     * @param mixed $default Default value if key doesn't exist
-     * @return mixed
-     */
+
     public function get($key, $default = null) {
         return isset($_SESSION[$key]) ? $_SESSION[$key] : $default;
     }
 
-    /**
-     * Check if session variable exists
-     * 
-     * @param string $key
-     * @return bool
-     */
+
     public function has($key) {
         return isset($_SESSION[$key]);
     }
 
-    /**
-     * Remove session variable
-     * 
-     * @param string $key
-     * @return void
-     */
     public function remove($key) {
         if (isset($_SESSION[$key])) {
             unset($_SESSION[$key]);
         }
     }
 
-    /**
-     * Set flash message
-     * 
-     * @param string $key
-     * @param mixed $value
-     * @return void
-     */
+
     public function setFlash($key, $value) {
         $_SESSION['flash'][$key] = $value;
     }
 
-    /**
-     * Get flash message and remove it
-     * 
-     * @param string $key
-     * @param mixed $default Default value if key doesn't exist
-     * @return mixed
-     */
+
     public function getFlash($key, $default = null) {
         $value = $default;
         
@@ -85,21 +49,11 @@ class Session {
         return $value;
     }
 
-    /**
-     * Check if flash message exists
-     * 
-     * @param string $key
-     * @return bool
-     */
+
     public function hasFlash($key) {
         return isset($_SESSION['flash'][$key]);
     }
 
-    /**
-     * Destroy session
-     * 
-     * @return void
-     */
     public function destroy() {
         $_SESSION = [];
         
@@ -119,22 +73,12 @@ class Session {
         session_destroy();
     }
 
-    /**
-     * Regenerate session ID
-     * 
-     * @param bool $deleteOldSession Whether to delete the old session data
-     * @return bool
-     */
+ 
     public function regenerate($deleteOldSession = true) {
         return session_regenerate_id($deleteOldSession);
     }
 
-    /**
-     * Set session timeout
-     * 
-     * @param int $seconds Timeout in seconds
-     * @return void
-     */
+
     public function setTimeout($seconds) {
         ini_set('session.gc_maxlifetime', $seconds);
         
@@ -148,12 +92,7 @@ class Session {
         }
     }
 
-    /**
-     * Check if session has timed out
-     * 
-     * @param int $maxIdleTime Maximum idle time in seconds
-     * @return bool
-     */
+
     public function hasTimedOut($maxIdleTime = SESSION_LIFETIME) {
         $lastActivity = $this->get('last_activity');
         

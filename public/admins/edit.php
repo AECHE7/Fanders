@@ -1,6 +1,6 @@
 <?php
 /**
- * Edit admin page for the Library Management System
+ * Edit user page for the Library Management System
  */
 
 // Include configuration
@@ -59,43 +59,37 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
-// Check if user has permission to edit admins (only Super Admin)
-if ($userRole != ROLE_SUPER_ADMIN) {
-    // Redirect to dashboard with error message
-    $session->setFlash('error', 'You do not have permission to access this page.');
-    header('Location: ' . APP_URL . '/public/dashboard.php');
-    exit;
-}
-
-// Check if admin ID is provided
+// Check if user ID is provided
 if (!isset($_GET['id']) || empty($_GET['id'])) {
-    // Redirect to admins page with error message
-    $session->setFlash('error', 'Admin ID is required.');
-    header('Location: ' . APP_URL . '/public/admins/index.php');
+    // Redirect to users page with error message
+    $session->setFlash('error', 'User ID is required.');
+    header('Location: ' . APP_URL . '/public/users/index.php');
     exit;
 }
 
-$adminId = (int)$_GET['id'];
+$userId = (int)$_GET['id'];
 
 // Initialize user service
 $userService = new UserService();
 
-// Get admin data
-$editAdmin = $userService->getUserWithRoleName($adminId);
+// Get user data
+$editUser = $userService->getUserWithRoleName($userId);
 
-if (!$editAdmin) {
-    // Admin not found
-    $session->setFlash('error', 'Administrator not found.');
-    header('Location: ' . APP_URL . '/public/admins/index.php');
+if (!$editUser) {
+    // User not found
+    $session->setFlash('error', 'User not found.');
+    header('Location: ' . APP_URL . '/public/users/index.php');
     exit;
 }
 
-// Verify that the user is an admin
-if ($editAdmin['role_id'] != ROLE_ADMIN) {
-    $session->setFlash('error', 'The specified user is not an administrator.');
-    header('Location: ' . APP_URL . '/public/admins/index.php');
+// Check if user has permission to edit this user
+// Super Admin can edit any user, Admin can only edit borrowers
+if ($userRole === 'admin' && !in_array($editUser['role'], ['student', 'staff', 'other'])) {
+    // Redirect to dashboard with error message
+    $session->setFlash('error', 'You do not have permission to edit this user.');
+    header('Location: ' . APP_URL . '/public/dashboard.php');
     exit;
 }
 
@@ -107,25 +101,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$csrf->validateRequest()) {
         $error = 'Invalid form submission. Please try again.';
     } else {
-        // Get form data
-        $updatedAdmin = [
-            'username' => isset($_POST['username']) ? trim($_POST['username']) : '',
-            'email' => isset($_POST['email']) ? trim($_POST['email']) : '',
-            'password' => isset($_POST['password']) ? $_POST['password'] : '', // Leave empty to keep current password
-            'first_name' => isset($_POST['first_name']) ? trim($_POST['first_name']) : '',
-            'last_name' => isset($_POST['last_name']) ? trim($_POST['last_name']) : '',
-            'role_id' => ROLE_ADMIN, // Always set to Admin role
-            'is_active' => isset($_POST['is_active']) ? 1 : 0,
+        // Get form data with fallbacks to existing user data
+        $updatedUser = [
+            'name' => isset($_POST['name']) ? trim($_POST['name']) : ($editUser['name'] ?? ''),
+            'email' => isset($_POST['email']) ? trim($_POST['email']) : ($editUser['email'] ?? ''),
+            'phone_number' => isset($_POST['phone_number']) ? trim($_POST['phone_number']) : ($editUser['phone_number'] ?? ''),
+            'role' => isset($_POST['role']) ? trim($_POST['role']) : ($editUser['role'] ?? ''),
+            'status' => isset($_POST['status']) ? trim($_POST['status']) : ($editUser['status'] ?? 'active')
         ];
         
-        // Update the admin
-        if ($userService->updateUser($adminId, $updatedAdmin)) {
-            // Admin updated successfully
-            $session->setFlash('success', 'Administrator updated successfully.');
-            header('Location: ' . APP_URL . '/public/users/view.php?id=' . $adminId);
+        // Handle password update
+        if (!empty($_POST['password'])) {
+            $updatedUser['password'] = $_POST['password'];
+            $updatedUser['password_confirmation'] = $_POST['password_confirmation'];
+        }
+        
+        // Admin can only edit borrowers and can't change role
+        if ($userRole === 'admin') {
+            $updatedUser['role'] = $editUser['role']; // Keep existing role
+        }
+        
+        // Update the user
+        if ($userService->updateUser($userId, $updatedUser)) {
+            // User updated successfully
+            $session->setFlash('success', 'User updated successfully.');
+            header('Location: ' . APP_URL . '/public/users/view.php?id=' . $userId);
             exit;
         } else {
-            // Failed to update admin
+            // Failed to update user
             $error = $userService->getErrorMessage();
         }
     }
@@ -140,14 +143,14 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Edit Administrator</h1>
+        <h1 class="h2">Edit User</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <a href="<?= APP_URL ?>/public/users/view.php?id=<?= $adminId ?>" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="eye"></i> View Admin
+                <a href="<?= APP_URL ?>/public/users/view.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-secondary">
+                    <i data-feather="eye"></i> View User Profile
                 </a>
-                <a href="<?= APP_URL ?>/public/admins/index.php" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="arrow-left"></i> Back to Administrators
+                <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
+                    <i data-feather="arrow-left"></i> Back to Users
                 </a>
             </div>
         </div>
@@ -159,10 +162,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     <?php endif; ?>
     
-    <!-- Admin Edit Form -->
+    <!-- User Edit Form -->
     <div class="card">
         <div class="card-body">
-            <?php include_once BASE_PATH . '/templates/admins/form.php'; ?>
+            <?php include_once BASE_PATH . '/templates/users/form.php'; ?>
         </div>
     </div>
 </main>

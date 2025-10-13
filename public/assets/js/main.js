@@ -151,3 +151,11 @@ function togglePasswordVisibility(inputId) {
         icon.classList.add('fa-eye');
     }
 }
+
+// Force data-bs-popper="none" on all dropdown menus when shown
+document.addEventListener('shown.bs.dropdown', function(e) {
+    var menu = e.target.parentElement.querySelector('.dropdown-menu');
+    if (menu) {
+        menu.setAttribute('data-bs-popper', 'none');
+    }
+});

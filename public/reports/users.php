@@ -59,10 +59,10 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
 // Check if user has permission to generate reports (Super Admin or Admin)
-if (!$auth->hasRole([ROLE_SUPER_ADMIN, ROLE_ADMIN])) {
+if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -77,24 +77,43 @@ $reportService = new ReportService();
 $filters = [];
 $generatePdf = false;
 
-// Check if role filter is provided in URL
-if (isset($_GET['role']) && !empty($_GET['role'])) {
-    $filters['role_id'] = (int)$_GET['role'];
+// Determine roles filter based on logged-in user's role
+if ($userRole === 'admin') {
+    // Admin can only see borrower roles, exclude admin and super-admin
+    $filters['roles'] = [
+        UserModel::$ROLE_STUDENT,
+        UserModel::$ROLE_STAFF,
+        UserModel::$ROLE_OTHER
+    ];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrf->validateRequest()) {
+        $filters['status'] = isset($_POST['status']) && $_POST['status'] !== '' ? (int)$_POST['status'] : null;
+        $generatePdf = isset($_POST['generate_pdf']) && $_POST['generate_pdf'] == 1;
+    }
+} elseif ($userRole === 'super-admin') {
+    // Super-admin can filter by role from form input
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrf->validateRequest()) {
+        $roleInput = isset($_POST['role_id']) && !empty($_POST['role_id']) ? $_POST['role_id'] : null;
+        if ($roleInput) {
+            $filters['role'] = $roleInput;
+        }
+        $filters['status'] = isset($_POST['status']) && $_POST['status'] !== '' ? (int)$_POST['status'] : null;
+        $generatePdf = isset($_POST['generate_pdf']) && $_POST['generate_pdf'] == 1;
+    } else {
+        // For GET requests or no form submission, allow all roles
+        $filters['role'] = null;
+        $filters['status'] = null;
+    }
+} else {
+    // Other roles have no access
+    $session->setFlash('error', 'You do not have permission to access this page.');
+    header('Location: ' . APP_URL . '/public/dashboard.php');
+    exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && $csrf->validateRequest()) {
-    // Get filters
-    $filters['role_id'] = isset($_POST['role_id']) && !empty($_POST['role_id']) ? (int)$_POST['role_id'] : null;
-    $filters['is_active'] = isset($_POST['is_active']) && $_POST['is_active'] !== '' ? (int)$_POST['is_active'] : null;
-    
-    // Check if PDF generation is requested
-    $generatePdf = isset($_POST['generate_pdf']) && $_POST['generate_pdf'] == 1;
-    
-    if ($generatePdf) {
-        // Generate PDF
-        $reportService->generateUsersReport($filters, true);
-        exit; // PDF is output directly
-    }
+if ($generatePdf) {
+    // Generate PDF
+    $reportService->generateUsersReport($filters, true);
+    exit; // PDF is output directly
 }
 
 // Generate the report with applied filters
@@ -111,6 +130,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Users Report</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="<?= APP_URL ?>/public/reports/index.php" class="btn btn-sm btn-outline-primary me-2">
+                <i data-feather="list"></i> Reports Index
+            </a>
             <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
                 <i data-feather="arrow-left"></i> Back to Users
             </a>
@@ -141,20 +163,25 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 <div class="row mb-3">
                     <div class="col-md-4">
                         <label for="role_id" class="form-label">Role</label>
-                        <select name="role_id" id="role_id" class="form-select">
-                            <option value="">All Roles</option>
-                            <option value="<?= ROLE_SUPER_ADMIN ?>" <?= isset($filters['role_id']) && $filters['role_id'] == ROLE_SUPER_ADMIN ? 'selected' : '' ?>>Super Admin</option>
-                            <option value="<?= ROLE_ADMIN ?>" <?= isset($filters['role_id']) && $filters['role_id'] == ROLE_ADMIN ? 'selected' : '' ?>>Admin</option>
-                            <option value="<?= ROLE_BORROWER ?>" <?= isset($filters['role_id']) && $filters['role_id'] == ROLE_BORROWER ? 'selected' : '' ?>>Borrower</option>
-                        </select>
+                    <select name="role" id="role" class="form-select">
+                        <option value="">All Roles</option>
+                        <?php if ($userRole == 'super-admin'): ?>
+                        <option value="<?= UserModel::$ROLE_SUPER_ADMIN ?>" <?= isset($filters['role']) && $filters['role'] == UserModel::$ROLE_SUPER_ADMIN ? 'selected' : '' ?>>Super Admin</option>
+                        <option value="<?= UserModel::$ROLE_ADMIN ?>" <?= isset($filters['role']) && $filters['role'] == UserModel::$ROLE_ADMIN ? 'selected' : '' ?>>Admin</option>
+                        <?php elseif ($userRole == 'admin'): ?>
+                        <option value="<?= UserModel::$ROLE_STUDENT ?>" <?= isset($filters['role']) && $filters['role'] == UserModel::$ROLE_STUDENT ? 'selected' : '' ?>>Student</option>
+                        <option value="<?= UserModel::$ROLE_STAFF ?>" <?= isset($filters['role']) && $filters['role'] == UserModel::$ROLE_STAFF ? 'selected' : '' ?>>Staff</option>
+                        <option value="<?= UserModel::$ROLE_OTHER ?>" <?= isset($filters['role']) && $filters['role'] == UserModel::$ROLE_OTHER ? 'selected' : '' ?>>Other</option>
+                        <?php endif; ?>
+                    </select>
                     </div>
                     
                     <div class="col-md-4">
-                        <label for="is_active" class="form-label">Status</label>
-                        <select name="is_active" id="is_active" class="form-select">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select">
                             <option value="">All Statuses</option>
-                            <option value="1" <?= isset($filters['is_active']) && $filters['is_active'] == 1 ? 'selected' : '' ?>>Active</option>
-                            <option value="0" <?= isset($filters['is_active']) && $filters['is_active'] == 0 ? 'selected' : '' ?>>Inactive</option>
+                            <option value="1" <?= isset($filters['status']) && $filters['status'] == 1 ? 'selected' : '' ?>>Active</option>
+                            <option value="0" <?= isset($filters['status']) && $filters['status'] == 0 ? 'selected' : '' ?>>Inactive</option>
                         </select>
                     </div>
                     
@@ -191,31 +218,68 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <table class="table table-striped table-sm">
                         <thead>
                             <tr>
-                                <th>ID</th>
-                                <th>Username</th>
-                                <th>Name</th>
+                                <th>Full Name</th>
                                 <th>Email</th>
+                                <th>Phone</th>
                                 <th>Role</th>
                                 <th>Status</th>
-                                <th>Created</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($reportData['users'] as $user): ?>
                                 <tr>
-                                    <td><?= $user['id'] ?></td>
-                                    <td><?= htmlspecialchars($user['username']) ?></td>
-                                    <td><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></td>
-                                    <td><?= htmlspecialchars($user['email']) ?></td>
-                                    <td><?= htmlspecialchars($user['role_name']) ?></td>
+                                    <!-- Name -->
+                                    <td><?= htmlspecialchars($user['name'] ?? '',ENT_QUOTES,'UTF-8') ?></td>
+                                    <!-- Email Address (unique) -->
+                                    <td><?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
+                                    <!-- Phone Number (unique) -->
+                                    <td><?= htmlspecialchars($user['phone_number'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
+                                    <!-- Role (students, staff, admin, others) -->
                                     <td>
-                                        <?php if ($user['is_active']): ?>
-                                            <span class="badge bg-success">Active</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-danger">Inactive</span>
-                                        <?php endif; ?>
+                                        <?php
+                                    $role = strtolower($user['role'] ?? '');
+                                    switch ($role) {
+                                        case 'super-admin':
+                                        case 'admin':
+                                            echo 'Admin';
+                                            break;
+                                        case 'staff':
+                                            echo 'Staff';
+                                            break;
+                                        case 'student':
+                                            echo 'Student';
+                                            break;
+                                        case 'borrower':
+                                            echo 'Borrower';
+                                            break;
+                                        case 'other':
+                                            echo 'Other';
+                                            break;
+                                        default:
+                                            echo !empty($role) ? ucfirst($role) : 'Other';
+                                    }
+                                        ?>
                                     </td>
-                                    <td><?= date('Y-m-d', strtotime($user['created_at'])) ?></td>
+                                    <!-- Account Status -->
+                                    <td>
+                                        <?php 
+                                            $status = strtolower($user['status'] ?? '');
+                                            switch ($status) {
+                                                case 'active':
+                                                    echo '<span class="badge bg-success">Active</span>';
+                                                    break;
+                                                case 'inactive':
+                                                    echo '<span class="badge bg-danger">Inactive</span>';
+                                                    break;
+                                                case 'suspended':
+                                                    echo '<span class="badge bg-warning text-dark">Suspended</span>';
+                                                    break;
+                                                default:
+                                                    echo '<span class="badge bg-secondary">Unknown</span>';
+                                                    break;
+                                            }
+                                        ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

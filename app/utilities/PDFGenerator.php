@@ -19,9 +19,7 @@ class PDFGenerator {
     private $textFontSize = 10;
     private $tableFontSize = 9;
 
-    /**
-     * Constructor
-     */
+  
     public function __construct() {
         // Require FPDF library
         require_once(BASE_PATH . '/vendor/fpdf/fpdf.php');
@@ -43,34 +41,29 @@ class PDFGenerator {
         $this->pdf->SetFont('Arial', '', $this->textFontSize);
     }
 
-    /**
-     * Set document title
-     * 
-     * @param string $title
-     * @return void
-     */
+    public function setOrientation($orientation) {
+        // Recreate FPDF instance with new orientation
+        $this->pdf = new FPDF($orientation, 'mm', 'A4');
+        $this->pdf->SetAutoPageBreak(true, $this->margin);
+        $this->pdf->SetMargins($this->margin, $this->margin, $this->margin);
+        
+        // Add first page
+        $this->pdf->AddPage();
+        
+        // Reset font
+        $this->pdf->SetFont('Arial', '', $this->textFontSize);
+    }
+
     public function setTitle($title) {
         $this->title = $title;
         $this->pdf->SetTitle($title);
     }
 
-    /**
-     * Set document author
-     * 
-     * @param string $author
-     * @return void
-     */
     public function setAuthor($author) {
         $this->author = $author;
         $this->pdf->SetAuthor($author);
     }
 
-    /**
-     * Add a main header to the PDF
-     * 
-     * @param string $text
-     * @return void
-     */
     public function addHeader($text) {
         $this->pdf->SetFont('Arial', 'B', $this->titleFontSize);
         $this->pdf->Cell(0, $this->lineHeight, $text, 0, 1, 'C');
@@ -78,34 +71,19 @@ class PDFGenerator {
         $this->pdf->SetFont('Arial', '', $this->textFontSize);
     }
 
-    /**
-     * Add a sub header to the PDF
-     * 
-     * @param string $text
-     * @return void
-     */
+ 
     public function addSubHeader($text) {
         $this->pdf->SetFont('Arial', 'B', $this->subHeaderFontSize);
         $this->pdf->Cell(0, $this->lineHeight, $text, 0, 1, 'L');
         $this->pdf->SetFont('Arial', '', $this->textFontSize);
     }
 
-    /**
-     * Add a text line to the PDF
-     * 
-     * @param string $text
-     * @return void
-     */
+
     public function addLine($text) {
         $this->pdf->Cell(0, $this->lineHeight, $text, 0, 1, 'L');
     }
 
-    /**
-     * Add vertical space to the PDF
-     * 
-     * @param float $height Height in mm, default is line height
-     * @return void
-     */
+
     public function addSpace($height = null) {
         if ($height === null) {
             $height = $this->lineHeight;
@@ -113,13 +91,6 @@ class PDFGenerator {
         $this->pdf->Ln($height);
     }
 
-    /**
-     * Add a table to the PDF
-     * 
-     * @param array $columns Array of column definitions [header => string, width => float]
-     * @param array $data Array of rows, each row is an array of cell values
-     * @return void
-     */
     public function addTable($columns, $data) {
         $this->pdf->SetFont('Arial', 'B', $this->tableFontSize);
         
@@ -173,16 +144,6 @@ class PDFGenerator {
         $this->pdf->Ln($this->lineHeight / 2);
     }
 
-    /**
-     * Add image to the PDF
-     * 
-     * @param string $file Image file path
-     * @param float $x X position in mm
-     * @param float $y Y position in mm
-     * @param float $width Width in mm, 0 means original size
-     * @param float $height Height in mm, 0 means original size
-     * @return void
-     */
     public function addImage($file, $x = null, $y = null, $width = 0, $height = 0) {
         if ($x === null) {
             $x = $this->pdf->GetX();
@@ -194,22 +155,11 @@ class PDFGenerator {
         $this->pdf->Image($file, $x, $y, $width, $height);
     }
 
-    /**
-     * Add page break
-     * 
-     * @return void
-     */
+
     public function addPageBreak() {
         $this->pdf->AddPage();
     }
 
-    /**
-     * Generate and return the PDF
-     * 
-     * @param string $disposition 'I' (inline), 'D' (download), 'F' (file), 'S' (string)
-     * @param string $filename Filename for download
-     * @return mixed PDF output or filename depending on disposition
-     */
     public function output($disposition = 'I', $filename = null) {
         if ($filename === null) {
             $filename = $this->title . ' - ' . date('Y-m-d') . '.pdf';
@@ -218,13 +168,7 @@ class PDFGenerator {
         return $this->pdf->Output($filename, $disposition);
     }
 
-    /**
-     * Generate PDF report for book list
-     * 
-     * @param array $books Array of book data
-     * @param string $title Report title
-     * @return string PDF output
-     */
+
     public function generateBookReport($books, $title = 'Book Report') {
         $this->setTitle($title);
         
@@ -262,13 +206,7 @@ class PDFGenerator {
         return $this->output();
     }
 
-    /**
-     * Generate PDF report for user list
-     * 
-     * @param array $users Array of user data
-     * @param string $title Report title
-     * @return string PDF output
-     */
+  
     public function generateUserReport($users, $title = 'User Report') {
         $this->setTitle($title);
         
@@ -306,13 +244,7 @@ class PDFGenerator {
         return $this->output();
     }
 
-    /**
-     * Generate PDF report for transaction list
-     * 
-     * @param array $transactions Array of transaction data
-     * @param string $title Report title
-     * @return string PDF output
-     */
+ 
     public function generateTransactionReport($transactions, $title = 'Transaction Report') {
         $this->setTitle($title);
         
@@ -323,7 +255,7 @@ class PDFGenerator {
         
         // Define columns
         $columns = [
-            ['header' => 'ID', 'width' => 15],
+            ['header' => 'ID', 'width' => 20],
             ['header' => 'Book', 'width' => 55],
             ['header' => 'Borrower', 'width' => 35],
             ['header' => 'Borrow Date', 'width' => 25],

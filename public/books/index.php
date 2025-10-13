@@ -56,12 +56,15 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
 // Initialize book service
 $bookService = new BookService();
 
-// Process search if submitted
+// Initialize CSRF protection
+$csrf = new CSRF();
+$csrfToken = $csrf->generateToken();
+
 $searchTerm = '';
 $categoryId = '';
 $books = [];
@@ -73,9 +76,12 @@ if (isset($_GET['search']) && !empty($_GET['search'])) {
     $categoryId = (int)$_GET['category_id'];
     $books = $bookService->getBooksByCategory($categoryId);
 } else {
-    // Get all books
+    // Get all active books (not archived)
     $books = $bookService->getAllBooksWithCategories();
 }
+
+// Fetch archived books separately
+$archivedBooks = $bookService->getArchivedBooks();
 
 // Get all categories for the filter dropdown
 $categories = $bookService->getAllCategories();
@@ -91,7 +97,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Books</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <?php if ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN): ?>
+            <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
                 <div class="btn-group me-2">
                     <a href="<?= APP_URL ?>/public/books/add.php" class="btn btn-sm btn-outline-primary">
                         <i data-feather="plus"></i> Add New Book
@@ -127,25 +133,49 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <div class="col-md-6">
             <form action="<?= $_SERVER['PHP_SELF'] ?>" method="get" class="d-flex">
                 <select name="category_id" class="form-select me-2">
-                    <option value="">All Categories</option>
+                    <option value="" <?= $categoryId == '' ? 'selected' : '' ?>>All Categories</option>
                     <?php foreach ($categories as $category): ?>
                         <option value="<?= $category['id'] ?>" <?= $categoryId == $category['id'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($category['name']) ?>
                         </option>
                     <?php endforeach; ?>
+                    <option value="1" <?= $categoryId == 'Fiction' ? 'selected' : '' ?>>Fiction</option>
+                    <option value="2" <?= $categoryId == 'Non-Fiction' ? 'selected' : '' ?>>Non-Fiction</option>
+                    <option value="3" <?= $categoryId == 'Science' ? 'selected' : '' ?>>Science</option>
+                    <option value="4" <?= $categoryId == 'Technology' ? 'selected' : '' ?>>Technology</option>
+                    <option value="5" <?= $categoryId == 'History' ? 'selected' : '' ?>>History</option>
+                    <option value="6" <?= $categoryId == 'Philosophy' ? 'selected' : '' ?>>Philosophy</option>
+                    <option value="7" <?= $categoryId == 'Art' ? 'selected' : '' ?>>Art</option>
+                    <option value="8" <?= $categoryId == 'Reference' ? 'selected' : '' ?>>Reference</option>
                 </select>
-                <button type="submit" class="btn btn-secondary">Filter</button>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Filter</button>
+                    <a href="<?= $_SERVER['PHP_SELF'] ?>" class="btn btn-secondary">Reset</a>
+                </div>
             </form>
         </div>
     </div>
     
     <!-- Books List -->
     <?php include_once BASE_PATH . '/templates/books/list.php'; ?>
+
+    <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
+    <!-- Archived Books List -->
+    <?php include_once BASE_PATH . '/templates/books/archived.php'; ?>
+    
+    <?php endif; ?>
+
 </main>
 
 <?php
 // Include footer
 include_once BASE_PATH . '/templates/layout/footer.php';
+
+
+// // Debug - Add temporarily to check
+// echo '<pre>';
+// print_r($archivedBooks);
+// echo '</pre>';
 
 // End output buffering and flush output
 ob_end_flush();

@@ -59,7 +59,7 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
 // Check if user ID is provided
 if (!isset($_GET['id']) || empty($_GET['id'])) {
@@ -84,9 +84,24 @@ if (!$viewUser) {
     exit;
 }
 
+// Get borrowed books for the user
+$borrowedBooks = [];
+$activeLoans = [];
+$loanHistory = [];
+if (in_array($viewUser['role'], ['super-admin','student', 'staff', 'other', 'borrower'])) {
+    $bookService = new BookService();
+    $borrowedBooks = $bookService->getUserBorrowedBooks($userId);
+
+    if ($viewUser['role'] == 'borrower') {
+        $stats = $userService->getBorrowerStats($userId);
+        $activeLoans = $stats['active_loans'] ?? [];
+        $loanHistory = $stats['loan_history'] ?? [];
+    }
+}
+
 // Check if user has permission to view this user
-// Super Admin can view any user, Admin can only view borrowers
-if ($userRole == ROLE_ADMIN && $viewUser['role_id'] != ROLE_BORROWER) {
+// Super Admin can view any user, Admin can only view borrowers or themselves
+if ($userRole == 'admin' && !in_array($viewUser['role'], ['student', 'staff', 'other']) && $userId !== $user['id']) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to view this user.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -95,7 +110,7 @@ if ($userRole == ROLE_ADMIN && $viewUser['role_id'] != ROLE_BORROWER) {
 
 // Get transaction history for borrowers
 $transactions = [];
-if ($viewUser['role_id'] == ROLE_BORROWER) {
+if (in_array($viewUser['role'], ['super-admin', 'admin', 'staff', 'staff', 'others'])) {
     $transactionService = new TransactionService();
     $transactions = $transactionService->getUserTransactionHistory($userId);
     
@@ -103,9 +118,9 @@ if ($viewUser['role_id'] == ROLE_BORROWER) {
     $borrowerStats = $userService->getBorrowerStats($userId);
 }
 
-// Handle activate/deactivate actions
+// Handle activate/deactivate/delete actions
 if (isset($_POST['action']) && $csrf->validateRequest()) {
-    if ($_POST['action'] == 'activate' && !$viewUser['is_active']) {
+    if ($_POST['action'] == 'activate' && $viewUser['status'] === UserModel::$STATUS_INACTIVE) {
         if ($userService->activateUser($userId)) {
             $session->setFlash('success', 'User activated successfully.');
             header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $userId);
@@ -113,10 +128,18 @@ if (isset($_POST['action']) && $csrf->validateRequest()) {
         } else {
             $session->setFlash('error', 'Failed to activate user.');
         }
-    } elseif ($_POST['action'] == 'deactivate' && $viewUser['is_active']) {
-        if ($userService->deleteUser($userId)) {
+    } elseif ($_POST['action'] == 'deactivate' && $viewUser['status'] === UserModel::$STATUS_ACTIVE) {
+        if ($userService->deactivateUser($userId)) {
             $session->setFlash('success', 'User deactivated successfully.');
             header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $userId);
+            exit;
+        } else {
+            $session->setFlash('error', $userService->getErrorMessage());
+        }
+    } elseif ($_POST['action'] == 'delete') {
+        if ($userService->deleteUser($userId)) {
+            $session->setFlash('success', 'User deleted successfully.');
+            header('Location: ' . APP_URL . '/public/users/index.php');
             exit;
         } else {
             $session->setFlash('error', $userService->getErrorMessage());
@@ -136,15 +159,17 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <h1 class="h2">User Details</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <?php if (($userRole == ROLE_SUPER_ADMIN) || 
-                          ($userRole == ROLE_ADMIN && $viewUser['role_id'] == ROLE_BORROWER)): ?>
                     <a href="<?= APP_URL ?>/public/users/edit.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="edit"></i> Edit User
+                        <i data-feather="edit"></i> Edit User Profile
                     </a>
-                <?php endif; ?>
-                <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="arrow-left"></i> Back to Users
-                </a>
+                    <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
+                        <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
+                            <i data-feather="arrow-left"></i> Back to Users
+                        </a>
+                    <?php endif; ?>
+                    <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-sm btn-outline-secondary">
+                            <i data-feather="arrow-left"></i> Back to Dashboard
+                        </a>
             </div>
         </div>
     </div>
@@ -164,93 +189,102 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <!-- User Details -->
     <?php include_once BASE_PATH . '/templates/users/view.php'; ?>
     
-    <?php if ($viewUser['role_id'] == ROLE_BORROWER): ?>
-        <!-- Borrower Transactions -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5 class="mb-0">Transaction History</h5>
-            </div>
-            <div class="card-body">
-                <?php if (empty($transactions)): ?>
-                    <p class="text-muted">No transaction history found.</p>
-                <?php else: ?>
-                    <div class="table-responsive">
-                        <table class="table table-striped table-sm">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Book Title</th>
-                                    <th>Borrow Date</th>
-                                    <th>Due Date</th>
-                                    <th>Return Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($transactions as $transaction): ?>
-                                    <tr>
-                                        <td><?= $transaction['id'] ?></td>
-                                        <td><?= htmlspecialchars($transaction['book_title']) ?></td>
-                                        <td><?= date('Y-m-d', strtotime($transaction['borrow_date'])) ?></td>
-                                        <td><?= date('Y-m-d', strtotime($transaction['due_date'])) ?></td>
-                                        <td>
-                                            <?= $transaction['return_date'] ? date('Y-m-d', strtotime($transaction['return_date'])) : 'Not returned' ?>
-                                        </td>
-                                        <td>
-                                            <?php if ($transaction['status_label'] == 'Overdue'): ?>
-                                                <span class="badge bg-danger">Overdue</span>
-                                            <?php elseif ($transaction['status_label'] == 'Borrowed'): ?>
-                                                <span class="badge bg-primary">Borrowed</span>
-                                            <?php else: ?>
-                                                <span class="badge bg-success">Returned</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td>
-                                            <?php if ($transaction['return_date'] === null && ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN)): ?>
-                                                <a href="<?= APP_URL ?>/public/transactions/return.php?id=<?= $transaction['id'] ?>" class="btn btn-sm btn-primary">
-                                                    Return
-                                                </a>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
+    <!-- Borrower Transactions -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Transaction History</h5>
         </div>
-    <?php endif; ?>
+        <div class="card-body">
+            <?php if (empty($transactions)): ?>
+                <p class="text-muted">No transaction history found.</p>
+            <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Book Title</th>
+                                <th>Borrow Date</th>
+                                <th>Due Date</th>
+                                <th>Return Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($transactions as $transaction): ?>
+                                <tr>
+                                    <td><?= $transaction['id'] ?></td>
+                                    <td><?= htmlspecialchars($transaction['book_title']) ?></td>
+                                    <td><?= date('Y-m-d', strtotime($transaction['borrow_date'])) ?></td>
+                                    <td><?= date('Y-m-d', strtotime($transaction['due_date'])) ?></td>
+                                    <td>
+                                        <?= $transaction['return_date'] ? date('Y-m-d', strtotime($transaction['return_date'])) : 'Not returned' ?>
+                                    </td>
+                                    <td>
+                                        <?php if ($transaction['status_label'] == 'Overdue'): ?>
+                                            <span class="badge bg-danger">Overdue</span>
+                                        <?php elseif ($transaction['status_label'] == 'Borrowed'): ?>
+                                            <span class="badge bg-primary">Borrowed</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-success">Returned</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+
     
-    <?php if (($userRole == ROLE_SUPER_ADMIN) || 
-             ($userRole == ROLE_ADMIN && $viewUser['role_id'] == ROLE_BORROWER)): ?>
+    <?php if (($userRole == 'super-admin') || 
+             ($userRole == 'admin')): ?>
         <!-- User Management Actions -->
         <div class="card mt-4">
-            <div class="card-header bg-<?= $viewUser['is_active'] ? 'warning' : 'success' ?> text-white">
+            <div class="card-header bg-<?= $viewUser['status'] ? 'warning' : 'success' ?> text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">User Status Management</h5>
             </div>
             <div class="card-body">
-                <?php if ($viewUser['is_active']): ?>
-                    <p class="card-text">This user is currently active. You can deactivate this account.</p>
-                    <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" onsubmit="return confirm('Are you sure you want to deactivate this user?');">
+            <?php if ($viewUser['status'] === UserModel::$STATUS_ACTIVE): ?>
+                <p class="card-text">This user is currently active. You can deactivate this account.</p>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" onsubmit="return confirm('Are you sure you want to deactivate this user?');">
+                    <?= $csrf->getTokenField() ?>
+                    <input type="hidden" name="action" value="deactivate">
+                    <button type="submit" class="btn btn-warning">
+                        <i data-feather="user-x"></i> Deactivate User
+                    </button>
+                </form>
+            <?php else: ?>
+                <p class="card-text">This user is currently inactive. You can activate this account.</p>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post">
+                    <?= $csrf->getTokenField() ?>
+                    <input type="hidden" name="action" value="activate">
+                    <button type="submit" class="btn btn-success">
+                        <i data-feather="user-check"></i> Activate User
+                    </button>
+                </form>
+            <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- <div class="card mt-4">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Delete Zone</h5>
+            </div>
+            <div class="card-body">
+            <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
+                <p class="card-text">Deleting this user is irreversible. Please be certain..</p>
+                    <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" onsubmit="return confirm('Are you sure you want to delete this user account? This action cannot be undone.');" style="margin:0;">
                         <?= $csrf->getTokenField() ?>
-                        <input type="hidden" name="action" value="deactivate">
-                        <button type="submit" class="btn btn-warning">
-                            <i data-feather="user-x"></i> Deactivate User
-                        </button>
-                    </form>
-                <?php else: ?>
-                    <p class="card-text">This user is currently inactive. You can activate this account.</p>
-                    <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post">
-                        <?= $csrf->getTokenField() ?>
-                        <input type="hidden" name="action" value="activate">
-                        <button type="submit" class="btn btn-success">
-                            <i data-feather="user-check"></i> Activate User
+                        <input type="hidden" name="action" value="delete">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i data-feather="trash-2"></i> Delete User
                         </button>
                     </form>
                 <?php endif; ?>
-            </div>
+            </div> -->
         </div>
     <?php endif; ?>
 </main>

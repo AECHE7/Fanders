@@ -38,6 +38,9 @@ $session = new Session();
 // Initialize authentication service
 $auth = new AuthService();
 
+// Initialize CSRF protection
+$csrf = new CSRF();
+
 // Check if user is logged in
 if (!$auth->isLoggedIn()) {
     // Redirect to login page
@@ -56,7 +59,7 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
 // Check if book ID is provided
 if (!isset($_GET['id']) || empty($_GET['id'])) {
@@ -83,20 +86,80 @@ if (!$book) {
 
 // Get transaction history for this book
 $transactionService = new TransactionService();
-$transactions = $transactionService->getBookTransactionHistory($bookId);
+
+// Remove any other filtering or restrictions here
+// Fetch all transactions for super-admin and admin, else fetch user-specific transactions
+if ($userRole === 'super-admin' || $userRole === 'admin') {
+    $transactions = $transactionService->getBookTransactionHistory($bookId);
+} else {
+    $transactions = $transactionService->getBookTransactionHistoryByUser($bookId, $user['id']);
+}
 
 // Handle delete request
-if (isset($_POST['delete']) && $auth->hasRole([ROLE_SUPER_ADMIN, ROLE_ADMIN])) {
-    if ($bookService->deleteBook($bookId)) {
+if (isset($_POST['delete']) && $auth->hasRole(['super-admin']) && $csrf->validateRequest()) {
+    if ($bookService->deleteBook($bookId, $userRole)) {
         // Book deleted successfully
         $session->setFlash('success', 'Book deleted successfully.');
         header('Location: ' . APP_URL . '/public/books/index.php');
-        exit;
+
     } else {
         // Failed to delete book
         $session->setFlash('error', $bookService->getErrorMessage());
     }
 }
+
+// Handle archive request
+if (isset($_POST['archive']) && $auth->hasRole(['super-admin', 'admin']) && $csrf->validateRequest()) {
+    if ($bookService->archiveBook($bookId)) {
+        // Book archived successfully
+        $session->setFlash('success', 'Book archived successfully.');
+        header('Location: ' . APP_URL . '/public/books/index.php');
+        exit;
+    } else {
+        // Failed to archive book
+        $session->setFlash('error', $bookService->getErrorMessage());
+    }
+}
+// Handle return book request
+
+if (isset($_POST['return_book']) && $csrf->validateRequest()) {
+    $transactionId = isset($_POST['transaction_id']) ? (int)$_POST['transaction_id'] : 0;
+    if ($transactionId > 0) {
+        // Instead of directly returning the book, set status to 'returning' for admin approval
+        $updateData = [
+            'status' => 'returning',
+            'updated_at' => date('Y-m-d H:i:s'),
+            'return_date' => null
+        ];
+        if ($transactionService->updateTransaction($transactionId, $updateData)) {
+            $session->setFlash('success', 'Return record submitted and pending admin action.');
+            header('Location: ' . $_SERVER['REQUEST_URI']);
+            exit;
+        } else {
+            $session->setFlash('error', $transactionService->getLastError());
+        }
+    } else {
+        $session->setFlash('error', 'Invalid transaction ID.');
+    }
+}
+
+
+// Handle borrow book request
+
+if (isset($_POST['borrow_book']) && $csrf->validateRequest()) {
+    if ($auth->hasRole(['borrower'])) {
+        if ($transactionService->borrowBook($user['id'], $bookId)) {
+            $session->setFlash('success', 'Book borrowed successfully.');
+            header('Location: ' . $_SERVER['REQUEST_URI']);
+            exit;
+        } else {
+            $session->setFlash('error', $transactionService->getLastError());
+        }
+    } else {
+        $session->setFlash('error', 'You do not have permission to borrow books.');
+    }
+}
+
 
 // Include header
 include_once BASE_PATH . '/templates/layout/header.php';
@@ -110,13 +173,13 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <h1 class="h2">Book Details</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <?php if ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN): ?>
+                <?php if ($userRole == 'super-admin' || $userRole == 'admin'): ?>
                     <a href="<?= APP_URL ?>/public/books/edit.php?id=<?= $bookId ?>" class="btn btn-sm btn-outline-primary">
                         <i data-feather="edit"></i> Edit Book
                     </a>
                 <?php endif; ?>
                 
-                <?php if ($userRole == ROLE_BORROWER && $book['is_available'] && $book['available_copies'] > 0): ?>
+                <?php if ($userRole == 'borrower' && $book['status'] && $book['available_copies'] > 0): ?>
                     <a href="<?= APP_URL ?>/public/transactions/borrow.php?book_id=<?= $bookId ?>" class="btn btn-sm btn-outline-success">
                         <i data-feather="book"></i> Borrow Book
                     </a>
@@ -131,30 +194,111 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     
     <?php if ($session->hasFlash('success')): ?>
         <div class="alert alert-success">
-            <?= $session->getFlash('success') ?>
+            <?= htmlspecialchars($session->getFlash('success') ?? '') ?>
         </div>
     <?php endif; ?>
     
     <?php if ($session->hasFlash('error')): ?>
         <div class="alert alert-danger">
-            <?= $session->getFlash('error') ?>
+            <?= htmlspecialchars($session->getFlash('error') ?? '') ?>
         </div>
     <?php endif; ?>
     
     <!-- Book Details -->
     <?php include_once BASE_PATH . '/templates/books/view.php'; ?>
-    
-    <?php if ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN): ?>
-        <!-- Delete Book Form -->
+
+            <!-- Transaction History -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Transaction History</h5>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($transactions)): ?>
+                        <div class="alert alert-info">
+                            No transactions found.
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Book Title</th>
+                                        <th>Borrower</th>
+                                        <th>Loan Date</th>
+                                        <th>Due Date</th>
+                                        <th>Return Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($transactions as $transaction): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($transaction['id'] ?? '') ?></td>
+                                            <td><?= htmlspecialchars($book['title'] ?? '') ?></td>
+                                            <td><?= htmlspecialchars($transaction['name'] ?? '') ?></td>
+                                            <td><?= htmlspecialchars($transaction['borrow_date'] ?? '') ?></td>
+                                            <td><?= htmlspecialchars($transaction['due_date'] ?? '') ?></td>
+                                            <td>
+                                                <?= !empty($transaction['return_date']) ? htmlspecialchars($transaction['return_date']) : 'Not returned' ?>
+                                            </td>
+                                            <td>
+                                                <?php if (($transaction['status_label'] ?? '') == 'overdue'): ?>
+                                                    <span class="badge bg-danger">Overdue</span>
+                                                <?php elseif (($transaction['status_label'] ?? '') == 'borrowed'): ?>
+                                                    <span class="badge bg-success">Borrowed</span>
+                                                <?php elseif (($transaction['status_label'] ?? '') == 'returned'): ?>
+                                                    <span class="badge bg-secondary">Returned</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-secondary"><?= htmlspecialchars($transaction['status_label'] ?? '') ?></span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="<?= APP_URL ?>/public/transactions/view.php?id=<?= htmlspecialchars($transaction['id'] ?? '') ?>" class="btn btn-outline-primary">
+                                                        <i data-feather="eye"></i>
+                                                    </a>
+                                                    <?php if (($transaction['status_label'] ?? '') == 'borrowed' || ($transaction['status_label'] ?? '') == 'overdue'): ?>
+                                                    <form action="<?= $_SERVER['PHP_SELF'] . '?id=' . $bookId ?>" method="post" class="d-inline ms-1">
+                                                        <input type="hidden" name="transaction_id" value="<?= htmlspecialchars($transaction['id'] ?? '') ?>">
+                                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf->getToken() ?? '') ?>">
+                                                        <button type="submit" name="return_book" class="btn btn-outline-success" 
+                                                                onclick="return confirm('Are you sure you want to return this book?')">
+                                                            <i data-feather="rotate-ccw"></i>
+                                                        </button>
+                                                    </form>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+    <!-- Delete functiony -->
+    <?php if ($userRole == 'super-admin'): ?>
+        <!-- Danger Zone -->
         <div class="card mt-4">
             <div class="card-header bg-danger text-white">
                 <h5 class="mb-0">Danger Zone</h5>
             </div>
             <div class="card-body">
-                <p class="card-text">Deleting this book is irreversible. Please be certain.</p>
-                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $bookId ?>" method="post" onsubmit="return confirm('Are you sure you want to delete this book? This action cannot be undone.');">
+                <p class="card-text">Deleting or archiving this book is irreversible. Please be certain.</p>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $bookId ?>" method="post" onsubmit="return confirm('Are you sure you want to delete this book? This action cannot be undone.');" class="d-inline me-2">
+                    <?= $csrf->getTokenField() ?>
                     <button type="submit" name="delete" class="btn btn-danger">
                         <i data-feather="trash-2"></i> Delete Book
+                    </button>
+                </form>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $bookId ?>" method="post" onsubmit="return confirm('Are you sure you want to archive this book?');" class="d-inline">
+                    <?= $csrf->getTokenField() ?>
+                    <button type="submit" name="archive" class="btn btn-warning text-white">
+                        <i data-feather="archive"></i> Archive Book
                     </button>
                 </form>
             </div>

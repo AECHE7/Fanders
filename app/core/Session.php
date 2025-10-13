@@ -1,3 +1,5 @@
+
+
 <?php
 /**
  * Session - Manages user sessions
@@ -5,11 +7,9 @@
 class Session {
     private $sessionLifetime = 1800; // 30 minutes
     
-    /**
-     * Constructor
-     */
+
     public function __construct() {
-        // Only set session cookie parameters if session is not already started
+        // Only set session cookie parameters if session is not active
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
                 'lifetime' => $this->sessionLifetime,
@@ -21,69 +21,41 @@ class Session {
             ]);
             session_start();
         }
+
+        // Start the session if not already started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         
         // Check if session needs to be regenerated
         $this->checkSessionLifetime();
     }
-    
-    /**
-     * Set a session value
-     * 
-     * @param string $key
-     * @param mixed $value
-     * @return void
-     */
+
     public function set($key, $value) {
         $_SESSION[$key] = $value;
     }
     
-    /**
-     * Get a session value
-     * 
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
+
     public function get($key, $default = null) {
         return isset($_SESSION[$key]) ? $_SESSION[$key] : $default;
     }
-    
-    /**
-     * Check if session key exists
-     * 
-     * @param string $key
-     * @return bool
-     */
+ 
     public function has($key) {
         return isset($_SESSION[$key]);
     }
     
-    /**
-     * Remove a session value
-     * 
-     * @param string $key
-     * @return void
-     */
+
     public function remove($key) {
         if (isset($_SESSION[$key])) {
             unset($_SESSION[$key]);
         }
     }
-    
-    /**
-     * Clear all session data
-     * 
-     * @return void
-     */
+
     public function clear() {
         session_unset();
     }
     
-    /**
-     * Destroy the session
-     * 
-     * @return void
-     */
+
     public function destroy() {
         $this->clear();
         session_destroy();
@@ -103,23 +75,14 @@ class Session {
         }
     }
     
-    /**
-     * Regenerate session ID
-     * 
-     * @param bool $deleteOldSession
-     * @return void
-     */
+ 
     public function regenerate($deleteOldSession = true) {
         session_regenerate_id($deleteOldSession);
         // Update last activity time on regeneration
         $this->set('last_activity', time());
     }
     
-    /**
-     * Check if session has expired and regenerate if needed
-     * 
-     * @return void
-     */
+
     private function checkSessionLifetime() {
         $lastActivity = $this->get('last_activity');
         $currentTime = time();
@@ -141,25 +104,12 @@ class Session {
         // Update last activity time
         $this->set('last_activity', $currentTime);
     }
-    
-    /**
-     * Set flash message for one-time display
-     * 
-     * @param string $key
-     * @param mixed $value
-     * @return void
-     */
+
     public function setFlash($key, $value) {
         $_SESSION['flash'][$key] = $value;
     }
     
-    /**
-     * Get flash message and remove it
-     * 
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
-     */
+ 
     public function getFlash($key, $default = null) {
         $value = $default;
         
@@ -171,32 +121,19 @@ class Session {
         return $value;
     }
     
-    /**
-     * Check if flash message exists
-     * 
-     * @param string $key
-     * @return bool
-     */
+ 
     public function hasFlash($key) {
         return isset($_SESSION['flash'][$key]);
     }
     
-    /**
-     * Set CSRF token
-     * 
-     * @return string
-     */
+
     public function setCsrfToken() {
         $token = bin2hex(random_bytes(32));
         $this->set('csrf_token', $token);
         return $token;
     }
     
-    /**
-     * Get CSRF token
-     * 
-     * @return string|null
-     */
+
     public function getCsrfToken() {
         if (!$this->has('csrf_token')) {
             return $this->setCsrfToken();
@@ -204,12 +141,7 @@ class Session {
         return $this->get('csrf_token');
     }
     
-    /**
-     * Validate CSRF token
-     * 
-     * @param string $token
-     * @return bool
-     */
+
     public function validateCsrfToken($token) {
         return $token === $this->getCsrfToken();
     }

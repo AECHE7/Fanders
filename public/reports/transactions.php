@@ -59,10 +59,10 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
 // Check if user has permission to generate reports (Super Admin or Admin)
-if (!$auth->hasRole([ROLE_SUPER_ADMIN, ROLE_ADMIN])) {
+if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -106,6 +106,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Transactions Report</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="<?= APP_URL ?>/public/reports/index.php" class="btn btn-sm btn-outline-primary me-2">
+                <i data-feather="list"></i> Reports Index
+            </a>
             <a href="<?= APP_URL ?>/public/transactions/index.php" class="btn btn-sm btn-outline-secondary">
                 <i data-feather="arrow-left"></i> Back to Transactions
             </a>
@@ -196,26 +199,37 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                             </tr>
                         </thead>
                         <tbody>
+                            <?php
+                            $i = 1;
+                            ?>
                             <?php foreach ($reportData['transactions'] as $transaction): ?>
                                 <tr>
-                                    <td><?= $transaction['id'] ?></td>
+                                    <td><?= $i ?></td>
                                     <td><?= htmlspecialchars($transaction['book_title']) ?></td>
-                                    <td><?= htmlspecialchars($transaction['first_name'] . ' ' . $transaction['last_name']) ?></td>
+                                    <td><?= htmlspecialchars($transaction['name']) ?></td>
                                     <td><?= date('Y-m-d', strtotime($transaction['borrow_date'])) ?></td>
                                     <td><?= date('Y-m-d', strtotime($transaction['due_date'])) ?></td>
                                     <td>
                                         <?= $transaction['return_date'] ? date('Y-m-d', strtotime($transaction['return_date'])) : 'Not returned' ?>
                                     </td>
                                     <td>
-                                        <?php if ($transaction['status_label'] == 'Overdue'): ?>
-                                            <span class="badge bg-danger">Overdue</span>
-                                        <?php elseif ($transaction['status_label'] == 'Borrowed'): ?>
-                                            <span class="badge bg-primary">Borrowed</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-success">Returned</span>
-                                        <?php endif; ?>
+                                        <?php
+                                            $statusLabel = isset($transaction['status_label']) ? $transaction['status_label'] : $transaction['status'];
+                                            $badgeClass = 'bg-secondary';
+                                            if ($statusLabel === 'Overdue') {
+                                                $badgeClass = 'bg-danger';
+                                            } elseif ($statusLabel === 'Borrowed') {
+                                                $badgeClass = 'bg-primary';
+                                            } elseif ($statusLabel === 'Returned') {
+                                                $badgeClass = 'bg-success';
+                                            }
+                                        ?>
+                                        <span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($statusLabel) ?></span>
                                     </td>
                                 </tr>
+                                <?php
+                                $i++;
+                                ?>
                             <?php endforeach; ?>
                         </tbody>
                     </table>

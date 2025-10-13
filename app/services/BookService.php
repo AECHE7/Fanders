@@ -6,9 +6,7 @@ class BookService extends BaseService {
     private $bookModel;
     private $categoryModel;
 
-    /**
-     * Constructor
-     */
+
     public function __construct() {
         parent::__construct();
         $this->bookModel = new BookModel();
@@ -16,72 +14,41 @@ class BookService extends BaseService {
         $this->setModel($this->bookModel);
     }
 
-    /**
-     * Get book with category
-     * 
-     * @param int $id
-     * @return array|bool
-     */
+
     public function getBookWithCategory($id) {
         return $this->bookModel->getBookWithCategory($id);
     }
 
-    /**
-     * Get all books with categories
-     * 
-     * @return array|bool
-     */
+
     public function getAllBooksWithCategories() {
         return $this->bookModel->getAllBooksWithCategories();
     }
 
-    /**
-     * Search books
-     * 
-     * @param string $term
-     * @return array|bool
-     */
+
     public function searchBooks($term) {
         return $this->bookModel->searchBooks($term);
     }
 
-    /**
-     * Get books by category
-     * 
-     * @param int $categoryId
-     * @return array|bool
-     */
+
     public function getBooksByCategory($categoryId) {
         return $this->bookModel->getBooksByCategory($categoryId);
     }
 
-    /**
-     * Get available books
-     * 
-     * @return array|bool
-     */
-    public function getAvailableBooks() {
-        return $this->bookModel->getAvailableBooks();
+ 
+    public function getAvailableBooks($limit = 5) {
+        return $this->bookModel->getAvailableBooks($limit);
     }
 
-    /**
-     * Add new book
-     * 
-     * @param array $bookData
-     * @param int $addedBy
-     * @return int|bool
-     */
+    public function getAllAvailableBooksWithCategories() {
+        return $this->bookModel->getAllAvailableBooksWithCategories();
+    }
+
     public function addBook($bookData, $addedBy) {
         // Validate book data
         if (!$this->validateBookData($bookData)) {
             return false;
         }
         
-        // Check if ISBN exists
-        if ($this->bookModel->isbnExists($bookData['isbn'])) {
-            $this->setErrorMessage('A book with this ISBN already exists.');
-            return false;
-        }
         
         // Set additional fields
         $bookData['added_by'] = $addedBy;
@@ -93,13 +60,6 @@ class BookService extends BaseService {
         return $this->bookModel->create($bookData);
     }
 
-    /**
-     * Update book
-     * 
-     * @param int $id
-     * @param array $bookData
-     * @return bool
-     */
     public function updateBook($id, $bookData) {
         // Get existing book
         $existingBook = $this->bookModel->findById($id);
@@ -122,13 +82,8 @@ class BookService extends BaseService {
         return $this->bookModel->update($id, $bookData);
     }
 
-    /**
-     * Delete book
-     * 
-     * @param int $id
-     * @return bool
-     */
-    public function deleteBook($id) {
+  
+    public function deleteBook($id, $role) {
         // Check if book exists
         $book = $this->bookModel->findById($id);
         
@@ -150,34 +105,31 @@ class BookService extends BaseService {
             return false;
         }
         
-        // Delete book
-        return $this->bookModel->delete($id);
+        if ($role === 'admin') {
+            // Soft delete (archive)
+            if ($this->bookModel->archiveBook($id)) {
+                return true;
+            } else {
+                $this->setErrorMessage('Failed to archive the book.');
+                return false;
+            }
+        } elseif ($role === 'super-admin') {
+            // Hard delete
+            return $this->permanentlyDeleteBook($id, $role);
+        } else {
+            $this->setErrorMessage('Unauthorized role for deleting book.');
+            return false;
+        }
     }
 
-    /**
-     * Get all categories
-     * 
-     * @return array|bool
-     */
     public function getAllCategories() {
         return $this->categoryModel->getAll('name', 'ASC');
     }
 
-    /**
-     * Get all categories with book count
-     * 
-     * @return array|bool
-     */
     public function getAllCategoriesWithBookCount() {
         return $this->categoryModel->getAllCategoriesWithBookCount();
     }
 
-    /**
-     * Add new category
-     * 
-     * @param array $categoryData
-     * @return int|bool
-     */
     public function addCategory($categoryData) {
         // Validate category data
         if (!isset($categoryData['name']) || empty($categoryData['name'])) {
@@ -199,13 +151,7 @@ class BookService extends BaseService {
         return $this->categoryModel->create($categoryData);
     }
 
-    /**
-     * Update category
-     * 
-     * @param int $id
-     * @param array $categoryData
-     * @return bool
-     */
+
     public function updateCategory($id, $categoryData) {
         // Validate category data
         if (!isset($categoryData['name']) || empty($categoryData['name'])) {
@@ -226,12 +172,6 @@ class BookService extends BaseService {
         return $this->categoryModel->update($id, $categoryData);
     }
 
-    /**
-     * Delete category
-     * 
-     * @param int $id
-     * @return bool
-     */
     public function deleteCategory($id) {
         // Check if category has books
         $bookCount = $this->categoryModel->getCategoryBooksCount($id);
@@ -245,54 +185,50 @@ class BookService extends BaseService {
         return $this->categoryModel->delete($id);
     }
 
-    /**
-     * Get recently added books
-     * 
-     * @param int $limit
-     * @return array|bool
-     */
+
     public function getRecentlyAddedBooks($limit = 10) {
         return $this->bookModel->getRecentlyAddedBooks($limit);
     }
 
-    /**
-     * Get most borrowed books
-     * 
-     * @param int $limit
-     * @return array|bool
-     */
+    public function getUserBorrowedBooks($userId) {
+        $sql = "SELECT 
+                    b.title,
+                    b.author,
+                    b.published_year,
+                    c.id as category_id,
+                    c.name as category_name,
+                    t.borrow_date,
+                    t.due_date,
+                    t.return_date,
+                    CASE 
+                        WHEN t.return_date IS NOT NULL THEN 'returned'
+                        WHEN t.due_date < CURRENT_DATE THEN 'overdue'
+                        ELSE 'borrowed'
+                    END as status
+                FROM transactions t
+                JOIN books b ON t.book_id = b.id
+                JOIN categories c ON b.category_id = c.id
+                WHERE t.user_id = ?
+                ORDER BY t.borrow_date DESC";
+        
+        return $this->bookModel->query($sql, [$userId]);
+    }
+
+  
     public function getMostBorrowedBooks($limit = 10) {
         return $this->bookModel->getMostBorrowedBooks($limit);
     }
 
-    /**
-     * Validate book data
-     * 
-     * @param array $bookData
-     * @param int $excludeId
-     * @return bool
-     */
     private function validateBookData($bookData, $excludeId = null) {
         // Check required fields
-        $requiredFields = ['title', 'author', 'isbn', 'category_id', 'total_copies', 'available_copies'];
+        $requiredFields = ['title', 'author', 'category_id', 'total_copies', 'available_copies'];
         foreach ($requiredFields as $field) {
             if (!isset($bookData[$field]) || $bookData[$field] === '') {
                 $this->setErrorMessage(ucfirst(str_replace('_', ' ', $field)) . ' is required.');
                 return false;
             }
         }
-        
-        // Validate ISBN (simple validation)
-        if (!preg_match('/^[0-9-]{10,17}$/', $bookData['isbn'])) {
-            $this->setErrorMessage('ISBN must be a valid format (10-17 digits with optional hyphens).');
-            return false;
-        }
-        
-        // Check if ISBN exists (excluding current book on update)
-        if ($this->bookModel->isbnExists($bookData['isbn'], $excludeId)) {
-            $this->setErrorMessage('A book with this ISBN already exists.');
-            return false;
-        }
+    
         
         // Validate category exists
         if (!$this->categoryModel->findById($bookData['category_id'])) {
@@ -326,5 +262,126 @@ class BookService extends BaseService {
         }
         
         return true;
+    }
+
+
+    public function permanentlyDeleteBook($id, $role = 'super-admin') {
+        if ($role !== 'super-admin') {
+            $this->setErrorMessage('Unauthorized role for permanent deletion.');
+            return false;
+        }
+        
+        // Check if book exists
+        $book = $this->bookModel->findById($id);
+        
+        if (!$book) {
+            $this->setErrorMessage('Book not found.');
+            return false;
+        }
+        
+        // Check if book is archived
+        if (!$this->bookModel->isBookArchived($id)) {
+            $this->setErrorMessage('Book must be archived before permanent deletion.');
+            return false;
+        }
+        
+        // Permanently delete book
+        if ($this->bookModel->permanentlyDeleteBook($id)) {
+            return true;
+        }
+        
+        $this->setErrorMessage('Cannot delete book with transaction history.');
+        return false;
+    }
+
+    public function restoreBook($id, $role = 'super-admin') {
+        if ($role !== 'super-admin') {
+            $this->setErrorMessage('Unauthorized role for restoring book.');
+            return false;
+        }
+        
+        // Check if book exists
+        $book = $this->bookModel->findById($id);
+        
+        if (!$book) {
+            $this->setErrorMessage('Book not found.');
+            return false;
+        }
+        
+        // Check if book is archived
+        if (!$this->bookModel->isBookArchived($id)) {
+            $this->setErrorMessage('Book is not archived.');
+            return false;
+        }
+        
+        // Restore book
+        if ($this->bookModel->restoreBook($id)) {
+            return true;
+        }
+        
+        $this->setErrorMessage('Failed to restore the book.');
+        return false;
+    }
+
+    public function getBooksByPublishedYear($year) {
+        $sql = "SELECT * FROM books WHERE YEAR(published_date) = ?";
+        return $this->db->resultSet($sql, [$year]);
+    }
+
+    // In app/services/BookService.php
+
+    public function getAllPublishedYears() {
+        $sql = "SELECT DISTINCT YEAR(published_date) AS year FROM books ORDER BY year DESC";
+        return $this->db->resultSet($sql);
+    }
+
+ 
+    public function archiveBook($id) {
+        // Check if book has active loans
+        $transactionModel = new TransactionModel();
+        $activeLoans = $transactionModel->query(
+            "SELECT COUNT(*) as count FROM transaction WHERE book_id = ? AND return_date IS NULL",
+            [$id],
+            true
+        );
+        
+        if ($activeLoans && $activeLoans['count'] > 0) {
+            $this->setErrorMessage('Cannot archive book with active loans.');
+            return false;
+        }
+
+        if ($this->bookModel->archiveBook($id)) {
+            return true;
+        } else {
+            $this->setErrorMessage('Failed to archive the book.');
+            return false;
+        }
+    }
+
+ 
+    public function getArchivedBooks() {
+        // Fetch archived books with deleted_at values
+        $archivedBooks = $this->bookModel->getArchivedBooks();
+        $deletedAtValues = $this->bookModel->getDeletedAtValues();
+
+        // Map deleted_at values by book id
+        $deletedAtMap = [];
+        if ($deletedAtValues && is_array($deletedAtValues)) {
+            foreach ($deletedAtValues as $item) {
+                $deletedAtMap[$item['id']] = $item['deleted_at'];
+            }
+        }
+
+        // Add deleted_at to archived books if missing
+        if ($archivedBooks && is_array($archivedBooks)) {
+            foreach ($archivedBooks as &$book) {
+                if (isset($deletedAtMap[$book['id']])) {
+                    $book['deleted_at'] = $deletedAtMap[$book['id']];
+                }
+            }
+            unset($book);
+        }
+
+        return $archivedBooks;
     }
 }

@@ -1,167 +1,129 @@
 <?php
 /**
- * PenaltyService - Handles penalties for late book returns
+ * PenaltyService - Business logic for penalties
  */
 class PenaltyService extends BaseService {
     private $penaltyModel;
-    private $transactionModel;
 
-    /**
-     * Constructor
-     */
     public function __construct() {
         parent::__construct();
         $this->penaltyModel = new PenaltyModel();
-        $this->transactionModel = new TransactionModel();
         $this->setModel($this->penaltyModel);
     }
 
-    /**
-     * Get penalty with details
-     * 
-     * @param int $id
-     * @return array|bool
-     */
-    public function getPenaltyWithDetails($id) {
-        return $this->penaltyModel->getPenaltyWithDetails($id);
-    }
-
-    /**
-     * Get all penalties with details
-     * 
-     * @return array|bool
-     */
-    public function getAllPenaltiesWithDetails() {
-        return $this->penaltyModel->getAllPenaltiesWithDetails();
-    }
-
-    /**
-     * Create penalty for overdue book
-     * 
-     * @param int $transactionId
-     * @param int $daysOverdue
-     * @return int|bool
-     */
-    public function createPenalty($transactionId, $daysOverdue) {
-        // Check if transaction exists
-        $transaction = $this->transactionModel->findById($transactionId);
-        
-        if (!$transaction) {
-            $this->setErrorMessage('Transaction not found.');
-            return false;
-        }
-        
-        // Check if penalty already exists for this transaction
-        if ($this->penaltyModel->transactionHasPenalty($transactionId)) {
-            $this->setErrorMessage('Penalty already exists for this transaction.');
-            return false;
-        }
-        
-        // Create penalty
-        return $this->penaltyModel->createPenalty($transactionId, $daysOverdue);
-    }
-
-    /**
-     * Mark penalty as paid
-     * 
-     * @param int $id
-     * @return bool
-     */
-    public function markAsPaid($id) {
-        // Check if penalty exists
-        $penalty = $this->penaltyModel->findById($id);
-        
-        if (!$penalty) {
-            $this->setErrorMessage('Penalty not found.');
-            return false;
-        }
-        
-        if ($penalty['is_paid']) {
-            $this->setErrorMessage('Penalty is already paid.');
-            return false;
-        }
-        
-        // Mark as paid
-        return $this->penaltyModel->markAsPaid($id);
-    }
-
-    /**
-     * Get unpaid penalties
-     * 
-     * @return array|bool
-     */
-    public function getUnpaidPenalties() {
-        return $this->penaltyModel->getUnpaidPenalties();
-    }
-
-    /**
-     * Get user's penalties
-     * 
-     * @param int $userId
-     * @return array|bool
-     */
+ 
     public function getUserPenalties($userId) {
-        return $this->penaltyModel->getUserPenalties($userId);
+        return $this->penaltyModel->getPenaltiesByUser($userId);
     }
 
-    /**
-     * Get user's unpaid penalties total
-     * 
-     * @param int $userId
-     * @return float
-     */
-    public function getUserUnpaidPenaltiesTotal($userId) {
-        return $this->penaltyModel->getUserUnpaidPenaltiesTotal($userId);
+    public function getAllUnpaidPenalties() {
+        // Access protected properties via getter methods or reflection if available
+        $reflection = new ReflectionClass($this->penaltyModel);
+        $tableProperty = $reflection->getProperty('table');
+        $tableProperty->setAccessible(true);
+        $table = $tableProperty->getValue($this->penaltyModel);
+
+        $dbProperty = $reflection->getProperty('db');
+        $dbProperty->setAccessible(true);
+        $db = $dbProperty->getValue($this->penaltyModel);
+
+        $sql = "SELECT p.*, t.borrow_date, t.due_date, t.return_date, 
+                       b.title as book_title, u.name, u.email
+                FROM {$table} p
+                JOIN transaction t ON p.transaction_id = t.id
+                JOIN books b ON t.book_id = b.id
+                JOIN users u ON t.user_id = u.id
+                WHERE p.status = 'unpaid'
+                AND t.status = 'borrowed'
+                AND t.due_date < CURRENT_DATE
+                AND t.return_date IS NULL
+                ORDER BY p.penalty_date DESC";
+
+        return $db->resultSet($sql);
     }
 
-    /**
-     * Calculate overdue penalty amount
-     * 
-     * @param int $daysOverdue
-     * @return float
-     */
-    public function calculatePenaltyAmount($daysOverdue) {
-        return PENALTY_BASE_AMOUNT + (PENALTY_DAILY_INCREMENT * $daysOverdue);
+    public function getPenaltyByTransaction($transactionId) {
+        return $this->penaltyModel->getPenaltyByTransaction($transactionId);
     }
 
-    /**
-     * Get penalties for reports
-     * 
-     * @param string $startDate
-     * @param string $endDate
-     * @param bool $isPaid
-     * @return array|bool
-     */
-    public function getPenaltiesForReports($startDate = null, $endDate = null, $isPaid = null) {
-        return $this->penaltyModel->getPenaltiesForReports($startDate, $endDate, $isPaid);
+ 
+    public function createOrUpdatePenalty($userId, $transactionId, $penaltyAmount) {
+        $existingPenalty = $this->penaltyModel->getPenaltyByTransaction($transactionId);
+        $data = [
+            'user_id' => $userId,
+            'transaction_id' => $transactionId,
+            'penalty_amount' => $penaltyAmount,
+            'penalty_date' => date('Y-m-d H:i:s')
+        ];
+
+        if ($existingPenalty) {
+            if ($penaltyAmount > $existingPenalty['amount']) {
+                $updated = $this->penaltyModel->update($existingPenalty['id'], $data);
+                return $updated ? true : false;
+            }
+            return true;
+        } else {
+            $created = $this->penaltyModel->create($data);
+            return $created ? true : false;
+        }
     }
 
-    /**
-     * Get penalty statistics
-     * 
-     * @return array
-     */
-    public function getPenaltyStatistics() {
-        $stats = [];
-        
-        // Total penalties
-        $sql = "SELECT COUNT(*) as count, SUM(amount) as total FROM penalties";
-        $result = $this->db->single($sql);
-        $stats['total_count'] = $result ? $result['count'] : 0;
-        $stats['total_amount'] = $result ? $result['total'] : 0;
-        
-        // Paid penalties
-        $sql = "SELECT COUNT(*) as count, SUM(amount) as total FROM penalties WHERE is_paid = 1";
-        $result = $this->db->single($sql);
-        $stats['paid_count'] = $result ? $result['count'] : 0;
-        $stats['paid_amount'] = $result ? $result['total'] : 0;
-        
-        // Unpaid penalties
-        $sql = "SELECT COUNT(*) as count, SUM(amount) as total FROM penalties WHERE is_paid = 0";
-        $result = $this->db->single($sql);
-        $stats['unpaid_count'] = $result ? $result['count'] : 0;
-        $stats['unpaid_amount'] = $result ? $result['total'] : 0;
-        
-        return $stats;
+
+    public function getPenaltiesForReports($startDate = null, $endDate = null, $status = null) {
+        // Access protected properties via getter methods or reflection if available
+        $reflection = new ReflectionClass($this->penaltyModel);
+        $tableProperty = $reflection->getProperty('table');
+        $tableProperty->setAccessible(true);
+        $table = $tableProperty->getValue($this->penaltyModel);
+
+        $dbProperty = $reflection->getProperty('db');
+        $dbProperty->setAccessible(true);
+        $db = $dbProperty->getValue($this->penaltyModel);
+
+        $sql = "SELECT p.*, t.borrow_date, t.due_date, t.return_date, 
+                       b.title as book_title, u.name, u.email
+                FROM {$table} p
+                JOIN transaction t ON p.transaction_id = t.id
+                JOIN books b ON t.book_id = b.id
+                JOIN users u ON t.user_id = u.id
+                WHERE 1=1";
+
+        $params = [];
+
+        if ($startDate) {
+            $sql .= " AND p.penalty_date >= ?";
+            $params[] = $startDate;
+        }
+
+        if ($endDate) {
+            $sql .= " AND p.penalty_date <= ?";
+            $params[] = $endDate;
+        }
+
+        if ($status) {
+            $sql .= " AND p.status = ?";
+            $params[] = $status;
+        }
+
+        $sql .= " ORDER BY p.penalty_date DESC";
+
+        return $db->resultSet($sql, $params);
+    }
+
+ 
+    public function getTotalPenalties() {
+        $reflection = new ReflectionClass($this->penaltyModel);
+        $tableProperty = $reflection->getProperty('table');
+        $tableProperty->setAccessible(true);
+        $table = $tableProperty->getValue($this->penaltyModel);
+
+        $dbProperty = $reflection->getProperty('db');
+        $dbProperty->setAccessible(true);
+        $db = $dbProperty->getValue($this->penaltyModel);
+
+        $sql = "SELECT COALESCE(SUM(penalty_amount), 0) as total FROM {$table}";
+
+        $result = $db->single($sql);
+        return $result ? floatval($result['total']) : 0;
     }
 }

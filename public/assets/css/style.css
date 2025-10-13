@@ -8,7 +8,7 @@
     --notion-light-gray: #f7f6f3;
     --notion-gray: #ebeaea;
     --notion-light-blue: #edf2fc;
-    --notion-blue: #0b76ef;
+    --notion-blue: #000000;
     --notion-hover-bg: #f5f5f5;
     --notion-border: rgba(55, 53, 47, 0.09);
     --notion-shadow: rgba(15, 15, 15, 0.05);
@@ -91,9 +91,11 @@ body {
     position: sticky;
     top: 0;
     height: 100vh;
-    overflow-y: auto;
-    scrollbar-width: thin;
+    .sidebar::-webkit-scrollbar {
+        width: 6px; /* For WebKit browsers */
+    }
 }
+
 
 .sidebar::-webkit-scrollbar {
     width: 6px;

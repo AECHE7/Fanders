@@ -58,7 +58,7 @@ if ($auth->checkSessionTimeout()) {
 }
 
 // Check if user has permission to edit books (Super Admin or Admin)
-if (!$auth->hasRole([ROLE_SUPER_ADMIN, ROLE_ADMIN])) {
+if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -89,7 +89,8 @@ if (!$book) {
 }
 
 // Get all categories for the dropdown
-$categories = $bookService->getAllCategories();
+$categoryModel = new CategoryModel();
+$categories = $categoryModel->getAll(); // Changed to use getAll() instead of undefined getAllForSelect()
 
 // Process form submission
 $error = '';
@@ -99,17 +100,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$csrf->validateRequest()) {
         $error = 'Invalid form submission. Please try again.';
     } else {
-        // Get form data
+        // Standardize on published_year, but allow publication_year for form compatibility
+        $yearField = isset($_POST['publication_year']) ? 'publication_year' : (isset($_POST['published_year']) ? 'published_year' : null);
+        $bookYear = $yearField ? trim($_POST[$yearField]) : '';
+
+        // Get form data with fallbacks to existing book data
         $updatedBook = [
             'title' => isset($_POST['title']) ? trim($_POST['title']) : '',
             'author' => isset($_POST['author']) ? trim($_POST['author']) : '',
-            'isbn' => isset($_POST['isbn']) ? trim($_POST['isbn']) : '',
-            'description' => isset($_POST['description']) ? trim($_POST['description']) : '',
-            'publication_year' => isset($_POST['publication_year']) ? trim($_POST['publication_year']) : '',
-            'publisher' => isset($_POST['publisher']) ? trim($_POST['publisher']) : '',
-            'category_id' => isset($_POST['category_id']) ? (int)$_POST['category_id'] : '',
-            'total_copies' => isset($_POST['total_copies']) ? (int)$_POST['total_copies'] : 1,
-            'available_copies' => isset($_POST['available_copies']) ? (int)$_POST['available_copies'] : 1
+            'published_year' => $bookYear,
+            'publisher' => isset($_POST['publisher']) ? trim($_POST['publisher']) : ($book['publisher'] ?? ''),
+            'category_id' => isset($_POST['category_id']) ? (int)$_POST['category_id'] : ($book['category_id'] ?? ''),
+            'total_copies' => isset($_POST['total_copies']) ? (int)$_POST['total_copies'] : ($book['total_copies'] ?? 1),
+            'available_copies' => isset($_POST['available_copies']) ? (int)$_POST['available_copies'] : ($book['available_copies'] ?? 1)
         ];
         
         // Update the book

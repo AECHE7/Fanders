@@ -3,60 +3,85 @@
  * Navbar template for the Library Management System
  */
 
-// Get current user and role
+// Get current user and role (safe defaulting)
 $currentUser = $auth->getCurrentUser();
-$userRole = $currentUser['role_id'];
-$roleName = $currentUser['role_name'];
+
+// Use 'role' string directly
+$userRole = isset($currentUser['role']) ? $currentUser['role'] : '';
+// For display, format role if needed
+$roleName = isset($currentUser['role_display']) ? $currentUser['role_display'] : ucfirst(str_replace('-', ' ', $userRole));
+
+// Parse first and last name from 'name'
+$fullName = isset($currentUser['name']) ? $currentUser['name'] : '';
+$nameParts = explode(' ', $fullName, 2);
+$firstName = $nameParts[0] ?? '';
+$lastName = $nameParts[1] ?? '';
+$initials = ($firstName ? substr($firstName, 0, 1) : '') . ($lastName ? substr($lastName, 0, 1) : '');
+
+// For username, prefer 'username', fallback to 'email'
+$usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
 
 // Determine active page for navigation highlighting
 $currentPage = basename($_SERVER['PHP_SELF'], '.php');
 
 // Define navigation items based on role
 $navItems = [
-    'dashboard' => [
+    'home' => [
         'icon' => 'home',
+        'title' => 'Home',
+        'url' => APP_URL . '/public/index.php',
+        'roles' => ['super-admin', 'admin', 'student', 'staff', 'other', 'borrower']
+    ],
+    'dashboard' => [
+        'icon' => 'grid',
         'title' => 'Dashboard',
         'url' => APP_URL . '/public/dashboard.php',
-        'roles' => [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_BORROWER]
+        'roles' => ['super-admin', 'admin', 'student', 'staff', 'other', 'borrower']
     ],
     'books' => [
         'icon' => 'book',
-        'title' => ($userRole == ROLE_BORROWER) ? 'Available Books' : 'Books',
+        'title' => (in_array($userRole, ['student', 'staff', 'other', 'borrower'])) ? 'Available Books' : 'Books',
         'url' => APP_URL . '/public/books/index.php',
-        'roles' => [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_BORROWER]
-    ],
-    'bookshelf' => [
-        'icon' => 'book-open',
-        'title' => 'Bookshelf View',
-        'url' => APP_URL . '/public/books/bookshelf.php',
-        'roles' => [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_BORROWER]
+        'roles' => ['super-admin', 'admin', 'student', 'staff', 'other', 'borrower']
     ],
     'users' => [
         'icon' => 'users',
         'title' => 'Users',
         'url' => APP_URL . '/public/users/index.php',
-        'roles' => [ROLE_SUPER_ADMIN, ROLE_ADMIN]
+        'roles' => ['super-admin', 'admin']
+    ],
+    'admins' => [
+        'icon' => 'users',
+        'title' => 'Admins',
+        'url' => APP_URL . '/public/admins/index.php',
+        'roles' => ['super-admin']
     ],
     'transactions' => [
         'icon' => 'repeat',
-        'title' => ($userRole == ROLE_BORROWER) ? 'My Loans' : 'Transactions',
+        'title' => (in_array($userRole, ['student', 'staff', 'other'])) ? 'My Borrowing' : 'Transactions',
         'url' => APP_URL . '/public/transactions/index.php',
-        'roles' => [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_BORROWER]
+        'roles' => ['super-admin', 'admin', 'student', 'staff', 'other']
     ],
     'reports' => [
         'icon' => 'file-text',
         'title' => 'Reports',
-        'url' => APP_URL . '/public/reports/books.php',
-        'roles' => [ROLE_SUPER_ADMIN, ROLE_ADMIN]
+        'url' => APP_URL . '/public/reports/index.php',
+        'roles' => ['super-admin', 'admin']
+    ],
+    'penalties' => [
+        'icon' => 'alert-circle',
+        'title' => 'Penalties',
+        'url' => APP_URL . '/public/penalties/index.php',
+        'roles' => ['super-admin', 'admin']
     ]
 ];
 ?>
 
 <header class="navbar sticky-top flex-md-nowrap p-0 border-bottom">
     <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 d-flex align-items-center" href="<?= APP_URL ?>/public/dashboard.php">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-book me-2">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-        </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-dollar-sign me-2">
+                    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
         <span><?= APP_NAME ?></span>
     </a>
     <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
@@ -77,17 +102,24 @@ $navItems = [
             <a class="nav-link dropdown-toggle px-3 d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="d-flex align-items-center">
                     <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                        <span class="fw-bold"><?= substr($currentUser['first_name'], 0, 1) . substr($currentUser['last_name'], 0, 1) ?></span>
+                        <span class="fw-bold"><?= htmlspecialchars($initials) ?></span>
                     </div>
-                    <span class="d-none d-md-inline"><?= htmlspecialchars($currentUser['first_name']) ?></span>
+                    <span class="d-none d-md-inline"><?= htmlspecialchars($firstName) ?></span>
                 </div>
             </a>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                <li class="dropdown-header">Signed in as<br/><strong><?= htmlspecialchars($currentUser['username']) ?></strong></li>
+            <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="navbarDropdown" style="z-index: 1050; position: absolute;">
+                <li class="dropdown-header">
+                <i data-feather="user" class="me-2" style="width: 16px; height: 16px;"></i>Signed in as<br/><strong><?= htmlspecialchars($usernameDisplay) ?></strong></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><span class="dropdown-item-text"><span class="badge bg-secondary"><?= $roleName ?></span></span></li>
+                <li><span class="dropdown-item-text"><span class="badge bg-secondary">
+                <i data-feather="user-check" class="me-2" style="width: 16px; height: 16px;"></i><?= $roleName ?></span></span></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="<?= APP_URL ?>/public/logout.php">Sign out</a></li>
+                <li><a class="dropdown-item" href="<?= APP_URL ?>/public/users/view.php?id=<?= $currentUser['id'] ?>">
+                    <i data-feather="settings" class="me-2" style="width: 16px; height: 16px;"></i> Settings
+                </a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="<?= APP_URL ?>/public/logout.php">
+                <i data-feather="log-out" class="me-2" style="width: 16px; height: 16px;"></i>Sign out</a></li>
             </ul>
         </div>
     </div>
@@ -95,19 +127,35 @@ $navItems = [
 
 <div class="container-fluid">
     <div class="row g-0">
-        <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block sidebar">
-            <div class="position-sticky pt-3">
+        <div class="collapse d-md-block col-md-3 col-lg-2 sidebar" id="sidebarMenu">
+            <nav class="position-sticky pt-3">
                 <ul class="nav flex-column">
-                    <?php foreach ($navItems as $id => $item): ?>
+                <?php foreach ($navItems as $id => $item): ?>
                         <?php if (in_array($userRole, $item['roles'])): ?>
                             <li class="nav-item">
-                                <a class="nav-link <?= (strpos($currentPage, $id) !== false) ? 'active' : '' ?>" href="<?= $item['url'] ?>">
+                                <a class="nav-link <?= ($currentPage === $id) ? 'active' : '' ?>" href="<?= $item['url'] ?>">
                                     <i data-feather="<?= $item['icon'] ?>"></i>
                                     <?= $item['title'] ?>
                                 </a>
                             </li>
                         <?php endif; ?>
                     <?php endforeach; ?>
+                    <?php if (in_array($userRole, ['super-admin', 'admin'])): ?>
+                        <?php
+                            // Load TransactionService to get pending approvals count
+                            $transactionService = new \TransactionService();
+                            $pendingCount = count($transactionService->getTransactionsByStatuses(['pending_approval', 'pending_return_approval']));
+                        ?>
+                        <li class="nav-item">
+                            <a class="nav-link <?= ($currentPage === 'approvals') ? 'active' : '' ?>" href="<?= APP_URL ?>/public/transactions/approvals.php">
+                                <i data-feather="check-circle"></i>
+                                Recording
+                                <?php if ($pendingCount > 0): ?>
+                                    <span class="badge bg-danger ms-1"><?= $pendingCount ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                    <?php endif; ?>
                 </ul>
                 
                 <div class="notion-divider my-3"></div>
@@ -118,7 +166,7 @@ $navItems = [
                         <span>Quick Actions</span>
                     </h6>
                     <div class="d-grid gap-2 mt-2">
-                        <?php if ($userRole == ROLE_SUPER_ADMIN || $userRole == ROLE_ADMIN): ?>
+                        <?php if ($userRole === 'admin'): ?>
                             <a href="<?= APP_URL ?>/public/books/add.php" class="btn btn-sm btn-outline-primary d-flex align-items-center">
                                 <i data-feather="plus-circle" class="me-1" style="width: 16px; height: 16px;"></i> Add Book
                             </a>
@@ -132,3 +180,4 @@ $navItems = [
                 
             </div>
         </nav>
+    

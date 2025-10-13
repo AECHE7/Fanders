@@ -1,65 +1,42 @@
 <?php
 /**
- * UserModel - Base class for all user types
+ * UserModel - Handles all user-related operations
+ * Inherits from BaseModel for core CRUD operations
  */
+require_once __DIR__ . '/../core/BaseModel.php';
+
 class UserModel extends BaseModel {
     protected $table = 'users';
     protected $primaryKey = 'id';
     protected $fillable = [
-        'username', 'email', 'password', 'first_name', 'last_name', 
-        'role_id', 'is_active', 'created_at', 'updated_at'
+        'name', 'email', 'phone_number', 'password', 'role',
+        'status', 'last_login', 'password_changed_at', 'created_at', 'updated_at'
     ];
     protected $hidden = ['password'];
 
-    /**
-     * Get user by username
-     * 
-     * @param string $username
-     * @return array|bool
-     */
-    public function getUserByUsername($username) {
-        $sql = "SELECT * FROM {$this->table} WHERE username = ?";
-        return $this->db->single($sql, [$username]);
-    }
+    // Role definitions
+    public static $ROLE_SUPER_ADMIN = 'super-admin';
+    public static $ROLE_ADMIN = 'admin';
+    public static $ROLE_STUDENT = 'student';
+    public static $ROLE_STAFF = 'staff';
+    public static $ROLE_OTHER = 'other';
+    public static $ROLE_BORROWER = 'borrower';
 
-    /**
-     * Get user by email
-     * 
-     * @param string $email
-     * @return array|bool
-     */
+    // Status definitions
+    public static $STATUS_ACTIVE = 'active';
+    public static $STATUS_INACTIVE = 'inactive';
+    public static $STATUS_SUSPENDED = 'suspended';
+
     public function getUserByEmail($email) {
-        $sql = "SELECT * FROM {$this->table} WHERE email = ?";
-        return $this->db->single($sql, [$email]);
+        return $this->findOneByField('email', $email);
     }
 
-    /**
-     * Check if username exists
-     * 
-     * @param string $username
-     * @param int $excludeId
-     * @return bool
-     */
-    public function usernameExists($username, $excludeId = null) {
-        $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE username = ?";
-        $params = [$username];
-        
-        if ($excludeId) {
-            $sql .= " AND id != ?";
-            $params[] = $excludeId;
-        }
-        
-        $result = $this->db->single($sql, $params);
-        return $result && $result['count'] > 0;
+ 
+    public function getUserByPhone($phoneNumber) {
+        return $this->findOneByField('phone_number', $phoneNumber);
     }
 
-    /**
-     * Check if email exists
-     * 
-     * @param string $email
-     * @param int $excludeId
-     * @return bool
-     */
+
     public function emailExists($email, $excludeId = null) {
         $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE email = ?";
         $params = [$email];
@@ -73,95 +50,396 @@ class UserModel extends BaseModel {
         return $result && $result['count'] > 0;
     }
 
-    /**
-     * Get users by role
-     * 
-     * @param int $roleId
-     * @return array|bool
-     */
-    public function getUsersByRole($roleId) {
-        $sql = "SELECT * FROM {$this->table} WHERE role_id = ?";
-        return $this->db->resultSet($sql, [$roleId]);
+
+    public function phoneNumberExists($phoneNumber, $excludeId = null) {
+        $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE phone_number = ?";
+        $params = [$phoneNumber];
+        
+        if ($excludeId) {
+            $sql .= " AND id != ?";
+            $params[] = $excludeId;
+        }
+        
+        $result = $this->db->single($sql, $params);
+        return $result && $result['count'] > 0;
     }
 
-    /**
-     * Deactivate user (soft delete)
-     * 
-     * @param int $id
-     * @return bool
-     */
-    public function deactivateUser($id) {
-        $sql = "UPDATE {$this->table} SET is_active = 0 WHERE id = ?";
-        return $this->db->query($sql, [$id]) ? true : false;
+    public function getUsersByRole($role) {
+        return $this->findByField('role', $role);
     }
 
-    /**
-     * Activate user
-     * 
-     * @param int $id
-     * @return bool
-     */
-    public function activateUser($id) {
-        $sql = "UPDATE {$this->table} SET is_active = 1 WHERE id = ?";
-        return $this->db->query($sql, [$id]) ? true : false;
-    }
-
-    /**
-     * Get active users
-     * 
-     * @return array|bool
-     */
+ 
     public function getActiveUsers() {
-        $sql = "SELECT * FROM {$this->table} WHERE is_active = 1";
-        return $this->db->resultSet($sql);
+        return $this->findByField('status', self::$STATUS_ACTIVE);
     }
 
-    /**
-     * Update user password
-     * 
-     * @param int $id
-     * @param string $newPassword
-     * @return bool
-     */
-    public function updatePassword($id, $newPassword) {
-        $sql = "UPDATE {$this->table} SET password = ? WHERE id = ?";
-        return $this->db->query($sql, [$newPassword, $id]) ? true : false;
+ 
+    public function updateLastLogin($userId) {
+        return $this->update($userId, [
+            'last_login' => date('Y-m-d H:i:s')
+        ]);
     }
 
-    /**
-     * Get user with role name
-     * 
-     * @param int $id
-     * @return array|bool
-     */
+    public function updatePassword($userId, $hashedPassword) {
+        return $this->update($userId, [
+            'password' => $hashedPassword,
+            'password_changed_at' => date('Y-m-d H:i:s')
+        ]);
+    }
+
+
+    public function getUserStats() {
+        $stats = [];
+        
+        // Total users
+        $sql = "SELECT COUNT(*) as count FROM {$this->table}";
+        $result = $this->db->single($sql);
+        $stats['total_users'] = $result ? $result['count'] : 0;
+        
+        // Active users
+        $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE status = ?";
+        $result = $this->db->single($sql, [self::$STATUS_ACTIVE]);
+        $stats['active_users'] = $result ? $result['count'] : 0;
+        
+        // Users by role
+        $sql = "SELECT role, COUNT(*) as count FROM {$this->table} GROUP BY role";
+        $result = $this->db->resultSet($sql);
+        $stats['users_by_role'] = $result ?: [];
+        
+        // Users by status
+        $sql = "SELECT status, COUNT(*) as count FROM {$this->table} GROUP BY status";
+        $result = $this->db->resultSet($sql);
+        $stats['users_by_status'] = $result ?: [];
+        
+        // Recently registered users
+        $sql = "SELECT * FROM {$this->table} ORDER BY created_at DESC LIMIT 5";
+        $stats['recent_users'] = $this->db->resultSet($sql);
+        
+        return $stats;
+    }
+
+
+    public function searchUsers($term) {
+        $sql = "SELECT * FROM {$this->table} 
+                WHERE name LIKE ? 
+                OR email LIKE ? 
+                OR phone_number LIKE ?
+                ORDER BY name ASC";
+                
+        $searchTerm = "%{$term}%";
+        $params = [$searchTerm, $searchTerm, $searchTerm];
+        
+        return $this->db->resultSet($sql, $params);
+    }
+
+    public function getUserTransactionHistory($userId) {
+        $sql = "SELECT t.*, b.title as book_title, b.author
+                FROM transactions t
+                JOIN books b ON t.book_id = b.id
+                WHERE t.user_id = ?
+                ORDER BY t.borrow_date DESC";
+                
+        return $this->db->resultSet($sql, [$userId]);
+    }
+
+    public function getUserCurrentBorrows($userId) {
+        $sql = "SELECT t.*, b.title as book_title, b.author
+                FROM transactions t
+                JOIN books b ON t.book_id = b.id
+                WHERE t.user_id = ? 
+                AND t.return_date IS NULL
+                ORDER BY t.due_date ASC";
+                
+        return $this->db->resultSet($sql, [$userId]);
+    }
+
+
+    public function getUserPenaltyHistory($userId) {
+        $sql = "SELECT p.*, t.borrow_date, t.due_date, b.title as book_title
+                FROM penalties p
+                JOIN transactions t ON p.transaction_id = t.id
+                JOIN books b ON t.book_id = b.id
+                WHERE t.user_id = ?
+                ORDER BY p.created_at DESC";
+                
+        return $this->db->resultSet($sql, [$userId]);
+    }
+
+ 
+    public function create($data) {
+        // Ensure required fields are present
+        $requiredFields = ['name', 'email', 'password', 'role'];
+        foreach ($requiredFields as $field) {
+            if (!isset($data[$field]) || empty($data[$field])) {
+                $this->setLastError("Field '{$field}' is required.");
+                return false;
+            }
+        }
+
+        // Set default values if not provided
+        $data['status'] = $data['status'] ?? self::$STATUS_ACTIVE;
+        $data['created_at'] = $data['created_at'] ?? date('Y-m-d H:i:s');
+        $data['updated_at'] = $data['updated_at'] ?? date('Y-m-d H:i:s');
+
+        // Validate email format
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $this->setLastError('Invalid email format.');
+            return false;
+        }
+
+        // Check if email already exists
+        if ($this->emailExists($data['email'])) {
+            $this->setLastError('Email already exists.');
+            return false;
+        }
+
+        // Validate role
+        if (!in_array($data['role'], [
+            self::$ROLE_SUPER_ADMIN,
+            self::$ROLE_ADMIN,
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER
+        ])) {
+            $this->setLastError('Invalid role.');
+            return false;
+        }
+
+        // Call parent create method
+        return parent::create($data);
+    }
+
+    public function createAdmin($data) {
+        $data['role'] = self::$ROLE_ADMIN;
+        $data['status'] = self::$STATUS_ACTIVE;
+        return $this->create($data);
+    }
+
+ 
+    public function createBorrower($data) {
+        // Set default role to student if not specified
+        if (!isset($data['role'])) {
+            $data['role'] = self::$ROLE_STUDENT;
+        } else {
+            // Validate role is a borrower role
+            if (!in_array($data['role'], [
+                self::$ROLE_STUDENT,
+                self::$ROLE_STAFF,
+                self::$ROLE_OTHER
+            ])) {
+                $this->setLastError('Invalid borrower role.');
+                return false;
+            }
+        }
+        
+        $data['status'] = self::$STATUS_ACTIVE;
+        return $this->create($data);
+    }
+
+   
+    public function getAllAdmins() {
+        return $this->getUsersByRole(self::$ROLE_ADMIN);
+    }
+
+
+    public function getAllBorrowers() {
+        $sql = "SELECT * FROM {$this->table} 
+                WHERE role IN (?, ?, ?) 
+                ORDER BY name ASC";
+                
+        return $this->db->resultSet($sql, [
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER
+        ]);
+    }
+
+    public function getUsersByRoles(array $roles) {
+        if (empty($roles)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($roles), '?'));
+        $sql = "SELECT * FROM {$this->table} WHERE role IN ({$placeholders}) ORDER BY name ASC";
+        return $this->db->resultSet($sql, $roles);
+    }
+
+   
+    public function getSystemStats() {
+        $stats = $this->getUserStats();
+        
+        // Add additional system-wide statistics
+        $stats['total_admins'] = count($this->getAllAdmins());
+        $stats['total_borrowers'] = count($this->getAllBorrowers());
+        
+        // Get borrowers by role
+        $sql = "SELECT role, COUNT(*) as count 
+                FROM {$this->table} 
+                WHERE role IN (?, ?, ?) 
+                GROUP BY role";
+                
+        $result = $this->db->resultSet($sql, [
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER
+        ]);
+        
+        $stats['borrowers_by_role'] = $result ?: [];
+        
+        return $stats;
+    }
+
+   
+    public function getAdminStats() {
+        $stats = [];
+        
+        // Get total borrowers count
+        $sql = "SELECT COUNT(*) as count 
+                FROM {$this->table} 
+                WHERE role IN (?, ?, ?)";
+                
+        $result = $this->db->single($sql, [
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER
+        ]);
+        
+        $stats['total_borrowers'] = $result ? $result['count'] : 0;
+        
+        // Get active borrowers count
+        $sql = "SELECT COUNT(*) as count 
+                FROM {$this->table} 
+                WHERE role IN (?, ?, ?) 
+                AND status = ?";
+                
+        $result = $this->db->single($sql, [
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER,
+            self::$STATUS_ACTIVE
+        ]);
+        
+        $stats['active_borrowers'] = $result ? $result['count'] : 0;
+        
+        // Get borrowers by role
+        $borrowerRoles = [self::$ROLE_STUDENT, self::$ROLE_STAFF, self::$ROLE_OTHER];
+        foreach ($borrowerRoles as $role) {
+            $stats['borrowers_by_role'][$role] = $this->count('role', $role);
+        }
+        
+        // Get borrowers by status
+        $statuses = [self::$STATUS_ACTIVE, self::$STATUS_INACTIVE, self::$STATUS_SUSPENDED];
+        foreach ($statuses as $status) {
+            $sql = "SELECT COUNT(*) as count 
+                    FROM {$this->table} 
+                    WHERE role IN (?, ?, ?) 
+                    AND status = ?";
+                    
+            $result = $this->db->single($sql, [
+                self::$ROLE_STUDENT,
+                self::$ROLE_STAFF,
+                self::$ROLE_OTHER,
+                $status
+            ]);
+            
+            $stats['borrowers_by_status'][$status] = $result ? $result['count'] : 0;
+        }
+        
+        // Get recently registered borrowers
+        $sql = "SELECT * FROM {$this->table} 
+                WHERE role IN (?, ?, ?) 
+                ORDER BY created_at DESC LIMIT 5";
+                
+        $stats['recent_borrowers'] = $this->db->resultSet($sql, [
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER
+        ]);
+        
+        return $stats;
+    }
+
+
     public function getUserWithRoleName($id) {
         $sql = "SELECT u.*, 
                 CASE 
-                    WHEN u.role_id = 1 THEN 'Super Admin'
-                    WHEN u.role_id = 2 THEN 'Admin'
-                    WHEN u.role_id = 3 THEN 'Borrower'
+                    WHEN u.role = ? THEN 'Super Admin'
+                    WHEN u.role = ? THEN 'Admin'
+                    WHEN u.role = ? THEN 'Student'
+                    WHEN u.role = ? THEN 'Staff'
+                    WHEN u.role = ? THEN 'Other'
+                    WHEN u.role = ? THEN 'Borrower'
                     ELSE 'Unknown'
-                END as role_name
+                END as role_display
                 FROM {$this->table} u
                 WHERE u.id = ?";
-        return $this->db->single($sql, [$id]);
+                
+        return $this->db->single($sql, [
+            self::$ROLE_SUPER_ADMIN,
+            self::$ROLE_ADMIN,
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER,
+            self::$ROLE_BORROWER,
+            $id
+        ]);
     }
 
-    /**
-     * Get all users with role names
-     * 
-     * @return array|bool
-     */
-    public function getAllUsersWithRoleNames() {
+    public function getAllUsersWithRoleNames($roles = []) {
         $sql = "SELECT u.*, 
                 CASE 
-                    WHEN u.role_id = 1 THEN 'Super Admin'
-                    WHEN u.role_id = 2 THEN 'Admin'
-                    WHEN u.role_id = 3 THEN 'Borrower'
+                    WHEN u.role = ? THEN 'Super Admin'
+                    WHEN u.role = ? THEN 'Admin'
+                    WHEN u.role = ? THEN 'Student'
+                    WHEN u.role = ? THEN 'Staff'
+                    WHEN u.role = ? THEN 'Other'
+                    WHEN u.role = ? THEN 'Borrower'
                     ELSE 'Unknown'
-                END as role_name
-                FROM {$this->table} u
-                ORDER BY u.created_at DESC";
-        return $this->db->resultSet($sql);
+                END as role_display
+                FROM {$this->table} u";
+                
+        $params = [
+            self::$ROLE_SUPER_ADMIN,
+            self::$ROLE_ADMIN,
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER,
+            self::$ROLE_BORROWER
+        ];
+        
+        if (!empty($roles)) {
+            $placeholders = str_repeat('?,', count($roles) - 1) . '?';
+            $sql .= " WHERE u.role IN ({$placeholders})";
+            $params = array_merge($params, $roles);
+        }
+        
+        $sql .= " ORDER BY u.created_at DESC";
+        
+        return $this->db->resultSet($sql, $params);
+    }
+
+
+    public function getUsersCountByRole($role) {
+        $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE role = ? AND status = ?";
+        $result = $this->db->single($sql, [$role, self::$STATUS_ACTIVE]);
+        return $result ? $result['count'] : 0;
+    }
+
+    public function getTotalBorrowersCount() {
+        $sql = "SELECT COUNT(*) as count FROM {$this->table} 
+                WHERE role IN (?, ?, ?) 
+                AND status = ?";
+        $params = [
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER,
+            self::$STATUS_ACTIVE
+        ];
+        $result = $this->db->single($sql, $params);
+        return $result ? $result['count'] : 0;
+    }
+
+
+    public function getUsersByStatus($status) {
+        return $this->findByField('status', $status);
     }
 }

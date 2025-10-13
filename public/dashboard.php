@@ -57,53 +57,67 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = isset($user['role']) ? $user['role'] : null;
 
-// Initialize services based on user role
+// Initialize services
 $userService = new UserService();
 $bookService = new BookService();
+$transactionService = new TransactionService();
+$penaltyService = new PenaltyService();
+$reportService = new ReportService();
 
-// Get role-specific dashboard data
-if ($userRole == ROLE_SUPER_ADMIN) {
-    // Super Admin Dashboard
-    $stats = $userService->getSystemStats();
-    $users = $userService->getAllUsersWithRoleNames();
-    $recentlyAddedBooks = $bookService->getRecentlyAddedBooks(5);
-    $mostBorrowedBooks = $bookService->getMostBorrowedBooks(5);
-    
-    // Include Super Admin dashboard template
-    $dashboardTemplate = BASE_PATH . '/templates/dashboard/admin.php';
-} elseif ($userRole == ROLE_ADMIN) {
-    // Admin Dashboard
-    $stats = $userService->getAdminStats();
-    $borrowers = $userService->getAllBorrowers();
-    $recentlyAddedBooks = $bookService->getRecentlyAddedBooks(5);
-    
-    // Initialize transaction service
-    $transactionService = new TransactionService();
-    $activeLoans = $transactionService->getActiveLoans();
-    $overdueLoans = $transactionService->getOverdueLoans();
-    
-    // Include Admin dashboard template
-    $dashboardTemplate = BASE_PATH . '/templates/dashboard/admin.php';
-} elseif ($userRole == ROLE_BORROWER) {
-    // Borrower Dashboard
-    $borrowerModel = new BorrowerModel();
-    $stats = $borrowerModel->getBorrowerStats($user['id']);
-    
-    // Initialize transaction service
-    $transactionService = new TransactionService();
-    $activeLoans = $borrowerModel->getActiveLoans($user['id']);
-    $loanHistory = $borrowerModel->getLoanHistory($user['id']);
-    $overdueBooks = $borrowerModel->getOverdueBooks($user['id']);
-    
-    // Initialize penalty service
-    $penaltyService = new PenaltyService();
-    $penalties = $penaltyService->getUserPenalties($user['id']);
-    
-    // Include Borrower dashboard template
-    $dashboardTemplate = BASE_PATH . '/templates/dashboard/borrower.php';
-} else {
+// Initialize models
+$userModel = new UserModel();
+$transactionModel = new TransactionModel();
+
+    // Get role-specific dashboard data
+    if (in_array($userRole, [UserModel::$ROLE_STUDENT, UserModel::$ROLE_STAFF, UserModel::$ROLE_OTHER])) {
+        // Borrower Dashboard
+        error_log("User ID for borrower stats: " . $user['id']);
+        $stats = $userService->getBorrowerStats($user['id']);
+        error_log("Active loans from getBorrowerStats: " . print_r($stats['active_loans'], true));
+        $activeLoans = $stats['active_loans'] ?? [];
+        $loanHistory = $stats['loan_history'] ?? [];
+        $overdueBooks = $transactionModel->getUserOverdueLoans($user['id']);
+$penalties = $penaltyService->getUserPenalties($user['id']);
+
+// Calculate total penalties due from penalties array
+$totalPenaltiesDue = 0;
+if (is_array($penalties)) {
+    foreach ($penalties as $penalty) {
+        if (isset($penalty['penalty_amount'])) {
+            $totalPenaltiesDue += floatval($penalty['penalty_amount']);
+        }
+    }
+}
+$stats['total_penalties'] = $totalPenaltiesDue;
+
+$availableBooks = $stats['available_books'] ?? [];
+$dashboardTemplate = BASE_PATH . '/templates/dashboard/borrower.php';
+        } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_SUPER_ADMIN])) {
+        // Admin Dashboard
+        $stats = $userService->getAdminStats();
+        $activeLoans = $transactionModel->getActiveLoans();
+        $overdueBooks = $transactionModel->getOverdueLoans();
+        $recentlyAddedBooks = $bookService->getRecentlyAddedBooks(5);
+        $recentTransactions = $stats['recent_transactions'] ?? [];
+        $analytics = $reportService->getMonthlyActivitySummary();
+
+        // Fetch total penalties amount from all penalty records
+        $totalPenaltiesDue = $penaltyService->getTotalPenalties();
+        $stats['total_penalties'] = $totalPenaltiesDue;
+        
+        if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
+            // Additional super admin data
+            $users = $userService->getAllUsersWithRoleNames();
+            $mostBorrowedBooks = $bookService->getMostBorrowedBooks(5);
+        } else {
+            // Additional admin data
+            $borrowers = $userService->getAllBorrowers();
+        }
+        
+        $dashboardTemplate = BASE_PATH . '/templates/dashboard/admin.php';
+    } else {
     // Unknown role
     $session->setFlash('error', 'Invalid user role.');
     header('Location: ' . APP_URL . '/public/logout.php');
@@ -131,12 +145,17 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php endif; ?>
     
     <?php
-    // Include role-specific dashboard content
-    if (file_exists($dashboardTemplate)) {
-        include $dashboardTemplate;
-    } else {
-        echo '<div class="alert alert-danger">Dashboard template not found.</div>';
-    }
+// //Debug print for $stats to investigate missing borrowed books data
+// echo '<pre>Stats Debug: ';
+// print_r($stats);
+// echo '</pre>';// 
+
+// Include role-specific dashboard content
+if (file_exists($dashboardTemplate)) {
+    include $dashboardTemplate;
+} else {
+    echo '<div class="alert alert-danger">Dashboard template not found.</div>';
+}
     ?>
 </main>
 

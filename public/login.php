@@ -57,21 +57,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Invalid form submission. Please try again.';
     } else {
         // Get form data
-        $username = isset($_POST['username']) ? trim($_POST['username']) : '';
+        $email= isset($_POST['email']) ? trim($_POST['email']) : '';
         $password = isset($_POST['password']) ? $_POST['password'] : '';
         
         // Validate form data
-        if (empty($username) || empty($password)) {
-            $error = 'Please enter both username and password.';
+        if (empty($email) || empty($password)) {
+            $error = 'Please enter both email and password.';
         } else {
-            // Attempt to log in
-            if ($auth->login($username, $password)) {
+            // Attempt to log in using AuthService
+            $loginResult = $auth->login($email, $password);
+            if ($loginResult['success']) {
                 // Login successful, redirect to dashboard
                 header('Location: ' . APP_URL . '/public/dashboard.php');
                 exit;
             } else {
-                // Login failed
-                $error = $auth->getErrorMessage();
+                // Login failed, show error message
+                $error = $loginResult['message'];
             }
         }
     }
@@ -90,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
     <!-- Favicon -->
-    <link rel="shortcut icon" href="<?= APP_URL ?>/assets/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="../public/assets/favicon.png" type="image/png">
 </head>
 <body style="background-color: var(--notion-light-gray);">
     <div class="container">
@@ -98,8 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="col-md-5 col-lg-4">
                 <!-- Logo and brand at top -->
                 <div class="text-center mb-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-book">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-dollar-sign me-2">
+                        <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                     </svg>
                     <h3 class="mt-3 mb-4"><?= APP_NAME ?></h3>
                 </div>
@@ -127,18 +128,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         <?php endif; ?>
                         
-                        <form action="<?= $_SERVER['PHP_SELF'] ?>" method="post" class="notion-form needs-validation" novalidate>
+                        <form action="<?= $_SERVER['PHP_SELF'] ?>" method="post" class="notion-form needs-validation <?= $error ? 'shake' : '' ?>" novalidate>
                             <?= $csrf->getTokenField() ?>
                             
                             <div class="notion-form-group mb-4">
-                                <label for="username" class="notion-form-label">Username</label>
+                                <label for="email" class="notion-form-label">Email Address</label>
                                 <div class="d-flex align-items-center notion-form-control-wrapper">
                                     <div class="rounded d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; background-color: #edf2fc;">
                                         <i data-feather="user" style="width: 14px; height: 14px; color: #0b76ef;"></i>
                                     </div>
-                                    <input type="text" class="notion-form-control" id="username" name="username" value="<?= isset($_POST['username']) ? htmlspecialchars($_POST['username']) : '' ?>" required autofocus placeholder="Enter your username">
+                                    <input type="text" class="notion-form-control" id="email" name="email" value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>" required autofocus placeholder="Enter your email">
                                 </div>
-                                <div class="invalid-feedback">Please enter your username.</div>
+                                <div class="invalid-feedback">Please enter your Email.</div>
                             </div>
                             
                             <div class="notion-form-group mb-4">
@@ -181,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <!-- Footer info -->
                 <div class="text-center mt-5 small text-muted">
-                    <p>Default login: admin / admin123</p>
+                    <p>Default login: admin.1@fanders.com / admin123</p>
                     <p>&copy; <?= date('Y') ?> <?= APP_NAME ?>. All rights reserved.</p>
                 </div>
             </div>
@@ -249,6 +250,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     </style>
 
+    <style>
+        /* Shake animation for invalid form */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+        .shake {
+            animation: shake 0.5s;
+            animation-timing-function: ease-in-out;
+        }
+    </style>
+
     <script>
         // Initialize feather icons
         feather.replace();
@@ -263,6 +277,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         event.stopPropagation();
                     }
                     form.classList.add('was-validated');
+                });
+
+                // Remove shake class after animation ends to allow repeated shakes
+                form.addEventListener('animationend', function() {
+                    form.classList.remove('shake');
                 });
             }
             

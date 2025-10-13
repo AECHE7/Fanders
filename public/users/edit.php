@@ -59,7 +59,7 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
 // Check if user ID is provided
 if (!isset($_GET['id']) || empty($_GET['id'])) {
@@ -85,8 +85,8 @@ if (!$editUser) {
 }
 
 // Check if user has permission to edit this user
-// Super Admin can edit any user, Admin can only edit borrowers
-if ($userRole == ROLE_ADMIN && $editUser['role_id'] != ROLE_BORROWER) {
+// Super Admin can edit any user, Admin can only edit borrowers or themselves
+if ($userRole === 'admin' && !in_array($editUser['role'], ['student', 'staff', 'other']) && $userId !== $user['id']) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to edit this user.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -101,20 +101,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$csrf->validateRequest()) {
         $error = 'Invalid form submission. Please try again.';
     } else {
-        // Get form data
+        // Get form data with fallbacks to existing user data
         $updatedUser = [
-            'username' => isset($_POST['username']) ? trim($_POST['username']) : '',
-            'email' => isset($_POST['email']) ? trim($_POST['email']) : '',
-            'password' => isset($_POST['password']) ? $_POST['password'] : '',
-            'first_name' => isset($_POST['first_name']) ? trim($_POST['first_name']) : '',
-            'last_name' => isset($_POST['last_name']) ? trim($_POST['last_name']) : '',
-            'role_id' => $userRole == ROLE_SUPER_ADMIN && isset($_POST['role_id']) ? (int)$_POST['role_id'] : $editUser['role_id'],
-            'is_active' => isset($_POST['is_active']) ? 1 : 0,
+            'name' => isset($_POST['name']) ? trim($_POST['name']) : ($editUser['name'] ?? ''),
+            'email' => isset($_POST['email']) ? trim($_POST['email']) : ($editUser['email'] ?? ''),
+            'phone_number' => isset($_POST['phone_number']) ? trim($_POST['phone_number']) : ($editUser['phone_number'] ?? ''),
+            'role' => isset($_POST['role']) ? trim($_POST['role']) : ($editUser['role'] ?? ''),
+            'status' => isset($_POST['status']) ? trim($_POST['status']) : ($editUser['status'] ?? 'active')
         ];
         
+        // Handle password update
+        if (!empty($_POST['password'])) {
+            $updatedUser['password'] = $_POST['password'];
+            $updatedUser['password_confirmation'] = $_POST['password_confirmation'];
+        }
+        
         // Admin can only edit borrowers and can't change role
-        if ($userRole == ROLE_ADMIN) {
-            $updatedUser['role_id'] = ROLE_BORROWER;
+        if ($userRole === 'admin') {
+            $updatedUser['role'] = $editUser['role']; // Keep existing role
         }
         
         // Update the user
@@ -139,15 +143,21 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Edit User</h1>
+        <h1 class="h2">Edit User Information</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <a href="<?= APP_URL ?>/public/users/view.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="eye"></i> View User
-                </a>
-                <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="arrow-left"></i> Back to Users
-                </a>
+                <?php if (in_array($userRole, ['student', 'staff', 'other'])): ?>
+                    <a href="<?= APP_URL ?>/public/users/view.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="arrow-left"></i> Back to User Profile
+                    </a>
+                <?php elseif (in_array($userRole, ['super-admin', 'admin'])): ?>
+                    <a href="<?= APP_URL ?>/public/users/view.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="eye"></i> View User Profile
+                    </a>
+                    <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="arrow-left"></i> Back to Users
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -161,7 +171,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <!-- User Edit Form -->
     <div class="card">
         <div class="card-body">
-            <?php include_once BASE_PATH . '/templates/users/form.php'; ?>
+            <?php 
+                global $userRole, $editUser, $userId;
+                include_once BASE_PATH . '/templates/users/form.php'; 
+            ?>
         </div>
     </div>
 </main>

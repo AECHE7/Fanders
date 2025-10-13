@@ -59,10 +59,10 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
 // Check if user has permission to generate reports (Super Admin or Admin)
-if (!$auth->hasRole([ROLE_SUPER_ADMIN, ROLE_ADMIN])) {
+if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -109,6 +109,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Books Report</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="<?= APP_URL ?>/public/reports/index.php" class="btn btn-sm btn-outline-primary me-2">
+                <i data-feather="list"></i> Back to Reports
+            </a>
             <a href="<?= APP_URL ?>/public/books/index.php" class="btn btn-sm btn-outline-secondary">
                 <i data-feather="arrow-left"></i> Back to Books
             </a>
@@ -137,7 +140,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 <?= $csrf->getTokenField() ?>
                 
                 <div class="row mb-3">
-                    <div class="col-md-4">
+                    <!-- <div class="col-md-4">
                         <label for="category_id" class="form-label">Category</label>
                         <select name="category_id" id="category_id" class="form-select">
                             <option value="">All Categories</option>
@@ -147,7 +150,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                    </div>
+                    </div> -->
                     
                     <div class="col-md-4">
                         <label for="availability" class="form-label">Availability</label>
@@ -192,29 +195,33 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                 <th>ID</th>
                                 <th>Title</th>
                                 <th>Author</th>
-                                <th>ISBN</th>
                                 <th>Category</th>
                                 <th>Copies</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
+                            <?php
+                            $i = 1;
+                            ?>
                             <?php foreach ($reportData['books'] as $book): ?>
                                 <tr>
-                                    <td><?= $book['id'] ?></td>
-                                    <td><?= htmlspecialchars($book['title']) ?></td>
-                                    <td><?= htmlspecialchars($book['author']) ?></td>
-                                    <td><?= htmlspecialchars($book['isbn']) ?></td>
-                                    <td><?= htmlspecialchars($book['category_name']) ?></td>
-                                    <td><?= $book['available_copies'] ?>/<?= $book['total_copies'] ?></td>
+                                    <td><?= $i ?></td>
+                                    <td><?= htmlspecialchars($book['title'] ?? '') ?></td>
+                                    <td><?= htmlspecialchars($book['author'] ?? '') ?></td>
+                                    <td><?= htmlspecialchars($book['category_name'] ?? '') ?></td>
+                                    <td><?= ($book['available_copies'] ?? '0') ?>/<?= ($book['total_copies'] ?? '0') ?></td>
                                     <td>
-                                        <?php if ($book['is_available']): ?>
+                                        <?php if (isset($book['is_available']) && $book['is_available']): ?>
                                             <span class="badge bg-success">Available</span>
                                         <?php else: ?>
                                             <span class="badge bg-danger">Not Available</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
+                                <?php
+                                $i++;
+                                ?>
                             <?php endforeach; ?>
                         </tbody>
                     </table>

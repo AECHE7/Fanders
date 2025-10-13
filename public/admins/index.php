@@ -1,6 +1,6 @@
 <?php
 /**
- * Admins list page for the Library Management System
+ * Users list page for the Library Management System
  */
 
 // Include configuration
@@ -56,10 +56,10 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
-// Check if user has permission to view admins list (only Super Admin)
-if ($userRole != ROLE_SUPER_ADMIN) {
+// Check if user has permission to view users list (Super Admin or Admin)
+if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -69,21 +69,47 @@ if ($userRole != ROLE_SUPER_ADMIN) {
 // Initialize user service
 $userService = new UserService();
 
-// Get all admins
-$admins = $userService->getAllAdmins();
+// Process filter
+$roleFilter = isset($_GET['role']) ? $_GET['role'] : '';
+$statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
 
-// Process status filter
-$statusFilter = isset($_GET['status']) ? (int)$_GET['status'] : -1;
+// Get users based on filters
+if ($userRole == 'super-admin') {
+    // Super admin can see all users
+    $users = $userService->getAllUsersWithRoleNames();
+    // Filter to only admin and super-admin
+    $users = array_filter($users, function($u) {
+        return in_array($u['role'], ['admin', 'super-admin']);
+    });
+} else {
+    // Admin can only see borrowers
+    $users = $userService->getAllBorrowers();
+    // Filter to only admin role (if any)
+    $users = array_filter($users, function($u) {
+        return $u['role'] === 'admin';
+    });
+}
 
-// Apply status filter if specified
-if ($statusFilter !== -1) {
-    $filteredAdmins = [];
-    foreach ($admins as $admin) {
-        if ($admin['is_active'] == $statusFilter) {
-            $filteredAdmins[] = $admin;
+// Apply role filter if specified
+if (!empty($roleFilter) && $userRole == 'super-admin') {
+    $filteredUsers = [];
+    foreach ($users as $u) {
+        if ($u['role'] == $roleFilter) {
+            $filteredUsers[] = $u;
         }
     }
-    $admins = $filteredAdmins;
+    $users = $filteredUsers;
+}
+
+// Apply status filter if specified
+if (!empty($statusFilter) &&  $userRole == 'super-admin') {
+    $filteredUsers = [];
+    foreach ($users as $u) {
+        if ($u['status'] == $statusFilter) {
+            $filteredUsers[] = $u;
+        }
+    }
+    $users = $filteredUsers;
 }
 
 // Include header
@@ -95,13 +121,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Administrators</h1>
+        <h1 class="h2">Manage Admins</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <a href="<?= APP_URL ?>/public/admins/add.php" class="btn btn-sm btn-outline-primary">
-                    <i data-feather="user-plus"></i> Add New Admin
-                </a>
-                <a href="<?= APP_URL ?>/public/reports/users.php?role=<?= ROLE_ADMIN ?>" class="btn btn-sm btn-outline-secondary">
+                <?php if ($userRole == 'super-admin'): ?>
+                    <a href="<?= APP_URL ?>/public/admins/add.php" class="btn btn-sm btn-outline-primary">
+                        <i data-feather="user-plus"></i> Add Admin Account
+                    </a>
+                <?php endif; ?>
+                
+                <a href="<?= APP_URL ?>/public/reports/users.php" class="btn btn-sm btn-outline-secondary">
                     <i data-feather="file-text"></i> Generate Report
                 </a>
             </div>
@@ -122,24 +151,28 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     
     <!-- Filter Options -->
     <div class="row mb-3">
-        <div class="col-md-6">
-            <form action="<?= $_SERVER['PHP_SELF'] ?>" method="get" class="d-flex">
-                <select name="status" class="form-select me-2">
-                    <option value="-1" <?= $statusFilter == -1 ? 'selected' : '' ?>>All Statuses</option>
-                    <option value="1" <?= $statusFilter == 1 ? 'selected' : '' ?>>Active</option>
-                    <option value="0" <?= $statusFilter == 0 ? 'selected' : '' ?>>Inactive</option>
-                </select>
-                <button type="submit" class="btn btn-primary me-2">Filter</button>
-                <a href="<?= $_SERVER['PHP_SELF'] ?>" class="btn btn-secondary">Reset</a>
+        <div class="col-md-12">
+            <form action="<?= $_SERVER['PHP_SELF'] ?>" method="get" class="row g-3">
+            
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="" <?= $statusFilter == '' ? 'selected' : '' ?>>All Statuses</option>
+                        <option value="active" <?= $statusFilter == 'active' ? 'selected' : '' ?>>Active</option>
+                        <option value="inactive" <?= $statusFilter == 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Filter</button>
+                    <a href="<?= $_SERVER['PHP_SELF'] ?>" class="btn btn-secondary">Reset</a>
+                </div>
             </form>
         </div>
     </div>
     
-    <!-- Admins List -->
-    <?php 
-    $users = $admins; // Assign admins to $users for template compatibility
-    include_once BASE_PATH . '/templates/users/list.php'; 
-    ?>
+<!-- Users List -->
+<?php include_once BASE_PATH . '/templates/admins/list.php'; ?>
 </main>
 
 <?php

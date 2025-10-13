@@ -3,15 +3,14 @@
  * AuthService - Handles authentication, login, logout, and session management
  */
 require_once __DIR__ . '/../core/BaseService.php';
+require_once __DIR__ . '/../models/UserModel.php';
+require_once __DIR__ . '/../core/PasswordHash.php';
 
 class AuthService extends BaseService {
     private $userModel;
     private $session;
     private $passwordHash;
 
-    /**
-     * Constructor
-     */
     public function __construct() {
         parent::__construct();
         $this->userModel = new UserModel();
@@ -19,63 +18,53 @@ class AuthService extends BaseService {
         $this->passwordHash = new PasswordHash();
     }
 
-    /**
-     * Login user
-     * 
-     * @param string $username
-     * @param string $password
-     * @return bool
-     */
-    public function login($username, $password) {
-        // Get user by username
-        $user = $this->userModel->getUserByUsername($username);
+
+    public function login($email, $password) {
+        // Get user by email (username is actually email in the new schema)
+        $user = $this->userModel->getUserByEmail($email);
         
         if (!$user) {
-            $this->setErrorMessage('Invalid username or password.');
-            return false;
-        }
-        
-        // Check if user is active
-        if (!$user['is_active']) {
-            $this->setErrorMessage('Your account has been deactivated. Please contact an administrator.');
-            return false;
+            return [
+                'success' => false,
+                'message' => 'Invalid email or password.'
+            ];
         }
         
         // Verify password
         if (!$this->passwordHash->verify($password, $user['password'])) {
-            $this->setErrorMessage('Invalid username or password.');
-            return false;
+            return [
+                'success' => false,
+                'message' => 'Invalid email or password.'
+            ];
         }
         
+        // Check if user is active
+        if ($user['status'] !== 'active') {
+            return [
+                'success' => false,
+                'message' => 'Your account has been deactivated. Please contact an administrator.'
+            ];
+        }
+
         // Create session
         $this->createUserSession($user);
         
-        return true;
+        return [
+            'success' => true,
+            'message' => 'Login successful.'
+        ];
     }
 
-    /**
-     * Logout user
-     * 
-     * @return void
-     */
+
     public function logout() {
         $this->session->destroy();
     }
 
-    /**
-     * Check if user is logged in
-     * 
-     * @return bool
-     */
+
     public function isLoggedIn() {
         return $this->session->get('user_id') !== null;
     }
 
-    /**
-     * Get current user
-     * 
-     * @return array|null
-     */
     public function getCurrentUser() {
         if (!$this->isLoggedIn()) {
             return null;
@@ -85,48 +74,34 @@ class AuthService extends BaseService {
         return $this->userModel->getUserWithRoleName($userId);
     }
 
-    /**
-     * Check if current user has the role
-     * 
-     * @param int|array $roles
-     * @return bool
-     */
     public function hasRole($roles) {
         if (!$this->isLoggedIn()) {
             return false;
         }
         
-        $userRoleId = $this->session->get('user_role');
+        $userRole = $this->session->get('user_role');
         
         if (is_array($roles)) {
-            return in_array($userRoleId, $roles);
+            return in_array($userRole, $roles);
         }
         
-        return $userRoleId == $roles;
+        return $userRole == $roles;
     }
 
-    /**
-     * Create user session
-     * 
-     * @param array $user
-     * @return void
-     */
     private function createUserSession($user) {
         $this->session->set('user_id', $user['id']);
-        $this->session->set('user_name', $user['username']);
-        $this->session->set('user_role', $user['role_id']);
+        $this->session->set('user_name', $user['name']);
+        $this->session->set('user_role', $user['role']);
         $this->session->set('user_email', $user['email']);
-        $this->session->set('user_first_name', $user['first_name']);
-        $this->session->set('user_last_name', $user['last_name']);
+        // Split the name into first and last for backward compatibility
+        $nameParts = explode(' ', $user['name'], 2);
+        $firstName = $nameParts[0];
+        $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
+        $this->session->set('user_first_name', $firstName);
+        $this->session->set('user_last_name', $lastName);
         $this->session->set('last_activity', time());
     }
 
-    /**
-     * Register new user
-     * 
-     * @param array $userData
-     * @return int|bool
-     */
     public function register($userData) {
         // Validate user data
         if (!$this->validateUserData($userData)) {
@@ -136,13 +111,13 @@ class AuthService extends BaseService {
         // Hash password
         $userData['password'] = $this->passwordHash->hash($userData['password']);
         
-        // Set default role to Borrower if not provided
-        if (!isset($userData['role_id'])) {
-            $userData['role_id'] = ROLE_BORROWER;
+        // Set default role to students if not provided
+        if (!isset($userData['role'])) {
+            $userData['role'] = 'students';
         }
         
         // Set active status and timestamps
-        $userData['is_active'] = 1;
+        $userData['status'] = 'active';
         $userData['created_at'] = date('Y-m-d H:i:s');
         $userData['updated_at'] = date('Y-m-d H:i:s');
         
@@ -150,14 +125,7 @@ class AuthService extends BaseService {
         return $this->userModel->create($userData);
     }
 
-    /**
-     * Change user password
-     * 
-     * @param int $userId
-     * @param string $currentPassword
-     * @param string $newPassword
-     * @return bool
-     */
+
     public function changePassword($userId, $currentPassword, $newPassword) {
         // Get user
         $user = $this->userModel->findById($userId);
@@ -186,13 +154,6 @@ class AuthService extends BaseService {
         return $this->userModel->updatePassword($userId, $hashedPassword);
     }
 
-    /**
-     * Reset user password (for admin use)
-     * 
-     * @param int $userId
-     * @param string $newPassword
-     * @return bool
-     */
     public function resetPassword($userId, $newPassword) {
         // Validate new password
         if (strlen($newPassword) < 8) {
@@ -207,32 +168,15 @@ class AuthService extends BaseService {
         return $this->userModel->updatePassword($userId, $hashedPassword);
     }
 
-    /**
-     * Validate user data
-     * 
-     * @param array $userData
-     * @return bool
-     */
+
     private function validateUserData($userData) {
         // Check required fields
-        $requiredFields = ['username', 'email', 'password', 'first_name', 'last_name'];
+        $requiredFields = ['name', 'email', 'password', 'phone_number'];
         foreach ($requiredFields as $field) {
             if (!isset($userData[$field]) || empty($userData[$field])) {
                 $this->setErrorMessage(ucfirst($field) . ' is required.');
                 return false;
             }
-        }
-        
-        // Validate username (alphanumeric and at least 4 characters)
-        if (!preg_match('/^[a-zA-Z0-9]{4,}$/', $userData['username'])) {
-            $this->setErrorMessage('Username must be alphanumeric and at least 4 characters.');
-            return false;
-        }
-        
-        // Check if username already exists
-        if ($this->userModel->usernameExists($userData['username'])) {
-            $this->setErrorMessage('Username already exists.');
-            return false;
         }
         
         // Validate email
@@ -247,6 +191,12 @@ class AuthService extends BaseService {
             return false;
         }
         
+        // Check if phone number already exists
+        if ($this->userModel->phoneNumberExists($userData['phone_number'])) {
+            $this->setErrorMessage('Phone number already exists.');
+            return false;
+        }
+        
         // Validate password (at least 8 characters)
         if (strlen($userData['password']) < 8) {
             $this->setErrorMessage('Password must be at least 8 characters long.');
@@ -256,11 +206,6 @@ class AuthService extends BaseService {
         return true;
     }
 
-    /**
-     * Check if session has timed out
-     * 
-     * @return bool
-     */
     public function checkSessionTimeout() {
         if (!$this->isLoggedIn()) {
             return false;
@@ -280,5 +225,10 @@ class AuthService extends BaseService {
         // Update last activity
         $this->session->set('last_activity', time());
         return false;
+    }
+
+
+    public function isAdmin() {
+        return $this->hasRole(['admin', 'super-admin']);
     }
 }

@@ -1,6 +1,8 @@
 <?php
 /**
- * Add admin page for the Library Management System
+ * Add user page for the Library Management System
+ * 
+ * FIXED: Uses addBorrower from UserService, ensures fields and roles align with service and models.
  */
 
 // Include configuration
@@ -59,10 +61,10 @@ if ($auth->checkSessionTimeout()) {
 
 // Get current user data
 $user = $auth->getCurrentUser();
-$userRole = $user['role_id'];
+$userRole = $user['role'];
 
-// Check if user has permission to add admins (only Super Admin)
-if ($userRole != ROLE_SUPER_ADMIN) {
+// Check if user has permission to add users (Super Admin can add any user, Admin can only add borrowers)
+if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -75,14 +77,15 @@ $userService = new UserService();
 // Initialize password hash utility for generating random password
 $passwordHash = new PasswordHash();
 
-// Process form submission
-$newAdmin = [
-    'username' => '',
+// Default structure for the form
+$newUser = [
+    'name' => '',
     'email' => '',
+    'phone_number' => '',
     'password' => '',
-    'first_name' => '',
-    'last_name' => '',
-    'role_id' => ROLE_ADMIN,
+    'password_confirmation' => '',
+    'role' => '',  // Will be set based on user role and form input
+    'status' => 'active',
 ];
 
 $error = '';
@@ -95,27 +98,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$csrf->validateRequest()) {
         $error = 'Invalid form submission. Please try again.';
     } else {
-        // Get form data
-        $newAdmin = [
-            'username' => isset($_POST['username']) ? trim($_POST['username']) : '',
+        // Gather form input, ensure they match UserService expectations
+        $newUser = [
+            'name' => isset($_POST['name']) ? trim($_POST['name']) : '',
             'email' => isset($_POST['email']) ? trim($_POST['email']) : '',
-            'password' => isset($_POST['password']) ? $_POST['password'] : $passwordHash->generateRandomPassword(),
-            'first_name' => isset($_POST['first_name']) ? trim($_POST['first_name']) : '',
-            'last_name' => isset($_POST['last_name']) ? trim($_POST['last_name']) : '',
-            'role_id' => ROLE_ADMIN, // Always set to Admin role
+            'phone_number' => isset($_POST['phone_number']) ? trim($_POST['phone_number']) : '',
+            'password' => isset($_POST['password']) ? $_POST['password'] : '',
+            'password_confirmation' => isset($_POST['password_confirmation']) ? $_POST['password_confirmation'] : '',
+            'role' => isset($_POST['role']) ? strtolower(trim($_POST['role'])) : '',
+            'status' => isset($_POST['status']) ? trim($_POST['status']) : 'active',
         ];
         
-        // Add the admin
-        $adminId = $userService->addAdmin($newAdmin);
+        // Role validation and restriction
+        if ($userRole === 'admin') {
+            // Admin can only add borrowers (students, staff, others)
+            if (!in_array($newUser['role'], ['student', 'staff', 'other'])) {
+                $error = 'Admins can only add borrower accounts (Students, Staff, or Others).';
+            }
+        } else if ($userRole === 'super-admin') {
+            // Super Admin can add any role
+            if (!in_array($newUser['role'], ['super-admin', 'admin', 'student', 'staff', 'other'])) {
+                $error = 'Invalid role selected.';
+            }
+        }
         
-        if ($adminId) {
-            // Admin added successfully
-            $session->setFlash('success', 'Administrator added successfully.');
-            header('Location: ' . APP_URL . '/public/admins/index.php');
-            exit;
-        } else {
-            // Failed to add admin
-            $error = $userService->getErrorMessage();
+        if (empty($error)) {
+            // Now call UserService's addUser to handle all roles properly
+            $userId = $userService->addUser($newUser);
+            
+            if ($userId) {
+                // User added successfully
+                $session->setFlash('success', 'Admin added successfully.');
+                header('Location: ' . APP_URL . '/public/admins/index.php');
+                exit;
+            } else {
+                // Failed to add user
+                $error = $userService->getErrorMessage();
+            }
         }
     }
 }
@@ -129,10 +148,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Add Administrator</h1>
+        <h1 class="h2">Add Admin</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="<?= APP_URL ?>/public/admins/index.php" class="btn btn-sm btn-outline-secondary">
-                <i data-feather="arrow-left"></i> Back to Administrators
+            <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
+                <i data-feather="arrow-left"></i> Back to Admins
             </a>
         </div>
     </div>
@@ -145,17 +164,21 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     
     <?php if ($formSubmitted && !$error): ?>
         <div class="alert alert-success">
-            Administrator added successfully.
+            Admin added successfully.
         </div>
     <?php endif; ?>
     
-    <!-- Admin Form -->
+    <!-- User Form -->
     <div class="card">
         <div class="card-body">
-                <?php 
-                $newUser = $newAdmin; // Alias for form compatibility
-                include_once BASE_PATH . '/templates/users/form.php'; 
-                ?>
+            <?php
+            $formPath = BASE_PATH . '/templates/admins/form.php';
+            if (file_exists($formPath)) {
+                include_once $formPath;
+            } else {
+                echo '<div class="alert alert-danger">User form template is missing: ' . htmlspecialchars($formPath) . '</div>';
+            }
+            ?>
         </div>
     </div>
 </main>

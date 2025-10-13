@@ -4,279 +4,192 @@
  */
 class UserService extends BaseService {
     private $userModel;
-    private $superAdminModel;
-    private $adminModel;
-    private $borrowerModel;
+    private $bookModel;
+    private $transactionModel;
     private $passwordHash;
-
-    /**
-     * Constructor
-     */
+    private $validRoles;
+    private $validStatuses;
+    private $session;
+    
     public function __construct() {
         parent::__construct();
         $this->userModel = new UserModel();
-        $this->superAdminModel = new SuperAdminModel();
-        $this->adminModel = new AdminModel();
-        $this->borrowerModel = new BorrowerModel();
+        $this->bookModel = new BookModel();
+        $this->transactionModel = new TransactionModel();
         $this->passwordHash = new PasswordHash();
+        $this->session = new Session();
         $this->setModel($this->userModel);
+        
+        // Define valid roles and statuses
+        $this->validRoles = [
+            UserModel::$ROLE_SUPER_ADMIN,
+            UserModel::$ROLE_ADMIN,
+            UserModel::$ROLE_STUDENT,
+            UserModel::$ROLE_STAFF,
+            UserModel::$ROLE_OTHER
+        ];
+        
+        $this->validStatuses = [
+            UserModel::$STATUS_ACTIVE,
+            UserModel::$STATUS_INACTIVE,
+            UserModel::$STATUS_SUSPENDED
+        ];
     }
 
-    /**
-     * Get all users with role names
-     * 
-     * @return array|bool
-     */
-    public function getAllUsersWithRoleNames() {
-        return $this->userModel->getAllUsersWithRoleNames();
+ 
+    public function getAllUsersWithRoleNames($roles = []) {
+        return $this->userModel->getAllUsersWithRoleNames($roles);
     }
 
-    /**
-     * Get user with role name
-     * 
-     * @param int $id
-     * @return array|bool
-     */
     public function getUserWithRoleName($id) {
         return $this->userModel->getUserWithRoleName($id);
     }
 
-    /**
-     * Add new user
-     * 
-     * @param array $userData
-     * @return int|bool
-     */
+
     public function addUser($userData) {
-        // Validate user data
-        if (!$this->validateUserData($userData)) {
-            return false;
-        }
-        
-        // Hash password
-        $userData['password'] = $this->passwordHash->hash($userData['password']);
-        
-        // Set timestamps and active status
-        $userData['is_active'] = 1;
-        $userData['created_at'] = date('Y-m-d H:i:s');
-        $userData['updated_at'] = date('Y-m-d H:i:s');
-        
-        // Create user
-        return $this->userModel->create($userData);
-    }
-
-    /**
-     * Update user
-     * 
-     * @param int $id
-     * @param array $userData
-     * @return bool
-     */
-    public function updateUser($id, $userData) {
-        // Get existing user
-        $existingUser = $this->userModel->findById($id);
-        
-        if (!$existingUser) {
-            $this->setErrorMessage('User not found.');
-            return false;
-        }
-        
-        // Validate user data for update
-        if (!$this->validateUserDataForUpdate($userData, $id)) {
-            return false;
-        }
-        
-        // Set timestamps
-        $userData['updated_at'] = date('Y-m-d H:i:s');
-        
-        // Remove password from update data if empty
-        if (isset($userData['password']) && empty($userData['password'])) {
-            unset($userData['password']);
-        } elseif (isset($userData['password'])) {
-            // Hash password if provided
-            $userData['password'] = $this->passwordHash->hash($userData['password']);
-        }
-        
-        // Update user
-        return $this->userModel->update($id, $userData);
-    }
-
-    /**
-     * Delete user (deactivate)
-     * 
-     * @param int $id
-     * @return bool
-     */
-    public function deleteUser($id) {
-        // Get existing user
-        $existingUser = $this->userModel->findById($id);
-        
-        if (!$existingUser) {
-            $this->setErrorMessage('User not found.');
-            return false;
-        }
-        
-        // Check if user is a Super Admin
-        if ($existingUser['role_id'] == ROLE_SUPER_ADMIN) {
-            $this->setErrorMessage('Cannot delete a Super Admin user.');
-            return false;
-        }
-        
-        // Check if user has active loans
-        if ($existingUser['role_id'] == ROLE_BORROWER) {
-            $borrowerModel = new BorrowerModel();
-            $activeLoans = $borrowerModel->getActiveLoans($id);
-            
-            if ($activeLoans && count($activeLoans) > 0) {
-                $this->setErrorMessage('Cannot delete user with active loans.');
+        try {
+            // Ensure role is present and valid
+            if (!isset($userData['role']) || !in_array($userData['role'], $this->validRoles)) {
+                $this->setErrorMessage('Invalid or missing user role.');
                 return false;
             }
-        }
-        
-        // Deactivate user (soft delete)
-        return $this->userModel->deactivateUser($id);
-    }
 
-    /**
-     * Activate user
-     * 
-     * @param int $id
-     * @return bool
-     */
-    public function activateUser($id) {
-        return $this->userModel->activateUser($id);
-    }
+            // Validate user data
+            if (!$this->validateUserData($userData)) {
+                return false;
+            }
 
-    /**
-     * Get all admins
-     * 
-     * @return array|bool
-     */
-    public function getAllAdmins() {
-        return $this->superAdminModel->getAllAdmins();
-    }
+            // Hash password
+            $userData['password'] = $this->passwordHash->hash($userData['password']);
 
-    /**
-     * Add new admin
-     * 
-     * @param array $userData
-     * @return int|bool
-     */
-    public function addAdmin($userData) {
-        // Validate user data
-        if (!$this->validateUserData($userData)) {
+            // Create user based on role
+            switch ($userData['role']) {
+                case UserModel::$ROLE_ADMIN:
+                    return $this->userModel->createAdmin($userData);
+                case UserModel::$ROLE_STUDENT:
+                case UserModel::$ROLE_STAFF:
+                case UserModel::$ROLE_OTHER:
+                    return $this->userModel->createBorrower($userData);
+                case UserModel::$ROLE_SUPER_ADMIN:
+                    return $this->userModel->create($userData);
+                default:
+                    $this->setErrorMessage('Invalid user role.');
+                    return false;
+            }
+        } catch (\Exception $e) {
+            $this->setErrorMessage($e->getMessage());
             return false;
         }
-        
-        // Hash password
-        $userData['password'] = $this->passwordHash->hash($userData['password']);
-        
-        // Create admin
-        return $this->superAdminModel->createAdmin($userData);
     }
 
-    /**
-     * Get all borrowers
-     * 
-     * @return array|bool
-     */
-    public function getAllBorrowers() {
-        return $this->adminModel->getAllBorrowers();
-    }
 
-    /**
-     * Add new borrower
-     * 
-     * @param array $userData
-     * @return int|bool
-     */
-    public function addBorrower($userData) {
-        // Validate user data
-        if (!$this->validateUserData($userData)) {
+    public function updateUser($id, $userData) {
+        try {
+            // Get existing user
+            $existingUser = $this->userModel->findById($id);
+
+            if (!$existingUser) {
+                $this->setErrorMessage('User not found.');
+                return false;
+            }
+
+            // Validate user data for update
+            if (!$this->validateUserDataForUpdate($userData, $id)) {
+                return false;
+            }
+
+            // Hash password if provided
+            if (isset($userData['password']) && !empty($userData['password'])) {
+                $userData['password'] = $this->passwordHash->hash($userData['password']);
+            } else {
+                unset($userData['password']); // Remove password if not provided
+            }
+
+            // Update user
+            return $this->userModel->update($id, $userData);
+        } catch (\Exception $e) {
+            $this->setErrorMessage($e->getMessage());
             return false;
         }
-        
-        // Hash password
-        $userData['password'] = $this->passwordHash->hash($userData['password']);
-        
-        // Create borrower
-        return $this->adminModel->createBorrower($userData);
     }
 
-    /**
-     * Get borrower statistics
-     * 
-     * @param int $userId
-     * @return array
-     */
-    public function getBorrowerStats($userId) {
-        return $this->borrowerModel->getBorrowerStats($userId);
+   
+    public function deleteUser($id) {
+        try {
+            return $this->userModel->delete($id);
+        } catch (\Exception $e) {
+            $this->setErrorMessage($e->getMessage());
+            return false;
+        }
     }
 
-    /**
-     * Get borrower active loans
-     * 
-     * @param int $userId
-     * @return array|bool
-     */
-    public function getBorrowerActiveLoans($userId) {
-        return $this->borrowerModel->getActiveLoans($userId);
+
+    public function deactivateUser($id) {
+        return $this->userModel->update($id, [
+            'status' => UserModel::$STATUS_INACTIVE,
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
     }
 
-    /**
-     * Get borrower loan history
-     * 
-     * @param int $userId
-     * @return array|bool
-     */
-    public function getBorrowerLoanHistory($userId) {
-        return $this->borrowerModel->getLoanHistory($userId);
+    public function getUserStats() {
+        return $this->userModel->getUserStats();
     }
 
-    /**
-     * Get system statistics
-     * 
-     * @return array
-     */
     public function getSystemStats() {
-        return $this->superAdminModel->getSystemStats();
+        return $this->userModel->getSystemStats();
     }
 
-    /**
-     * Get admin statistics
-     * 
-     * @return array
-     */
     public function getAdminStats() {
-        return $this->adminModel->getAdminStats();
+        $stats = [];
+        
+        // Get book statistics
+        $bookModel = new BookModel();
+        $stats['total_books'] = $bookModel->getTotalBooks();
+        $stats['borrowed_books'] = $bookModel->getBorrowedBooksCount();
+        
+        // Get transaction statistics
+        $transactionModel = new TransactionModel();
+        $stats['overdue_returns'] = $transactionModel->getOverdueLoansCount();
+        $stats['total_penalties'] = $transactionModel->getTotalUnpaidPenalties();
+        
+        // Get user statistics based on role
+        $userRole = $this->session->get('user_role');
+        
+        if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
+            // Super Admin sees all user types
+            $stats['total_students'] = $this->userModel->getUsersCountByRole(UserModel::$ROLE_STUDENT);
+            $stats['total_staff'] = $this->userModel->getUsersCountByRole(UserModel::$ROLE_STAFF);
+            $stats['total_admins'] = $this->userModel->getUsersCountByRole(UserModel::$ROLE_ADMIN);
+            $stats['total_others'] = $this->userModel->getUsersCountByRole(UserModel::$ROLE_OTHER);
+        } else {
+            // Admin sees only total borrowers
+            $stats['total_borrowers'] = $this->userModel->getTotalBorrowersCount();
+        }
+        
+        // Get recent activity
+        $stats['recent_transactions'] = $transactionModel->getRecentTransactions(5);
+        $stats['recently_added_books'] = $bookModel->getRecentlyAddedBooks(5);
+        
+        return $stats;
     }
 
-    /**
-     * Validate user data
-     * 
-     * @param array $userData
-     * @return bool
-     */
+  
+    public function getAllBorrowers() {
+        return $this->userModel->getAllUsersWithRoleNames([
+            UserModel::$ROLE_STUDENT,
+            UserModel::$ROLE_STAFF,
+            UserModel::$ROLE_OTHER
+        ]);
+    }
+
     private function validateUserData($userData) {
         // Check required fields
-        $requiredFields = ['username', 'email', 'password', 'first_name', 'last_name', 'role_id'];
+        $requiredFields = ['name', 'email', 'password', 'role', 'phone_number'];
         foreach ($requiredFields as $field) {
-            if (!isset($userData[$field]) || empty($userData[$field])) {
+            if (!isset($userData[$field]) || trim($userData[$field]) === '') {
                 $this->setErrorMessage(ucfirst(str_replace('_', ' ', $field)) . ' is required.');
                 return false;
             }
-        }
-        
-        // Validate username (alphanumeric and at least 4 characters)
-        if (!preg_match('/^[a-zA-Z0-9]{4,}$/', $userData['username'])) {
-            $this->setErrorMessage('Username must be alphanumeric and at least 4 characters.');
-            return false;
-        }
-        
-        // Check if username exists
-        if ($this->userModel->usernameExists($userData['username'])) {
-            $this->setErrorMessage('Username already exists.');
-            return false;
         }
         
         // Validate email
@@ -291,15 +204,37 @@ class UserService extends BaseService {
             return false;
         }
         
+        // Validate phone number (basic: digits and length)
+        if (!preg_match('/^[0-9]{8,15}$/', $userData['phone_number'])) {
+            $this->setErrorMessage('Phone Number must be numeric and 8-15 digits.');
+            return false;
+        }
+        
+        // Check if phone number exists
+        if ($this->userModel->phoneNumberExists($userData['phone_number'])) {
+            $this->setErrorMessage('Phone Number already exists.');
+            return false;
+        }
+        
         // Validate password (at least 8 characters)
         if (strlen($userData['password']) < 8) {
             $this->setErrorMessage('Password must be at least 8 characters long.');
             return false;
         }
         
+        // Password Confirmation: required and must match
+        if (!isset($userData['password_confirmation']) || trim($userData['password_confirmation']) === '') {
+            $this->setErrorMessage('Password confirmation is required.');
+            return false;
+        }
+        
+        if ($userData['password'] !== $userData['password_confirmation']) {
+            $this->setErrorMessage('Password and Password Confirmation do not match.');
+            return false;
+        }
+        
         // Validate role
-        $validRoles = [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_BORROWER];
-        if (!in_array($userData['role_id'], $validRoles)) {
+        if (!in_array($userData['role'], $this->validRoles)) {
             $this->setErrorMessage('Invalid role.');
             return false;
         }
@@ -307,33 +242,15 @@ class UserService extends BaseService {
         return true;
     }
 
-    /**
-     * Validate user data for update
-     * 
-     * @param array $userData
-     * @param int $userId
-     * @return bool
-     */
+
     private function validateUserDataForUpdate($userData, $userId) {
         // Check required fields
-        $requiredFields = ['username', 'email', 'first_name', 'last_name', 'role_id'];
+        $requiredFields = ['name', 'email', 'role', 'phone_number'];
         foreach ($requiredFields as $field) {
-            if (!isset($userData[$field]) || empty($userData[$field])) {
+            if (!isset($userData[$field]) || trim($userData[$field]) === '') {
                 $this->setErrorMessage(ucfirst(str_replace('_', ' ', $field)) . ' is required.');
                 return false;
             }
-        }
-        
-        // Validate username (alphanumeric and at least 4 characters)
-        if (!preg_match('/^[a-zA-Z0-9]{4,}$/', $userData['username'])) {
-            $this->setErrorMessage('Username must be alphanumeric and at least 4 characters.');
-            return false;
-        }
-        
-        // Check if username exists (excluding current user)
-        if ($this->userModel->usernameExists($userData['username'], $userId)) {
-            $this->setErrorMessage('Username already exists.');
-            return false;
         }
         
         // Validate email
@@ -348,19 +265,154 @@ class UserService extends BaseService {
             return false;
         }
         
-        // Validate password if provided
-        if (isset($userData['password']) && !empty($userData['password']) && strlen($userData['password']) < 8) {
-            $this->setErrorMessage('Password must be at least 8 characters long.');
+        // Validate phone number (basic: digits and length)
+        if (!preg_match('/^[0-9]{8,15}$/', $userData['phone_number'])) {
+            $this->setErrorMessage('Phone Number must be numeric and 8-15 digits.');
             return false;
         }
         
+        // Check if phone number exists (excluding current user)
+        if ($this->userModel->phoneNumberExists($userData['phone_number'], $userId)) {
+            $this->setErrorMessage('Phone Number already exists.');
+            return false;
+        }
+        
+        // Validate password if provided
+        if (isset($userData['password']) && !empty($userData['password'])) {
+            if (strlen($userData['password']) < 8) {
+                $this->setErrorMessage('Password must be at least 8 characters long.');
+                return false;
+            }
+            
+            // Password Confirmation: required and must match
+            if (!isset($userData['password_confirmation']) || trim($userData['password_confirmation']) === '') {
+                $this->setErrorMessage('Password confirmation is required.');
+                return false;
+            }
+            
+            if ($userData['password'] !== $userData['password_confirmation']) {
+                $this->setErrorMessage('Password and Password Confirmation do not match.');
+                return false;
+            }
+        }
+        
         // Validate role
-        $validRoles = [ROLE_SUPER_ADMIN, ROLE_ADMIN, ROLE_BORROWER];
-        if (!in_array($userData['role_id'], $validRoles)) {
+        if (!in_array($userData['role'], $this->validRoles)) {
             $this->setErrorMessage('Invalid role.');
             return false;
         }
         
         return true;
     }
+
+
+    public function getBorrowerStats($userId) {
+        $stats = [];
+        
+        // Get total borrowed books
+        $stats['total_borrowed'] = $this->transactionModel->getTotalBorrowedBooks($userId);
+        
+        // Get currently borrowed books
+        $stats['current_borrowed'] = $this->transactionModel->getCurrentBorrowedBooks($userId);
+        
+        // Get overdue books count
+        $stats['overdue_count'] = $this->transactionModel->getOverdueBooksCount($userId);
+        
+        // Get total penalties
+        $stats['total_penalties'] = $this->transactionModel->getTotalUnpaidPenalties($userId);
+        
+        // Get loan history
+        $loanHistory = $this->transactionModel->getUserTransactionHistory($userId);
+        $stats['loan_history'] = is_array($loanHistory) ? $loanHistory : [];
+        
+        // Filter active loans from loan history where return_date is null
+        $activeLoans = array_filter($stats['loan_history'], function($loan) {
+            return empty($loan['return_date']);
+        });
+        $stats['active_loans'] = $activeLoans;
+        
+        // Get available books using BookService to match books/index.php logic
+        $bookService = new BookService();
+        $allBooks = $bookService->getAllBooksWithCategories();
+        // Filter out books with no available copies
+        $availableBooks = array_filter($allBooks, function($book) {
+            return isset($book['available_copies']) && $book['available_copies'] > 0;
+        });
+        error_log("Available books fetched after filtering: " . print_r($availableBooks, true));
+        $stats['available_books'] = is_array($availableBooks) ? $availableBooks : [];
+        
+        return $stats;
+    }
+
+    public function activateUser($userId) {
+        try {
+            return $this->userModel->update($userId, [
+                'status' => UserModel::$STATUS_ACTIVE,
+                'updated_at' => date('Y-m-d H:i:s')
+            ]);
+        } catch (\Exception $e) {
+            $this->setErrorMessage($e->getMessage());
+            return false;
+        }
+    }
+
+
+    public function getUsersByRole($role) {
+        return $this->userModel->getUsersByRole($role);
+    }
+
+    public function getUsersByStatus($status) {
+        return $this->userModel->getUsersByStatus($status);
+    }
+
+ 
+    public function getActiveBorrowers() {
+        return $this->userModel->getUsersByStatus('active');
+    }
+
+    // Reset password for a user
+    public function resetPassword($id) {
+        try {
+            $user = $this->model->findById($id);
+            
+            if (!$user) {
+                return ['success' => false, 'message' => 'User not found'];
+            }
+            
+            // Generate random password
+            $newPassword = $this->generateRandomPassword();
+            
+            // Hash and update
+            $hashedPassword = $this->passwordHash->hash($newPassword);
+            $result = $this->model->update($id, ['password' => $hashedPassword]);
+            
+            if ($result) {
+                return [
+                    'success' => true, 
+                    'password' => $newPassword
+                ];
+            }
+                
+            return ['success' => false, 'message' => 'Failed to reset password'];
+    
+            } catch (PDOException $e) {
+                die('Query failed: ' . $e->getMessage());
+            }
+        }
+        
+        // Generate random password
+        private function generateRandomPassword($length = 12) {
+            try {
+                $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+                $password = '';
+                
+                for ($i = 0; $i < $length; $i++) {
+                    $password .= $chars[rand(0, strlen($chars) - 1)];
+                }
+                
+                return $password;
+            } catch (Exception $e) {
+                die('Error generating password: ' . $e->getMessage());
+            }
+        }
 }

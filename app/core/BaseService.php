@@ -3,128 +3,61 @@
  * BaseService - Base class for all services
  * Following strict OOP approach with inheritance and encapsulation
  */
+require_once __DIR__ . '/Database.php';
+
 class BaseService {
     protected $db;
     protected $model;
     protected $errorMessage;
 
-    /**
-     * Constructor - initialize database connection
-     */
     public function __construct() {
         $this->db = Database::getInstance();
     }
 
-    /**
-     * Set model for the service
-     * 
-     * @param BaseModel $model
-     * @return void
-     */
+
     public function setModel($model) {
         $this->model = $model;
     }
 
-    /**
-     * Get all records
-     * 
-     * @param string $orderBy
-     * @param string $direction
-     * @return array|bool
-     */
+
     public function getAll($orderBy = null, $direction = 'ASC') {
         return $this->model->getAll($orderBy, $direction);
     }
 
-    /**
-     * Get record by ID
-     * 
-     * @param int $id
-     * @return array|bool
-     */
     public function getById($id) {
         return $this->model->findById($id);
     }
 
-    /**
-     * Create new record
-     * 
-     * @param array $data
-     * @return int|bool
-     */
+
     public function create($data) {
         return $this->model->create($data);
     }
 
-    /**
-     * Update record
-     * 
-     * @param int $id
-     * @param array $data
-     * @return bool
-     */
     public function update($id, $data) {
         return $this->model->update($id, $data);
     }
 
-    /**
-     * Delete record
-     * 
-     * @param int $id
-     * @return bool
-     */
     public function delete($id) {
         return $this->model->delete($id);
     }
 
-    /**
-     * Get records by field
-     * 
-     * @param string $field
-     * @param mixed $value
-     * @return array|bool
-     */
+ 
     public function getByField($field, $value) {
         return $this->model->findByField($field, $value);
     }
 
-    /**
-     * Get single record by field
-     * 
-     * @param string $field
-     * @param mixed $value
-     * @return array|bool
-     */
     public function getOneByField($field, $value) {
         return $this->model->findOneByField($field, $value);
     }
 
-    /**
-     * Get error message
-     * 
-     * @return string
-     */
     public function getErrorMessage() {
         return $this->errorMessage;
     }
 
-    /**
-     * Set error message
-     * 
-     * @param string $message
-     * @return void
-     */
     protected function setErrorMessage($message) {
         $this->errorMessage = $message;
     }
 
-    /**
-     * Validate data against rules
-     * 
-     * @param array $data
-     * @param array $rules
-     * @return bool
-     */
     protected function validate($data, $rules) {
         foreach ($rules as $field => $rule) {
             if (strpos($rule, 'required') !== false && (!isset($data[$field]) || empty($data[$field]))) {
@@ -168,12 +101,6 @@ class BaseService {
         return true;
     }
 
-    /**
-     * Execute in transaction
-     * 
-     * @param callable $callback
-     * @return mixed
-     */
     protected function transaction($callback) {
         try {
             $this->db->beginTransaction();

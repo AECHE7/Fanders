@@ -15,7 +15,7 @@
                         <span class="text-muted">&copy; <?= date('Y') ?> <?= APP_NAME ?></span>
                     </div>
                     <div class="col-md-6 text-md-end">
-                        <span class="text-muted">Made with <i data-feather="heart" class="text-danger" style="width: 16px; height: 16px;"></i> for Libraries</span>
+                        <span class="text-muted">Made by <i data-feather="heart" class="text-danger" style="width: 16px; height: 16px;"></i> BSIT 2-1 Group 4.</span>
                     </div>
                 </div>
             </div>
@@ -44,6 +44,7 @@
             var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
                 return new bootstrap.Popover(popoverTriggerEl)
             })
+            
         </script>
     </body>
 </html>
