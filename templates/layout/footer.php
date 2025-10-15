@@ -14,9 +14,9 @@
                     <div class="col-md-6">
                         <span class="text-muted">&copy; <?= date('Y') ?> <?= APP_NAME ?></span>
                     </div>
-                    <div class="col-md-6 text-md-end">
+                    <!-- <div class="col-md-6 text-md-end">
                         <span class="text-muted">Made by <i data-feather="heart" class="text-danger" style="width: 16px; height: 16px;"></i> BSIT 2-1 Group 4.</span>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </footer>

@@ -1,20 +1,24 @@
 <?php
 /**
- * ReportService - Handles generating reports for books, users, and transactions
+ * ReportService - Handles generating reports for microfinance operations
  */
 class ReportService extends BaseService {
-    private $bookModel;
-    private $userModel;
-    private $transactionModel;
+    private $clientModel;
+    private $loanModel;
+    private $paymentModel;
     private $penaltyModel;
+    private $cashBlotterModel;
+    private $userModel;
     private $pdfGenerator;
 
     public function __construct() {
         parent::__construct();
-        $this->bookModel = new BookModel();
-        $this->userModel = new UserModel();
-        $this->transactionModel = new TransactionModel();
+        $this->clientModel = new ClientModel();
+        $this->loanModel = new LoanModel();
+        $this->paymentModel = new PaymentModel();
         $this->penaltyModel = new PenaltyModel();
+        $this->cashBlotterModel = new CashBlotterModel();
+        $this->userModel = new UserModel();
         $this->pdfGenerator = new PDFGenerator();
     }
 
@@ -529,49 +533,49 @@ private function generatePenaltiesPdf($data) {
         if ($month === null) {
             $month = date('Y-m');
         }
-        
+
         $startDate = $month . '-01';
         $endDate = date('Y-m-t', strtotime($startDate));
-        
-        // New Books Added
-        $newBooksAdded = $this->bookModel->query(
-            "SELECT COUNT(*) as count FROM books WHERE DATE(created_at) BETWEEN ? AND ?",
+
+        // New Loans Disbursed
+        $newLoansDisbursed = $this->loanModel->query(
+            "SELECT COUNT(*) as count FROM loans WHERE DATE(created_at) BETWEEN ? AND ?",
             [$startDate, $endDate],
             true
         )['count'] ?? 0;
-        
-        // Books Borrowed
-        $booksBorrowed = $this->transactionModel->query(
-            "SELECT COUNT(*) as count FROM transaction WHERE status = 'borrowed' AND DATE(borrow_date) BETWEEN ? AND ?",
+
+        // Payments Collected
+        $paymentsCollected = $this->paymentModel->query(
+            "SELECT SUM(payment_amount) as total FROM payments WHERE DATE(payment_date) BETWEEN ? AND ?",
+            [$startDate, $endDate],
+            true
+        )['total'] ?? 0;
+
+        // New Clients Added
+        $newClients = $this->clientModel->query(
+            "SELECT COUNT(*) as count FROM clients WHERE DATE(created_at) BETWEEN ? AND ?",
             [$startDate, $endDate],
             true
         )['count'] ?? 0;
-        
-        // Books Returned
-        $booksReturned = $this->transactionModel->query(
-            "SELECT COUNT(*) as count FROM transaction WHERE status = 'returned' AND DATE(return_date) BETWEEN ? AND ?",
+
+        // Portfolio Growth (total loan amounts disbursed this month)
+        $portfolioGrowth = $this->loanModel->query(
+            "SELECT SUM(loan_amount) as total FROM loans WHERE DATE(created_at) BETWEEN ? AND ?",
             [$startDate, $endDate],
             true
-        )['count'] ?? 0;
-        
-        // New Borrowers
-        $newBorrowers = $this->userModel->query(
-            "SELECT COUNT(*) as count FROM users WHERE DATE(created_at) BETWEEN ? AND ?",
-            [$startDate, $endDate],
-            true
-        )['count'] ?? 0;
-        
-        // Prepare summary data
+        )['total'] ?? 0;
+
+        // Prepare summary data for microfinance
         $summary = [
-            'borrower_growth_text' => "Active borrowers compared to last month",
+            'borrower_growth_text' => "Active clients compared to last month",
             'monthly' => [
-                ['label' => 'New Books Added', 'value' => $newBooksAdded, 'bg' => '#edf2fc', 'dot' => '#0b76ef'],
-                ['label' => 'Books Borrowed', 'value' => $booksBorrowed, 'bg' => '#f1ebfc', 'dot' => '#9d71ea'],
-                ['label' => 'Books Returned', 'value' => $booksReturned, 'bg' => '#fff3e9', 'dot' => '#ec7211'],
-                ['label' => 'New Borrowers', 'value' => $newBorrowers, 'bg' => '#ebfef6', 'dot' => '#0ca789']
+                ['label' => 'New Loans Disbursed', 'value' => $newLoansDisbursed, 'bg' => '#edf2fc', 'dot' => '#0b76ef'],
+                ['label' => 'Payments Collected', 'value' => '₱' . number_format($paymentsCollected, 2), 'bg' => '#f1ebfc', 'dot' => '#9d71ea'],
+                ['label' => 'New Clients', 'value' => $newClients, 'bg' => '#fff3e9', 'dot' => '#ec7211'],
+                ['label' => 'Portfolio Growth', 'value' => '₱' . number_format($portfolioGrowth, 2), 'bg' => '#ebfef6', 'dot' => '#0ca789']
             ]
         ];
-        
+
         return $summary;
     }
 

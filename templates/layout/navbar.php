@@ -1,6 +1,6 @@
 <?php
 /**
- * Navbar template for the Library Management System
+ * Navbar template for the Fanders Microfinance Loan Management System
  */
 
 // Get current user and role (safe defaulting)
@@ -24,54 +24,60 @@ $usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
 // Determine active page for navigation highlighting
 $currentPage = basename($_SERVER['PHP_SELF'], '.php');
 
-// Define navigation items based on role
+// Define navigation items based on role for microfinance system
 $navItems = [
-    'home' => [
-        'icon' => 'home',
-        'title' => 'Home',
-        'url' => APP_URL . '/public/index.php',
-        'roles' => ['super-admin', 'admin', 'student', 'staff', 'other', 'borrower']
-    ],
     'dashboard' => [
         'icon' => 'grid',
         'title' => 'Dashboard',
         'url' => APP_URL . '/public/dashboard.php',
-        'roles' => ['super-admin', 'admin', 'student', 'staff', 'other', 'borrower']
+        'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier', 'client']
     ],
-    'books' => [
-        'icon' => 'book',
-        'title' => (in_array($userRole, ['student', 'staff', 'other', 'borrower'])) ? 'Available Books' : 'Books',
-        'url' => APP_URL . '/public/books/index.php',
-        'roles' => ['super-admin', 'admin', 'student', 'staff', 'other', 'borrower']
+    'loans' => [
+        'icon' => 'file-text',
+        'title' => 'Loans',
+        'url' => APP_URL . '/public/loans/index.php',
+        'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier', 'client']
     ],
-    'users' => [
+    'clients' => [
         'icon' => 'users',
-        'title' => 'Users',
-        'url' => APP_URL . '/public/users/index.php',
-        'roles' => ['super-admin', 'admin']
+        'title' => 'Clients',
+        'url' => APP_URL . '/public/clients/index.php',
+        'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier']
     ],
-    'admins' => [
-        'icon' => 'users',
-        'title' => 'Admins',
-        'url' => APP_URL . '/public/admins/index.php',
-        'roles' => ['super-admin']
+    'payments' => [
+        'icon' => 'dollar-sign',
+        'title' => 'Payments',
+        'url' => APP_URL . '/public/payments/index.php',
+        'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier', 'client']
     ],
-    'transactions' => [
-        'icon' => 'repeat',
-        'title' => (in_array($userRole, ['student', 'staff', 'other'])) ? 'My Borrowing' : 'Transactions',
-        'url' => APP_URL . '/public/transactions/index.php',
-        'roles' => ['super-admin', 'admin', 'student', 'staff', 'other']
+    'collection-sheets' => [
+        'icon' => 'clipboard',
+        'title' => 'Collection Sheets',
+        'url' => APP_URL . '/public/collection-sheets/index.php',
+        'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier']
+    ],
+    'cash-blotter' => [
+        'icon' => 'book-open',
+        'title' => 'Cash Blotter',
+        'url' => APP_URL . '/public/cash-blotter/index.php',
+        'roles' => ['super-admin', 'admin', 'manager', 'cashier']
+    ],
+    'slr-documents' => [
+        'icon' => 'file-check',
+        'title' => 'SLR Documents',
+        'url' => APP_URL . '/public/slr-documents/index.php',
+        'roles' => ['super-admin', 'admin', 'manager', 'account_officer']
     ],
     'reports' => [
-        'icon' => 'file-text',
+        'icon' => 'bar-chart-2',
         'title' => 'Reports',
         'url' => APP_URL . '/public/reports/index.php',
-        'roles' => ['super-admin', 'admin']
+        'roles' => ['super-admin', 'admin', 'manager']
     ],
-    'penalties' => [
-        'icon' => 'alert-circle',
-        'title' => 'Penalties',
-        'url' => APP_URL . '/public/penalties/index.php',
+    'users' => [
+        'icon' => 'user-check',
+        'title' => 'Staff Management',
+        'url' => APP_URL . '/public/users/index.php',
         'roles' => ['super-admin', 'admin']
     ]
 ];
@@ -140,16 +146,17 @@ $navItems = [
                             </li>
                         <?php endif; ?>
                     <?php endforeach; ?>
-                    <?php if (in_array($userRole, ['super-admin', 'admin'])): ?>
+                    <?php if (in_array($userRole, ['super-admin', 'admin', 'manager'])): ?>
                         <?php
-                            // Load TransactionService to get pending approvals count
-                            $transactionService = new \TransactionService();
-                            $pendingCount = count($transactionService->getTransactionsByStatuses(['pending_approval', 'pending_return_approval']));
+                            // Load LoanService to get pending approvals count
+                            $loanService = new \LoanService();
+                            $pendingLoans = $loanService->getLoansByStatus('pending_approval');
+                            $pendingCount = is_array($pendingLoans) ? count($pendingLoans) : 0;
                         ?>
                         <li class="nav-item">
-                            <a class="nav-link <?= ($currentPage === 'approvals') ? 'active' : '' ?>" href="<?= APP_URL ?>/public/transactions/approvals.php">
+                            <a class="nav-link <?= ($currentPage === 'approvals') ? 'active' : '' ?>" href="<?= APP_URL ?>/public/loans/approvals.php">
                                 <i data-feather="check-circle"></i>
-                                Recording
+                                Loan Approvals
                                 <?php if ($pendingCount > 0): ?>
                                     <span class="badge bg-danger ms-1"><?= $pendingCount ?></span>
                                 <?php endif; ?>
@@ -166,13 +173,17 @@ $navItems = [
                         <span>Quick Actions</span>
                     </h6>
                     <div class="d-grid gap-2 mt-2">
-                        <?php if ($userRole === 'admin'): ?>
-                            <a href="<?= APP_URL ?>/public/books/add.php" class="btn btn-sm btn-outline-primary d-flex align-items-center">
-                                <i data-feather="plus-circle" class="me-1" style="width: 16px; height: 16px;"></i> Add Book
+                        <?php if (in_array($userRole, ['super-admin', 'admin', 'manager', 'account_officer'])): ?>
+                            <a href="<?= APP_URL ?>/public/loans/add.php" class="btn btn-sm btn-outline-primary d-flex align-items-center">
+                                <i data-feather="plus-circle" class="me-1" style="width: 16px; height: 16px;"></i> New Loan
+                            </a>
+                        <?php elseif ($userRole === 'cashier'): ?>
+                            <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-sm btn-outline-primary d-flex align-items-center">
+                                <i data-feather="dollar-sign" class="me-1" style="width: 16px; height: 16px;"></i> Record Payment
                             </a>
                         <?php else: ?>
-                            <a href="<?= APP_URL ?>/public/books/index.php" class="btn btn-sm btn-outline-primary d-flex align-items-center">
-                                <i data-feather="search" class="me-1" style="width: 16px; height: 16px;"></i> Find Books
+                            <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-primary d-flex align-items-center">
+                                <i data-feather="file-text" class="me-1" style="width: 16px; height: 16px;"></i> My Loans
                             </a>
                         <?php endif; ?>
                     </div>

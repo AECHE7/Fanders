@@ -1,8 +1,8 @@
 <?php
 /**
- * Add user page for the Library Management System
- * 
- * FIXED: Uses addBorrower from UserService, ensures fields and roles align with service and models.
+ * Add staff user page for the Fanders Microfinance Loan Management System
+ *
+ * Uses addUser from UserService, ensures fields and roles align with microfinance service and models.
  */
 
 // Include configuration
@@ -63,7 +63,7 @@ if ($auth->checkSessionTimeout()) {
 $user = $auth->getCurrentUser();
 $userRole = $user['role'];
 
-// Check if user has permission to add users (Super Admin can add any user, Admin can only add borrowers)
+// Check if user has permission to add staff users (Super Admin can add any staff user, Admin can add limited staff roles)
 if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
@@ -111,13 +111,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Role validation and restriction
         if ($userRole === 'admin') {
-            // Admin can only add borrowers (students, staff, others)
-            if (!in_array($newUser['role'], ['student', 'staff', 'other'])) {
-                $error = 'Admins can only add borrower accounts (Students, Staff, or Others).';
+            // Admin can only add limited staff roles (account_officer, cashier)
+            if (!in_array($newUser['role'], ['account_officer', 'cashier'])) {
+                $error = 'Admins can only add Account Officer and Cashier accounts.';
             }
         } else if ($userRole === 'super-admin') {
-            // Super Admin can add any role
-            if (!in_array($newUser['role'], ['super-admin', 'admin', 'student', 'staff', 'other'])) {
+            // Super Admin can add any staff role
+            if (!in_array($newUser['role'], ['super-admin', 'admin', 'manager', 'account_officer', 'cashier'])) {
                 $error = 'Invalid role selected.';
             }
         }
@@ -128,7 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             if ($userId) {
                 // User added successfully
-                $session->setFlash('success', 'Admin added successfully.');
+                $session->setFlash('success', 'Staff user added successfully.');
                 header('Location: ' . APP_URL . '/public/admins/index.php');
                 exit;
             } else {
@@ -148,10 +148,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Add Admin</h1>
+        <h1 class="h2">Add Staff User</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
-                <i data-feather="arrow-left"></i> Back to Admins
+            <a href="<?= APP_URL ?>/public/admins/index.php" class="btn btn-sm btn-outline-secondary">
+                <i data-feather="arrow-left"></i> Back to Staff Users
             </a>
         </div>
     </div>
@@ -164,7 +164,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     
     <?php if ($formSubmitted && !$error): ?>
         <div class="alert alert-success">
-            Admin added successfully.
+            Staff user added successfully.
         </div>
     <?php endif; ?>
     
@@ -176,7 +176,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             if (file_exists($formPath)) {
                 include_once $formPath;
             } else {
-                echo '<div class="alert alert-danger">User form template is missing: ' . htmlspecialchars($formPath) . '</div>';
+                echo '<div class="alert alert-danger">Staff user form template is missing: ' . htmlspecialchars($formPath) . '</div>';
             }
             ?>
         </div>

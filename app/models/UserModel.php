@@ -17,6 +17,10 @@ class UserModel extends BaseModel {
     // Role definitions
     public static $ROLE_SUPER_ADMIN = 'super-admin';
     public static $ROLE_ADMIN = 'admin';
+    public static $ROLE_BRANCH_MANAGER = 'branch-manager';
+    public static $ROLE_ACCOUNT_OFFICER = 'account-officer';
+    public static $ROLE_CASHIER = 'cashier';
+    public static $ROLE_CLIENT = 'client';
     public static $ROLE_STUDENT = 'student';
     public static $ROLE_STAFF = 'staff';
     public static $ROLE_OTHER = 'other';
@@ -197,6 +201,10 @@ class UserModel extends BaseModel {
         if (!in_array($data['role'], [
             self::$ROLE_SUPER_ADMIN,
             self::$ROLE_ADMIN,
+            self::$ROLE_BRANCH_MANAGER,
+            self::$ROLE_ACCOUNT_OFFICER,
+            self::$ROLE_CASHIER,
+            self::$ROLE_CLIENT,
             self::$ROLE_STUDENT,
             self::$ROLE_STAFF,
             self::$ROLE_OTHER
@@ -243,14 +251,17 @@ class UserModel extends BaseModel {
 
 
     public function getAllBorrowers() {
-        $sql = "SELECT * FROM {$this->table} 
-                WHERE role IN (?, ?, ?) 
+        $sql = "SELECT * FROM {$this->table}
+                WHERE role IN (?, ?, ?, ?, ?, ?)
                 ORDER BY name ASC";
-                
+
         return $this->db->resultSet($sql, [
+            self::$ROLE_CLIENT,
             self::$ROLE_STUDENT,
             self::$ROLE_STAFF,
-            self::$ROLE_OTHER
+            self::$ROLE_OTHER,
+            self::$ROLE_BORROWER,
+            self::$ROLE_BRANCH_MANAGER
         ]);
     }
 
@@ -272,17 +283,20 @@ class UserModel extends BaseModel {
         $stats['total_borrowers'] = count($this->getAllBorrowers());
         
         // Get borrowers by role
-        $sql = "SELECT role, COUNT(*) as count 
-                FROM {$this->table} 
-                WHERE role IN (?, ?, ?) 
+        $sql = "SELECT role, COUNT(*) as count
+                FROM {$this->table}
+                WHERE role IN (?, ?, ?, ?, ?, ?)
                 GROUP BY role";
-                
+
         $result = $this->db->resultSet($sql, [
+            self::$ROLE_CLIENT,
             self::$ROLE_STUDENT,
             self::$ROLE_STAFF,
-            self::$ROLE_OTHER
+            self::$ROLE_OTHER,
+            self::$ROLE_BORROWER,
+            self::$ROLE_BRANCH_MANAGER
         ]);
-        
+
         $stats['borrowers_by_role'] = $result ?: [];
         
         return $stats;
@@ -306,53 +320,62 @@ class UserModel extends BaseModel {
         $stats['total_borrowers'] = $result ? $result['count'] : 0;
         
         // Get active borrowers count
-        $sql = "SELECT COUNT(*) as count 
-                FROM {$this->table} 
-                WHERE role IN (?, ?, ?) 
+        $sql = "SELECT COUNT(*) as count
+                FROM {$this->table}
+                WHERE role IN (?, ?, ?, ?, ?, ?)
                 AND status = ?";
-                
+
         $result = $this->db->single($sql, [
+            self::$ROLE_CLIENT,
             self::$ROLE_STUDENT,
             self::$ROLE_STAFF,
             self::$ROLE_OTHER,
+            self::$ROLE_BORROWER,
+            self::$ROLE_BRANCH_MANAGER,
             self::$STATUS_ACTIVE
         ]);
-        
+
         $stats['active_borrowers'] = $result ? $result['count'] : 0;
-        
+
         // Get borrowers by role
-        $borrowerRoles = [self::$ROLE_STUDENT, self::$ROLE_STAFF, self::$ROLE_OTHER];
+        $borrowerRoles = [self::$ROLE_CLIENT, self::$ROLE_STUDENT, self::$ROLE_STAFF, self::$ROLE_OTHER, self::$ROLE_BORROWER, self::$ROLE_BRANCH_MANAGER];
         foreach ($borrowerRoles as $role) {
             $stats['borrowers_by_role'][$role] = $this->count('role', $role);
         }
-        
+
         // Get borrowers by status
         $statuses = [self::$STATUS_ACTIVE, self::$STATUS_INACTIVE, self::$STATUS_SUSPENDED];
         foreach ($statuses as $status) {
-            $sql = "SELECT COUNT(*) as count 
-                    FROM {$this->table} 
-                    WHERE role IN (?, ?, ?) 
+            $sql = "SELECT COUNT(*) as count
+                    FROM {$this->table}
+                    WHERE role IN (?, ?, ?, ?, ?, ?)
                     AND status = ?";
-                    
+
             $result = $this->db->single($sql, [
+                self::$ROLE_CLIENT,
                 self::$ROLE_STUDENT,
                 self::$ROLE_STAFF,
                 self::$ROLE_OTHER,
+                self::$ROLE_BORROWER,
+                self::$ROLE_BRANCH_MANAGER,
                 $status
             ]);
-            
+
             $stats['borrowers_by_status'][$status] = $result ? $result['count'] : 0;
         }
-        
+
         // Get recently registered borrowers
-        $sql = "SELECT * FROM {$this->table} 
-                WHERE role IN (?, ?, ?) 
+        $sql = "SELECT * FROM {$this->table}
+                WHERE role IN (?, ?, ?, ?, ?, ?)
                 ORDER BY created_at DESC LIMIT 5";
-                
+
         $stats['recent_borrowers'] = $this->db->resultSet($sql, [
+            self::$ROLE_CLIENT,
             self::$ROLE_STUDENT,
             self::$ROLE_STAFF,
-            self::$ROLE_OTHER
+            self::$ROLE_OTHER,
+            self::$ROLE_BORROWER,
+            self::$ROLE_BRANCH_MANAGER
         ]);
         
         return $stats;
@@ -360,10 +383,14 @@ class UserModel extends BaseModel {
 
 
     public function getUserWithRoleName($id) {
-        $sql = "SELECT u.*, 
-                CASE 
+        $sql = "SELECT u.*,
+                CASE
                     WHEN u.role = ? THEN 'Super Admin'
                     WHEN u.role = ? THEN 'Admin'
+                    WHEN u.role = ? THEN 'Branch Manager'
+                    WHEN u.role = ? THEN 'Account Officer'
+                    WHEN u.role = ? THEN 'Cashier'
+                    WHEN u.role = ? THEN 'Client'
                     WHEN u.role = ? THEN 'Student'
                     WHEN u.role = ? THEN 'Staff'
                     WHEN u.role = ? THEN 'Other'
@@ -372,10 +399,14 @@ class UserModel extends BaseModel {
                 END as role_display
                 FROM {$this->table} u
                 WHERE u.id = ?";
-                
+
         return $this->db->single($sql, [
             self::$ROLE_SUPER_ADMIN,
             self::$ROLE_ADMIN,
+            self::$ROLE_BRANCH_MANAGER,
+            self::$ROLE_ACCOUNT_OFFICER,
+            self::$ROLE_CASHIER,
+            self::$ROLE_CLIENT,
             self::$ROLE_STUDENT,
             self::$ROLE_STAFF,
             self::$ROLE_OTHER,
@@ -385,10 +416,14 @@ class UserModel extends BaseModel {
     }
 
     public function getAllUsersWithRoleNames($roles = []) {
-        $sql = "SELECT u.*, 
-                CASE 
+        $sql = "SELECT u.*,
+                CASE
                     WHEN u.role = ? THEN 'Super Admin'
                     WHEN u.role = ? THEN 'Admin'
+                    WHEN u.role = ? THEN 'Branch Manager'
+                    WHEN u.role = ? THEN 'Account Officer'
+                    WHEN u.role = ? THEN 'Cashier'
+                    WHEN u.role = ? THEN 'Client'
                     WHEN u.role = ? THEN 'Student'
                     WHEN u.role = ? THEN 'Staff'
                     WHEN u.role = ? THEN 'Other'
@@ -396,24 +431,28 @@ class UserModel extends BaseModel {
                     ELSE 'Unknown'
                 END as role_display
                 FROM {$this->table} u";
-                
+
         $params = [
             self::$ROLE_SUPER_ADMIN,
             self::$ROLE_ADMIN,
+            self::$ROLE_BRANCH_MANAGER,
+            self::$ROLE_ACCOUNT_OFFICER,
+            self::$ROLE_CASHIER,
+            self::$ROLE_CLIENT,
             self::$ROLE_STUDENT,
             self::$ROLE_STAFF,
             self::$ROLE_OTHER,
             self::$ROLE_BORROWER
         ];
-        
+
         if (!empty($roles)) {
             $placeholders = str_repeat('?,', count($roles) - 1) . '?';
             $sql .= " WHERE u.role IN ({$placeholders})";
             $params = array_merge($params, $roles);
         }
-        
+
         $sql .= " ORDER BY u.created_at DESC";
-        
+
         return $this->db->resultSet($sql, $params);
     }
 
@@ -425,13 +464,16 @@ class UserModel extends BaseModel {
     }
 
     public function getTotalBorrowersCount() {
-        $sql = "SELECT COUNT(*) as count FROM {$this->table} 
-                WHERE role IN (?, ?, ?) 
+        $sql = "SELECT COUNT(*) as count FROM {$this->table}
+                WHERE role IN (?, ?, ?, ?, ?, ?)
                 AND status = ?";
         $params = [
+            self::$ROLE_CLIENT,
             self::$ROLE_STUDENT,
             self::$ROLE_STAFF,
             self::$ROLE_OTHER,
+            self::$ROLE_BORROWER,
+            self::$ROLE_BRANCH_MANAGER,
             self::$STATUS_ACTIVE
         ];
         $result = $this->db->single($sql, $params);

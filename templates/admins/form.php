@@ -1,6 +1,6 @@
 <?php
 /**
- * User Account Creation/Edit Form
+ * Staff User Account Creation/Edit Form for Fanders Microfinance System
  */
 ?>
 
@@ -13,7 +13,7 @@
             <div class="rounded d-flex align-items-center justify-content-center me-3" style="width: 38px; height: 38px; background-color: #eaf8f6;">
                 <i data-feather="user" style="width: 20px; height: 20px; color: #0ca789;"></i>
             </div>
-            <h5 class="mb-0"><?= isset($editUser['id']) ? 'Edit Admin Account' : 'Create Admin Account' ?></h5>
+            <h5 class="mb-0"><?= isset($editUser['id']) ? 'Edit Staff Account' : 'Create Staff Account' ?></h5>
         </div>
     </div>
     
@@ -94,14 +94,14 @@
                         <?php if ($userRole === 'super-admin'): ?>
                             <option value="super-admin" <?= ($editUser['role'] ?? '') === 'super-admin' ? 'selected' : '' ?>>Super Admin</option>
                             <option value="admin" <?= ($editUser['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
+                            <option value="manager" <?= ($editUser['role'] ?? '') === 'manager' ? 'selected' : '' ?>>Manager</option>
                         <?php endif; ?>
-                        <option value="student" <?= ($editUser['role'] ?? '') === 'student' ? 'selected' : '' ?>>Student</option>
-                        <option value="staff" <?= ($editUser['role'] ?? '') === 'staff' ? 'selected' : '' ?>>Staff</option>
-                        <option value="other" <?= ($editUser['role'] ?? '') === 'other' ? 'selected' : '' ?>>Other</option>
+                        <option value="account_officer" <?= ($editUser['role'] ?? '') === 'account_officer' ? 'selected' : '' ?>>Account Officer</option>
+                        <option value="cashier" <?= ($editUser['role'] ?? '') === 'cashier' ? 'selected' : '' ?>>Cashier</option>
                     </select>
                     <div class="invalid-feedback">Please select a role.</div>
                     <?php if ($userRole === 'admin'): ?>
-                        <small class="form-text text-muted">Admins can only add borrower accounts (Students, Staff, or Others).</small>
+                        <small class="form-text text-muted">Admins can only add limited staff accounts (Account Officers or Cashiers).</small>
                     <?php endif; ?>
                 </div>
             </div>
@@ -124,7 +124,7 @@
     
     <!-- Form Actions -->
     <div class="d-flex justify-content-end mt-4">
-        <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
+        <a href="<?= APP_URL ?>/public/admins/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
         <button type="submit" class="btn btn-primary px-4 ripple-effect">
             <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
             <?= isset($editUser['id']) ? 'Update Account' : 'Create Account' ?>

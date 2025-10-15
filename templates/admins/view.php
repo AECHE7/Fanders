@@ -1,10 +1,10 @@
 <?php
-// User View Template
+// Staff User View Template for Fanders Microfinance System
 ?>
 
 <div class="card mb-4">
     <div class="card-body">
-        <h5 class="card-title">User Information</h5>
+        <h5 class="card-title">Staff User Information</h5>
         <dl class="row">
             <dt class="col-sm-3">Name</dt>
             <dd class="col-sm-9"><?= htmlspecialchars($viewUser['name']) ?></dd>
@@ -16,7 +16,11 @@
             <dd class="col-sm-9"><?= htmlspecialchars($viewUser['phone_number']) ?></dd>
 
             <dt class="col-sm-3">Role</dt>
-            <dd class="col-sm-9"><?= htmlspecialchars($viewUser['role']) ?></dd>
+            <dd class="col-sm-9">
+                <span class="badge bg-<?= getRoleBadgeClass($viewUser['role']) ?>">
+                    <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $viewUser['role']))) ?>
+                </span>
+            </dd>
 
             <dt class="col-sm-3">Status</dt>
             <dd class="col-sm-9">
@@ -103,6 +107,31 @@
         <?php endif; ?>
     </div>
 </div>
+
+<?php
+/**
+ * Get badge class for role
+ *
+ * @param string $role
+ * @return string
+ */
+function getRoleBadgeClass($role) {
+    switch($role) {
+        case 'super-admin':
+            return 'danger';
+        case 'admin':
+            return 'warning';
+        case 'manager':
+            return 'info';
+        case 'account_officer':
+            return 'primary';
+        case 'cashier':
+            return 'success';
+        default:
+            return 'secondary';
+    }
+}
+?>
 
 <style>
 .table-hover tbody tr:hover {

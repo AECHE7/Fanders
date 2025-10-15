@@ -1,5 +1,5 @@
 <?php
-// Users List Template
+// Staff Users List Template for Fanders Microfinance System
 ?>
 
 <!-- Users List -->
@@ -7,7 +7,7 @@
     <div class="card-body">
         <?php if (empty($users) || !is_array($users)): ?>
             <div class="alert alert-info">
-                No admins found.
+                No staff users found.
             </div>
         <?php else: ?>
             <div class="table-responsive">
@@ -46,15 +46,15 @@
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="<?= APP_URL ?>/public/users/view.php?id=<?= htmlspecialchars($user['id'] ?? '') ?>" 
-                                               class="btn btn-sm btn-outline-primary" 
-                                               title="View User">
+                                            <a href="<?= APP_URL ?>/public/admins/view.php?id=<?= htmlspecialchars($user['id'] ?? '') ?>"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="View Staff User">
                                                 <i data-feather="eye"></i>
                                             </a>
-                                            <?php if ($userRole === 'super-admin'): ?>
-                                                <a href="<?= APP_URL ?>/public/users/edit.php?id=<?= htmlspecialchars($user['id'] ?? '') ?>" 
-                                                   class="btn btn-sm btn-outline-secondary" 
-                                                   title="Edit User">
+                                            <?php if ($userRole === 'super-admin' || ($userRole === 'admin' && in_array($user['role'], ['account_officer', 'cashier']))): ?>
+                                                <a href="<?= APP_URL ?>/public/admins/edit.php?id=<?= htmlspecialchars($user['id'] ?? '') ?>"
+                                                   class="btn btn-sm btn-outline-secondary"
+                                                   title="Edit Staff User">
                                                     <i data-feather="edit-2"></i>
                                                 </a>
                                             <?php endif; ?>
@@ -86,8 +86,12 @@ function getRoleBadgeClass($role) {
             return 'danger';
         case 'admin':
             return 'warning';
-        case 'other':
-            return 'secondary';
+        case 'manager':
+            return 'info';
+        case 'account_officer':
+            return 'primary';
+        case 'cashier':
+            return 'success';
         default:
             return 'secondary';
     }

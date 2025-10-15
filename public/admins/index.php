@@ -1,6 +1,6 @@
 <?php
 /**
- * Users list page for the Library Management System
+ * Staff users list page for the Fanders Microfinance Loan Management System
  */
 
 // Include configuration
@@ -58,7 +58,7 @@ if ($auth->checkSessionTimeout()) {
 $user = $auth->getCurrentUser();
 $userRole = $user['role'];
 
-// Check if user has permission to view users list (Super Admin or Admin)
+// Check if user has permission to view staff users list (Super Admin or Admin)
 if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
@@ -73,21 +73,17 @@ $userService = new UserService();
 $roleFilter = isset($_GET['role']) ? $_GET['role'] : '';
 $statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
 
-// Get users based on filters
+// Get staff users based on filters
 if ($userRole == 'super-admin') {
-    // Super admin can see all users
+    // Super admin can see all staff users
     $users = $userService->getAllUsersWithRoleNames();
-    // Filter to only admin and super-admin
+    // Filter to only staff roles
     $users = array_filter($users, function($u) {
-        return in_array($u['role'], ['admin', 'super-admin']);
+        return in_array($u['role'], ['admin', 'super-admin', 'manager', 'account_officer', 'cashier']);
     });
 } else {
-    // Admin can only see borrowers
-    $users = $userService->getAllBorrowers();
-    // Filter to only admin role (if any)
-    $users = array_filter($users, function($u) {
-        return $u['role'] === 'admin';
-    });
+    // Admin can only see limited staff roles
+    $users = $userService->getAllUsersWithRoleNames(['account_officer', 'cashier']);
 }
 
 // Apply role filter if specified
@@ -121,15 +117,15 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Manage Admins</h1>
+        <h1 class="h2">Manage Staff Users</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
                 <?php if ($userRole == 'super-admin'): ?>
                     <a href="<?= APP_URL ?>/public/admins/add.php" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="user-plus"></i> Add Admin Account
+                        <i data-feather="user-plus"></i> Add Staff Account
                     </a>
                 <?php endif; ?>
-                
+
                 <a href="<?= APP_URL ?>/public/reports/users.php" class="btn btn-sm btn-outline-secondary">
                     <i data-feather="file-text"></i> Generate Report
                 </a>

@@ -229,6 +229,23 @@ class AuthService extends BaseService {
 
 
     public function isAdmin() {
-        return $this->hasRole(['admin', 'super-admin']);
+        return $this->hasRole(['admin', 'super-admin', 'branch_manager']);
+    }
+
+    public function hasMicrofinanceRole($roles) {
+        $microfinanceRoles = [
+            'super_admin',
+            'admin',
+            'branch_manager',
+            'account_officer',
+            'cashier',
+            'client'
+        ];
+
+        if (is_array($roles)) {
+            return !empty(array_intersect($roles, $microfinanceRoles)) && $this->hasRole($roles);
+        }
+
+        return in_array($roles, $microfinanceRoles) && $this->hasRole([$roles]);
     }
 }

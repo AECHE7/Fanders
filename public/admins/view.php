@@ -1,6 +1,6 @@
 <?php
 /**
- * View user details page for the Library Management System
+ * View staff user details page for the Fanders Microfinance Loan Management System
  */
 
 // Include configuration
@@ -63,9 +63,9 @@ $userRole = $user['role'];
 
 // Check if user ID is provided
 if (!isset($_GET['id']) || empty($_GET['id'])) {
-    // Redirect to users page with error message
-    $session->setFlash('error', 'User ID is required.');
-    header('Location: ' . APP_URL . '/public/users/index.php');
+    // Redirect to staff users page with error message
+    $session->setFlash('error', 'Staff user ID is required.');
+    header('Location: ' . APP_URL . '/public/admins/index.php');
     exit;
 }
 
@@ -78,34 +78,34 @@ $userService = new UserService();
 $viewUser = $userService->getUserWithRoleName($userId);
 
 if (!$viewUser) {
-    // User not found
-    $session->setFlash('error', 'User not found.');
-    header('Location: ' . APP_URL . '/public/users/index.php');
+    // Staff user not found
+    $session->setFlash('error', 'Staff user not found.');
+    header('Location: ' . APP_URL . '/public/admins/index.php');
     exit;
 }
 
-// Get borrowed books for the user
+// Get borrowed books for the user (if applicable)
 $borrowedBooks = [];
 if (in_array($viewUser['role'], ['super-admin','student', 'staff', 'other'])) {
     $bookService = new BookService();
     $borrowedBooks = $bookService->getUserBorrowedBooks($userId);
 }
 
-// Check if user has permission to view this user
-// Super Admin can view any user, Admin can only view borrowers
-if ($userRole == 'admin' && !in_array($viewUser['role'], ['student', 'staff', 'other'])) {
+// Check if user has permission to view this staff user
+// Super Admin can view any staff user, Admin can only view limited staff roles
+if ($userRole == 'admin' && !in_array($viewUser['role'], ['account_officer', 'cashier'])) {
     // Redirect to dashboard with error message
-    $session->setFlash('error', 'You do not have permission to view this user.');
+    $session->setFlash('error', 'You do not have permission to view this staff user.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
     exit;
 }
 
-// Get transaction history for borrowers
+// Get transaction history for borrowers (if applicable)
 $transactions = [];
 if ($viewUser['role'] == 'super-admin'|| $viewUser['role'] == 'staff') {
     $transactionService = new TransactionService();
     $transactions = $transactionService->getUserTransactionHistory($userId);
-    
+
     // Get borrower stats
     $borrowerStats = $userService->getBorrowerStats($userId);
 }
@@ -140,15 +140,15 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">User Details</h1>
+        <h1 class="h2">Staff User Details</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                    <a href="<?= APP_URL ?>/public/users/edit.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="edit"></i> Edit User Profile
+                    <a href="<?= APP_URL ?>/public/admins/edit.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-primary">
+                        <i data-feather="edit"></i> Edit Staff User Profile
                     </a>
                     <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
-                        <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
-                            <i data-feather="arrow-left"></i> Back to Users
+                        <a href="<?= APP_URL ?>/public/admins/index.php" class="btn btn-sm btn-outline-secondary">
+                            <i data-feather="arrow-left"></i> Back to Staff Users
                         </a>
                     <?php endif; ?>
                     <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-sm btn-outline-secondary">
@@ -170,10 +170,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     <?php endif; ?>
     
-    <!-- User Details -->
-    <?php include_once BASE_PATH . '/templates/users/view.php'; ?>
+    <!-- Staff User Details -->
+    <?php include_once BASE_PATH . '/templates/admins/view.php'; ?>
     
-        <!-- Borrower Transactions -->
+        <!-- Borrower Transactions (if applicable) -->
         <div class="card mt-4">
             <div class="card-header">
                 <h5 class="mb-0">Transaction History</h5>
@@ -230,30 +230,30 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </div>
         </div>
     
-    <?php if (($userRole == 'super-admin') || 
-             ($userRole == 'admin' && $viewUser['role'] == 'borrower')): ?>
-        <!-- User Management Actions -->
+    <?php if (($userRole == 'super-admin') ||
+             ($userRole == 'admin' && in_array($viewUser['role'], ['account_officer', 'cashier']))): ?>
+        <!-- Staff User Management Actions -->
         <div class="card mt-4">
             <div class="card-header bg-<?= $viewUser['status'] ? 'warning' : 'success' ?> text-white">
-                <h5 class="mb-0">User Status Management</h5>
+                <h5 class="mb-0">Staff User Status Management</h5>
             </div>
             <div class="card-body">
                 <?php if ($viewUser['status']): ?>
-                    <p class="card-text">This user is currently active. You can deactivate this account.</p>
-                    <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" onsubmit="return confirm('Are you sure you want to deactivate this user?');">
+                    <p class="card-text">This staff user is currently active. You can deactivate this account.</p>
+                    <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" onsubmit="return confirm('Are you sure you want to deactivate this staff user?');">
                         <?= $csrf->getTokenField() ?>
                         <input type="hidden" name="action" value="deactivate">
                         <button type="submit" class="btn btn-warning">
-                            <i data-feather="user-x"></i> Deactivate User
+                            <i data-feather="user-x"></i> Deactivate Staff User
                         </button>
                     </form>
                 <?php else: ?>
-                    <p class="card-text">This user is currently inactive. You can activate this account.</p>
+                    <p class="card-text">This staff user is currently inactive. You can activate this account.</p>
                     <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post">
                         <?= $csrf->getTokenField() ?>
                         <input type="hidden" name="action" value="activate">
                         <button type="submit" class="btn btn-success">
-                            <i data-feather="user-check"></i> Activate User
+                            <i data-feather="user-check"></i> Activate Staff User
                         </button>
                     </form>
                 <?php endif; ?>
