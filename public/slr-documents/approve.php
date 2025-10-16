@@ -1,119 +1,48 @@
 <?php
 /**
- * Approve SLR Document - Fanders Microfinance System
+ * SLR Approve Action (approve.php)
+ * Role: Handles POST request to approve a DRAFT SLR document.
  */
+// Set flag to skip default auth check in init.php since we handle it below
+$skip_auth_check = true; 
+require_once '../../public/init.php';
 
-// Include configuration
-require_once '../../app/config/config.php';
-
-// Start output buffering
-ob_start();
-
-// Include all required files
-function autoload($className) {
-    // Define the directories to look in
-    $directories = [
-        'app/core/',
-        'app/models/',
-        'app/services/',
-        'app/utilities/'
-    ];
-
-    // Try to find the class file
-    foreach ($directories as $directory) {
-        $file = BASE_PATH . '/' . $directory . $className . '.php';
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
-    }
+// Ensure the request is a POST request
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Method Not Allowed']);
+    exit;
 }
 
-// Register autoloader
-spl_autoload_register('autoload');
+// Only Admin/Manager can approve
+if (!$auth->isLoggedIn() || !$auth->hasRole(['super-admin', 'admin', 'manager'])) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Permission denied.']);
+    exit;
+}
 
-// Initialize session management
-$session = new Session();
-
-// Initialize authentication service
-$auth = new AuthService();
-
-// Initialize CSRF protection
-$csrf = new CSRF();
-
-// Set content type to JSON for AJAX response
+// Set JSON response header
 header('Content-Type: application/json');
 
-// Check if user is logged in
-if (!$auth->isLoggedIn()) {
-    echo json_encode(['success' => false, 'message' => 'Please login to access this page.']);
+// Validate CSRF token
+if (!$csrf->validateRequest()) {
+    echo json_encode(['success' => false, 'message' => 'Invalid security token.']);
     exit;
 }
 
-// Check for session timeout
-if ($auth->checkSessionTimeout()) {
-    echo json_encode(['success' => false, 'message' => 'Your session has expired. Please login again.']);
-    exit;
-}
+$slrId = isset($_POST['slr_id']) ? (int)$_POST['slr_id'] : 0;
+$approvedBy = $user['id'];
 
-// Get current user data
-$user = $auth->getCurrentUser();
-$userRole = $user['role'];
+$slrDocumentService = new SlrDocumentService();
 
-// Check if user has permission to approve SLR documents
-if (!$auth->hasRole(['administrator', 'manager'])) {
-    echo json_encode(['success' => false, 'message' => 'You do not have permission to approve SLR documents.']);
-    exit;
-}
-
-// Handle POST request
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate CSRF token
-    if (!$csrf->validateToken($_POST['csrf_token'] ?? '')) {
-        echo json_encode(['success' => false, 'message' => 'Invalid security token. Please try again.']);
-        exit;
-    }
-
-    $slrId = (int)($_POST['slr_id'] ?? 0);
-
-    if (!$slrId) {
-        echo json_encode(['success' => false, 'message' => 'Invalid SLR document ID.']);
-        exit;
-    }
-
-    // Initialize SLR document service
-    $slrDocumentService = new SlrDocumentService();
-
-    // Get SLR document details
-    $slrDetails = $slrDocumentService->getSlrDetails($slrId);
-    if (!$slrDetails) {
-        echo json_encode(['success' => false, 'message' => 'SLR document not found.']);
-        exit;
-    }
-
-    $slr = $slrDetails['slr'];
-
-    if ($slr['status'] !== 'draft') {
-        echo json_encode(['success' => false, 'message' => 'Only draft SLR documents can be approved.']);
-        exit;
-    }
-
-    // Approve the SLR document
-    $success = $slrDocumentService->updateSlrDocument($slrId, [
-        'status' => 'approved',
-        'approved_by' => $user['id'],
-        'updated_at' => date('Y-m-d H:i:s')
-    ]);
-
+if ($slrId > 0) {
+    $success = $slrDocumentService->approveSlrDocument($slrId, $approvedBy);
     if ($success) {
-        echo json_encode(['success' => true, 'message' => 'SLR document approved successfully.']);
+        echo json_encode(['success' => true, 'message' => 'SLR document approved.']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to approve SLR document: ' . $slrDocumentService->getLastError()]);
+        echo json_encode(['success' => false, 'message' => $slrDocumentService->getErrorMessage() ?: 'Failed to approve SLR.']);
     }
-    exit;
 } else {
-    // Invalid request method
-    echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
-    exit;
+    echo json_encode(['success' => false, 'message' => 'Invalid SLR ID.']);
 }
 ?>

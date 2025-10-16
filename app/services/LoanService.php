@@ -1,7 +1,14 @@
 <?php
 /**
- * LoanService - Handles loan-related operations for Fanders Microfinance
+ * LoanService - Handles loan-related operations for Fanders Microfinance.
+ * This service manages the loan lifecycle, integrates financial calculations,
+ * and enforces business rules like preventing concurrent loans.
  */
+require_once __DIR__ . '/../core/BaseService.php';
+require_once __DIR__ . '/../models/LoanModel.php';
+require_once __DIR__ . '/../models/ClientModel.php';
+require_once __DIR__ . '/LoanCalculationService.php';
+
 class LoanService extends BaseService {
     private $loanModel;
     private $clientModel;
@@ -31,86 +38,95 @@ class LoanService extends BaseService {
         return $this->loanModel->getLoansByClient($clientId);
     }
 
-    public function getActiveLoans($limit = 5) {
-        return $this->loanModel->getActiveLoans($limit);
+    public function getActiveLoans() {
+        return $this->loanModel->getActiveLoans();
     }
 
     public function getAllActiveLoansWithClients() {
         return $this->loanModel->getAllActiveLoansWithClients();
     }
+    
+    public function getLoanStats() {
+        return $this->loanModel->getLoanStats();
+    }
 
-    public function applyForLoan($loanData, $appliedBy) {
-        // Validate loan data
-        if (!$this->validateLoanData($loanData)) {
+    /**
+     * Creates a new loan application.
+     * Enforces business rule: Client cannot have an active or defaulted loan.
+     * @param array $loanData Must contain 'client_id' and 'principal'.
+     * @return int|false New loan ID on success.
+     */
+    public function applyForLoan(array $loanData) {
+        $principal = $loanData['principal'] ?? null;
+        $clientId = $loanData['client_id'] ?? null;
+
+        // 1. Validate required fields and unique loan status
+        if (!$this->validateLoanData(['client_id' => $clientId, 'principal' => $principal])) {
             return false;
         }
 
-        // Calculate loan details using LoanCalculationService
-        $calculation = $this->loanCalculationService->calculateLoan($loanData['loan_amount']);
+        // 2. Calculate loan details using LoanCalculationService
+        $calculation = $this->loanCalculationService->calculateLoan($principal);
         if (!$calculation) {
             $this->setErrorMessage($this->loanCalculationService->getErrorMessage());
             return false;
         }
 
-        // Prepare loan data
-        $loanData['interest_rate'] = $calculation['interest_rate'];
-        $loanData['loan_term_months'] = $calculation['loan_term_months'];
-        $loanData['total_interest'] = $calculation['total_interest'];
-        $loanData['insurance_fee'] = $calculation['insurance_fee'];
-        $loanData['total_amount'] = $calculation['total_amount'];
-        $loanData['weekly_payment'] = $calculation['weekly_payment'];
-        $loanData['status'] = 'application';
-        $loanData['application_date'] = date('Y-m-d H:i:s');
-        $loanData['created_at'] = date('Y-m-d H:i:s');
-        $loanData['updated_at'] = date('Y-m-d H:i:s');
+        // 3. Map calculation results to fillable fields for LoanModel::create()
+        $dataToCreate = [
+            'client_id' => $clientId,
+            'principal' => $calculation['principal'],
+            'interest_rate' => $calculation['interest_rate'],
+            'term_weeks' => $calculation['term_weeks'],
+            'total_interest' => $calculation['total_interest'],
+            'insurance_fee' => $calculation['insurance_fee'],
+            'total_loan_amount' => $calculation['total_loan_amount'],
+            'status' => LoanModel::STATUS_APPLICATION,
+            'application_date' => date('Y-m-d H:i:s'),
+        ];
 
-        // Create loan application
-        return $this->loanModel->create($loanData);
+        // 4. Create loan application
+        $newId = $this->loanModel->create($dataToCreate);
+        
+        if (!$newId) {
+             $this->setErrorMessage($this->loanModel->getLastError() ?: 'Failed to save loan application.');
+        }
+
+        return $newId;
     }
 
     public function updateLoan($id, $loanData) {
-        // Get existing loan
-        $existingLoan = $this->loanModel->findById($id);
-
-        if (!$existingLoan) {
-            $this->setErrorMessage('Loan not found.');
-            return false;
-        }
-
-        // Validate loan data
-        if (!$this->validateLoanData($loanData, $id)) {
-            return false;
-        }
-
-        // Set update timestamp
-        $loanData['updated_at'] = date('Y-m-d H:i:s');
-
-        // Update loan
+        // Validation check for status changes is handled in specific methods (approve, disburse, complete)
+        // General update is for application stage adjustments only.
         return $this->loanModel->update($id, $loanData);
     }
 
-    public function approveLoan($id, $approvedBy) {
+    /**
+     * Moves a loan from 'Application' to 'Approved'.
+     * @param int $id Loan ID.
+     * @return bool
+     */
+    public function approveLoan($id) {
         $loan = $this->loanModel->findById($id);
         if (!$loan) {
             $this->setErrorMessage('Loan not found.');
             return false;
         }
 
-        if ($loan['status'] !== 'application') {
+        if ($loan['status'] !== LoanModel::STATUS_APPLICATION) {
             $this->setErrorMessage('Only loan applications can be approved.');
             return false;
         }
 
-        $updateData = [
-            'status' => 'approved',
-            'approval_date' => date('Y-m-d H:i:s'),
-            'approved_by' => $approvedBy,
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
-
-        return $this->loanModel->update($id, $updateData);
+        return $this->loanModel->approveLoan($id);
     }
 
+    /**
+     * Moves a loan from 'Approved' to 'Active' (Fund Disbursement).
+     * @param int $id Loan ID.
+     * @param int $disbursedBy The user ID of the staff member disbursing the fund.
+     * @return bool
+     */
     public function disburseLoan($id, $disbursedBy) {
         $loan = $this->loanModel->findById($id);
         if (!$loan) {
@@ -118,102 +134,73 @@ class LoanService extends BaseService {
             return false;
         }
 
-        if ($loan['status'] !== 'approved') {
+        if ($loan['status'] !== LoanModel::STATUS_APPROVED) {
             $this->setErrorMessage('Only approved loans can be disbursed.');
             return false;
         }
-
-        $updateData = [
-            'status' => 'active',
-            'disbursement_date' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
-
-        return $this->loanModel->update($id, $updateData);
+        
+        // This is a crucial financial transaction, so we use the transactional wrapper
+        return $this->transaction(function() use ($id) {
+            // 1. Update loan status
+            $success = $this->loanModel->disburseLoan($id);
+            
+            // 2. Add Transaction/Audit Log (Phase 2/3 - Placeholder for now)
+            // if ($success) { $this->transactionService->log('LOAN_DISBURSEMENT', $id, $disbursedBy); }
+            
+            return $success;
+        });
     }
 
+    /**
+     * Finalizes a loan, moving status to 'Completed'.
+     * This should only be called by PaymentService when the outstanding balance is zero.
+     * @param int $id Loan ID.
+     * @return bool
+     */
     public function completeLoan($id) {
-        $loan = $this->loanModel->findById($id);
-        if (!$loan) {
-            $this->setErrorMessage('Loan not found.');
+        return $this->loanModel->completeLoan($id);
+    }
+
+    /**
+     * Validates client and loan amount before creating a loan application.
+     * @param array $loanData Must contain 'client_id' and 'principal'.
+     * @param int $excludeId Not used here, maintained for consistency.
+     * @return bool True if validation passes.
+     */
+    private function validateLoanData(array $loanData, $excludeId = null) {
+        $clientId = $loanData['client_id'] ?? null;
+        $principal = $loanData['principal'] ?? null;
+        
+        // Use BaseService validation for basic requirements
+        if (!$this->validate(['client_id' => $clientId, 'principal' => $principal], [
+            'client_id' => 'required|numeric',
+            'principal' => 'required|numeric|positive'
+        ])) {
             return false;
         }
 
-        $updateData = [
-            'status' => 'completed',
-            'completion_date' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
-
-        return $this->loanModel->update($id, $updateData);
-    }
-
-    public function getAllClients() {
-        return $this->clientModel->getAll('name', 'ASC');
-    }
-
-    public function getAllClientsForSelect() {
-        return $this->clientModel->getAllForSelect();
-    }
-
-    public function getRecentLoans($limit = 10) {
-        return $this->loanModel->getRecentLoans($limit);
-    }
-
-    public function getLoansByStatus($status) {
-        return $this->loanModel->getLoansByStatus($status);
-    }
-
-    public function getLoanStats() {
-        $stats = [];
-
-        // Total loans
-        $sql = "SELECT COUNT(*) as count FROM {$this->loanModel->getTable()}";
-        $result = $this->loanModel->query($sql);
-        $stats['total_loans'] = $result ? $result[0]['count'] : 0;
-
-        // Active loans
-        $sql = "SELECT COUNT(*) as count FROM {$this->loanModel->getTable()} WHERE status = 'active'";
-        $result = $this->loanModel->query($sql);
-        $stats['active_loans'] = $result ? $result[0]['count'] : 0;
-
-        // Total loan amount disbursed
-        $sql = "SELECT SUM(loan_amount) as total FROM {$this->loanModel->getTable()} WHERE status IN ('active', 'completed')";
-        $result = $this->loanModel->query($sql);
-        $stats['total_disbursed'] = $result ? $result[0]['total'] : 0;
-
-        // Loans this month
-        $sql = "SELECT COUNT(*) as count FROM {$this->loanModel->getTable()} WHERE MONTH(application_date) = MONTH(CURDATE()) AND YEAR(application_date) = YEAR(CURDATE())";
-        $result = $this->loanModel->query($sql);
-        $stats['loans_this_month'] = $result ? $result[0]['count'] : 0;
-
-        return $stats;
-    }
-
-    private function validateLoanData($loanData, $excludeId = null) {
-        // Check required fields
-        $requiredFields = ['client_id', 'loan_amount'];
-        foreach ($requiredFields as $field) {
-            if (!isset($loanData[$field]) || $loanData[$field] === '') {
-                $this->setErrorMessage(ucfirst(str_replace('_', ' ', $field)) . ' is required.');
-                return false;
-            }
-        }
-
-        // Validate client exists
-        if (!$this->clientModel->findById($loanData['client_id'])) {
+        // Check if client exists
+        if (!$this->clientModel->findById($clientId)) {
             $this->setErrorMessage('Selected client does not exist.');
             return false;
         }
 
-        // Validate loan amount
-        if (!is_numeric($loanData['loan_amount']) || $loanData['loan_amount'] <= 0) {
-            $this->setErrorMessage('Loan amount must be a positive number.');
+        // --- CORE BUSINESS RULE ENFORCEMENT ---
+        
+        // 1. Check for active loan
+        if ($this->loanModel->getClientActiveLoan($clientId)) {
+            $this->setErrorMessage('Client already has an active loan and cannot apply for another.');
             return false;
         }
 
-        // Use LoanCalculationService to validate amount
-        if (!$this->loanCalculationService->validateLoanAmount($loanData['loan_amount'])) {
+        // 2. Check for defaulted loan
+        if ($this->loanModel->hasClientDefaultedLoan($clientId)) {
+            $this->setErrorMessage('Client has defaulted loans and must settle their account before applying.');
+            return false;
+        }
+
+        // 3. Validate loan amount against business range rules
+        if (!$this->loanCalculationService->validateLoanAmount($principal)) {
             $this->setErrorMessage($this->loanCalculationService->getErrorMessage());
             return false;
         }

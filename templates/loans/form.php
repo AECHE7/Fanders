@@ -1,9 +1,14 @@
 <?php
 /**
- * Loan Application Form Template
+ * Loan Application Form Template (templates/loans/form.php)
+ * Used by public/loans/add.php.
+ * * Assumes the following variables are available from the controller:
+ * @var array $loan Current loan data (client_id, loan_amount)
+ * @var array $clients Array of active clients for selection
+ * @var array|null $loanCalculation Detailed calculation preview data
+ * @var CSRF $csrf The CSRF utility object
  */
 ?>
-
 
 <form action="" method="post" class="notion-form needs-validation" novalidate>
     <?= $csrf->getTokenField() ?>
@@ -14,14 +19,14 @@
             <div class="rounded d-flex align-items-center justify-content-center me-3" style="width:38px;height:38px;background:#f7ecff;">
                 <i data-feather="dollar-sign" style="width:20px;height:20px;color:#9d71ea;" aria-hidden="true"></i>
             </div>
-            <h1 class="mb-0 h5">Loan Application Details</h1>
+            <h1 class="mb-0 h5">Loan Application Details (4 Months / 17 Weeks)</h1>
         </div>
     </div>
 
-    <!-- Basic Information Section -->
+    <!-- Loan Information Section -->
     <section class="mb-4 animate-on-scroll" aria-labelledby="basic-info-title">
         <div class="d-flex align-items-center mb-3">
-            <h2 class="mb-0 me-2 h6" id="basic-info-title">Loan Information</h2>
+            <h2 class="mb-0 me-2 h6 text-primary">Required Details</h2>
             <div class="notion-divider flex-grow-1"></div>
         </div>
         <div class="row g-3 stagger-fade-in">
@@ -38,7 +43,7 @@
                         <option value="">Select Client</option>
                         <?php foreach ($clients as $client): ?>
                             <option value="<?= $client['id'] ?>" <?= (isset($loan['client_id']) && $loan['client_id'] == $client['id']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($client['name']) ?>
+                                <?= htmlspecialchars($client['name']) ?> (ID: <?= $client['id'] ?>)
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -48,7 +53,7 @@
             <!-- Loan Amount -->
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
-                    <label for="loan_amount" class="notion-form-label">Loan Amount (₱) <span class="text-danger">*</span></label>
+                    <label for="loan_amount" class="notion-form-label">Principal Amount (₱) <span class="text-danger">*</span></label>
                     <input
                         type="number"
                         class="notion-form-control"
@@ -60,7 +65,7 @@
                         max="50000"
                         step="100"
                         aria-required="true"
-                        placeholder="Enter loan amount">
+                        placeholder="Enter principal amount">
                     <small class="form-text text-muted">Minimum ₱1,000 - Maximum ₱50,000</small>
                     <div class="invalid-feedback">Please enter a valid loan amount between ₱1,000 and ₱50,000.</div>
                 </div>
@@ -70,29 +75,30 @@
 
     <!-- Form Actions -->
     <div class="d-flex justify-content-end mt-4">
+        <!-- The Calculate button will submit the form and show the preview -->
         <button type="submit" name="calculate" class="btn btn-outline-info me-2 ripple-effect" aria-label="Calculate Loan">
             <i data-feather="calculator" class="me-1" style="width:16px;height:16px;" aria-hidden="true"></i>
             Calculate
         </button>
-        <button type="submit" name="submit_loan" class="btn btn-primary px-4 ripple-effect" aria-label="Submit Loan Application">
-            <i data-feather="send" class="me-1" style="width:16px;height:16px;" aria-hidden="true"></i>
-            Submit Application
-        </button>
+        
+        <!-- The Submit button will only appear in the controller preview section -->
+        <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-outline-secondary px-4 ripple-effect">
+            Cancel
+        </a>
     </div>
 </form>
 
 <!-- Improved JS for Form Interactivity and Accessibility -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Bootstrap-style validation
+    // Standard Bootstrap validation setup
     const form = document.querySelector('.notion-form');
     if(form) {
         form.addEventListener('submit', function(event) {
             if(!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
-
-                // Focus first invalid input
+                // Find first invalid field and trigger shake/focus
                 const firstInvalid = form.querySelector(':invalid');
                 if(firstInvalid) {
                     firstInvalid.focus();
@@ -102,25 +108,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         setTimeout(() => group.classList.remove('shake-animation'), 820);
                     }
                 }
-            } else {
-                // Visual feedback on valid submit
-                const submitBtn = form.querySelector('[type="submit"]');
-                if(submitBtn) submitBtn.classList.add('pulse');
-                const cardBody = form.closest('.card-body') || document.body;
-                const checkmark = document.createElement('div');
-                checkmark.className = 'floating-success-checkmark';
-                checkmark.innerHTML = `<div class="success-checkmark"><div class="check-icon"><span class="icon-line line-tip"></span><span class="icon-line line-long"></span></div></div>`;
-                cardBody.appendChild(checkmark);
-                setTimeout(() => {
-                    checkmark.style.opacity = '0';
-                    setTimeout(() => checkmark.remove(), 500);
-                }, 2000);
             }
             form.classList.add('was-validated');
         });
     }
 
-    // Focus effect for inputs/selects
+    // Input/Select focus effects
     document.querySelectorAll('.notion-form-control, .notion-form-select').forEach(control => {
         control.addEventListener('focus', function() {
             this.closest('.notion-form-group').classList.add('is-focused');
@@ -143,20 +136,10 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => ripple.remove(), 600);
         });
     });
-
-    // Animated select on focus
-    document.querySelectorAll('.custom-select-animated').forEach(select => {
-        select.addEventListener('focus', function() {
-            this.classList.add('select-expanded');
-        });
-        select.addEventListener('blur', function() {
-            this.classList.remove('select-expanded');
-        });
-    });
 });
 </script>
 
-<!-- CSS: Improved comments and accessibility focus -->
+<!-- CSS: General Form Aesthetics (Copied for completeness) -->
 <style>
 @keyframes shake { 0%,100%{transform:translateX(0);}10%,30%,50%,70%,90%{transform:translateX(-5px);}20%,40%,60%,80%{transform:translateX(5px);} }
 .shake-animation { animation: shake 0.8s ease; }
@@ -171,13 +154,31 @@ document.addEventListener('DOMContentLoaded', function() {
 .custom-select-animated { transition: all 0.3s; }
 .custom-select-animated:focus { transform: scale(1.02); }
 .select-expanded { box-shadow: 0 0 0 3px rgba(157,113,234,0.25); }
-.floating-success-checkmark {
-    position: fixed; top:50%; left:50%; transform:translate(-50%,-50%);
-    z-index: 9999; background:rgba(255,255,255,.9);
-    border-radius:50%; padding:20px;
-    box-shadow:0 4px 20px rgba(0,0,0,.15);
-    transition: opacity 0.5s;
-}
 .notion-form-label { font-weight: 600; }
 .notion-divider { height: 1px; background: #f0e9ff; border-radius: 1px; }
+
+/* Notion Form Control Styles */
+.notion-form-group { position: relative; margin-bottom: 1.5rem; }
+.notion-form-control, .notion-form-select {
+    padding: 0.75rem 1rem; border: 1px solid #e0e0e0; border-radius: 8px;
+    transition: all 0.3s ease; width: 100%; font-size: 1rem; line-height: 1.5;
+    background-color: #fff;
+}
+.notion-form-control:focus, .notion-form-select:focus {
+    border-color: #9d71ea; box-shadow: 0 0 0 0.2rem rgba(157, 113, 234, 0.25); outline: none;
+}
+.notion-form-label {
+    position: absolute; top: 0.75rem; left: 1rem; padding: 0 0.25rem;
+    pointer-events: none; transition: all 0.3s ease; background-color: white;
+    color: #6c757d; font-size: 1rem;
+}
+.notion-form-group input:focus ~ .notion-form-label,
+.notion-form-group input:not(:placeholder-shown) ~ .notion-form-label,
+.notion-form-group textarea:focus ~ .notion-form-label,
+.notion-form-group textarea:not(:placeholder-shown) ~ .notion-form-label {
+    top: -0.65rem; font-size: 0.8rem; color: #9d71ea;
+}
+.notion-form-group input:required:invalid:not(:placeholder-shown) { border-color: #dc3545; }
+.notion-form-group input:required:invalid:not(:placeholder-shown) ~ .notion-form-label { color: #dc3545; }
+.text-primary { color: #9d71ea !important; }
 </style>

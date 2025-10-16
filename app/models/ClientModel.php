@@ -1,33 +1,51 @@
 <?php
 /**
  * ClientModel - Handles client (borrower) operations
- * Replaces borrower functionality from UserModel
+ * This model manages the static data of the client accounts for Fanders Microfinance Inc.
  */
 require_once __DIR__ . '/../core/BaseModel.php';
 
 class ClientModel extends BaseModel {
     protected $table = 'clients';
     protected $primaryKey = 'id';
+    
+    // Updated fillable fields to include updated_at for consistency
     protected $fillable = [
         'name', 'email', 'phone_number', 'address', 'date_of_birth',
         'identification_type', 'identification_number', 'status',
-        'created_at', 'updated_at'
+        'created_at', 'updated_at' 
     ];
     protected $hidden = [];
 
     // Status definitions
-    public static $STATUS_ACTIVE = 'active';
-    public static $STATUS_INACTIVE = 'inactive';
-    public static $STATUS_BLACKLISTED = 'blacklisted';
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_INACTIVE = 'inactive';
+    public const STATUS_BLACKLISTED = 'blacklisted';
 
+    /**
+     * Retrieves a client record by phone number.
+     * @param string $phoneNumber
+     * @return array|false
+     */
     public function getClientByPhone($phoneNumber) {
         return $this->findOneByField('phone_number', $phoneNumber);
     }
 
+    /**
+     * Retrieves a client record by email address.
+     * @param string $email
+     * @return array|false
+     */
     public function getClientByEmail($email) {
         return $this->findOneByField('email', $email);
     }
 
+    /**
+     * Checks if a phone number exists, excluding an optional ID.
+     * @param string $phoneNumber
+     * @param int|null $excludeId
+     * @return bool
+     */
     public function phoneNumberExists($phoneNumber, $excludeId = null) {
         $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE phone_number = ?";
         $params = [$phoneNumber];
@@ -41,6 +59,12 @@ class ClientModel extends BaseModel {
         return $result && $result['count'] > 0;
     }
 
+    /**
+     * Checks if an email exists, excluding an optional ID.
+     * @param string $email
+     * @param int|null $excludeId
+     * @return bool
+     */
     public function emailExists($email, $excludeId = null) {
         $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE email = ?";
         $params = [$email];
@@ -54,6 +78,12 @@ class ClientModel extends BaseModel {
         return $result && $result['count'] > 0;
     }
 
+    /**
+     * Checks if an identification number exists, excluding an optional ID.
+     * @param string $identificationNumber
+     * @param int|null $excludeId
+     * @return bool
+     */
     public function identificationExists($identificationNumber, $excludeId = null) {
         $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE identification_number = ?";
         $params = [$identificationNumber];
@@ -67,14 +97,28 @@ class ClientModel extends BaseModel {
         return $result && $result['count'] > 0;
     }
 
+    /**
+     * Retrieves clients based on their status.
+     * @param string $status
+     * @return array
+     */
     public function getClientsByStatus($status) {
         return $this->findByField('status', $status);
     }
 
+    /**
+     * Retrieves all active clients.
+     * @return array
+     */
     public function getActiveClients() {
-        return $this->findByField('status', self::$STATUS_ACTIVE);
+        return $this->findByField('status', self::STATUS_ACTIVE);
     }
 
+    /**
+     * Searches clients by name, email, or phone number.
+     * @param string $term
+     * @return array
+     */
     public function searchClients($term) {
         $sql = "SELECT * FROM {$this->table}
                 WHERE name LIKE ? OR email LIKE ? OR phone_number LIKE ?
@@ -86,11 +130,17 @@ class ClientModel extends BaseModel {
         return $this->db->resultSet($sql, $params);
     }
 
-    public function getClientWithLoans($id) {
+    /**
+     * Fetches client details aggregated with loan count and total active loan amounts.
+     * NOTE: total_active_loan_amount in this model returns raw loan amount. Calculations should be done in service layer.
+     * @param int $id
+     * @return array|false
+     */
+    public function getClientWithLoanSummary($id) {
         $sql = "SELECT c.*,
                 COUNT(l.id) as total_loans,
-                COUNT(CASE WHEN l.status = 'active' THEN 1 END) as active_loans,
-                SUM(CASE WHEN l.status = 'active' THEN l.loan_amount ELSE 0 END) as total_active_loan_amount
+                COUNT(CASE WHEN l.status = 'Active' THEN 1 END) as active_loans_count,
+                SUM(CASE WHEN l.status = 'Active' THEN l.total_loan_amount ELSE 0 END) as total_active_loan_amount
                 FROM {$this->table} c
                 LEFT JOIN loans l ON c.id = l.client_id
                 WHERE c.id = ?
@@ -99,44 +149,39 @@ class ClientModel extends BaseModel {
         return $this->db->single($sql, [$id]);
     }
 
+    /**
+     * Fetches all loan records for a given client (history).
+     * @param int $clientId
+     * @return array
+     */
     public function getClientLoanHistory($clientId) {
-        $sql = "SELECT l.*,
-                COUNT(p.id) as payments_made,
-                SUM(p.payment_amount) as total_paid,
-                l.total_amount - COALESCE(SUM(p.payment_amount), 0) as outstanding_balance
+        $sql = "SELECT l.*
                 FROM loans l
-                LEFT JOIN payments p ON l.id = p.loan_id
                 WHERE l.client_id = ?
-                GROUP BY l.id
                 ORDER BY l.created_at DESC";
 
         return $this->db->resultSet($sql, [$clientId]);
     }
 
+    /**
+     * Fetches currently active loan records for a given client.
+     * @param int $clientId
+     * @return array
+     */
     public function getClientCurrentLoans($clientId) {
-        $sql = "SELECT l.*,
-                COUNT(p.id) as payments_made,
-                SUM(p.payment_amount) as total_paid,
-                l.total_amount - COALESCE(SUM(p.payment_amount), 0) as outstanding_balance
+        $sql = "SELECT l.*
                 FROM loans l
-                LEFT JOIN payments p ON l.id = p.loan_id
-                WHERE l.client_id = ? AND l.status = 'active'
-                GROUP BY l.id
+                WHERE l.client_id = ? AND l.status = 'Active'
                 ORDER BY l.created_at DESC";
 
         return $this->db->resultSet($sql, [$clientId]);
     }
 
-    public function getClientPaymentHistory($clientId) {
-        $sql = "SELECT p.*, l.loan_amount, l.total_amount
-                FROM payments p
-                JOIN loans l ON p.loan_id = l.id
-                WHERE p.client_id = ?
-                ORDER BY p.payment_date DESC";
 
-        return $this->db->resultSet($sql, [$clientId]);
-    }
-
+    /**
+     * Retrieves general statistics about the client base.
+     * @return array
+     */
     public function getClientStats() {
         $stats = [];
 
@@ -147,7 +192,7 @@ class ClientModel extends BaseModel {
 
         // Active clients
         $sql = "SELECT COUNT(*) as count FROM {$this->table} WHERE status = ?";
-        $result = $this->db->single($sql, [self::$STATUS_ACTIVE]);
+        $result = $this->db->single($sql, [self::STATUS_ACTIVE]);
         $stats['active_clients'] = $result ? $result['count'] : 0;
 
         // Clients by status
@@ -156,92 +201,34 @@ class ClientModel extends BaseModel {
         $stats['clients_by_status'] = $result ?: [];
 
         // Recently added clients
-        $sql = "SELECT * FROM {$this->table} ORDER BY created_at DESC LIMIT 5";
+        $sql = "SELECT id, name, created_at, status FROM {$this->table} ORDER BY created_at DESC LIMIT 5";
         $stats['recent_clients'] = $this->db->resultSet($sql);
 
         return $stats;
     }
 
+    /**
+     * Overrides BaseModel create to add default logic.
+     * NOTE: Validation for uniqueness should primarily be done in the service layer.
+     * @param array $data
+     * @return int|false
+     */
     public function create($data) {
-        // Ensure required fields are present
-        $requiredFields = ['name', 'phone_number'];
-        foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || empty($data[$field])) {
-                $this->setLastError("Field '{$field}' is required.");
-                return false;
-            }
-        }
-
         // Set default values if not provided
-        $data['status'] = $data['status'] ?? self::$STATUS_ACTIVE;
+        $data['status'] = $data['status'] ?? self::STATUS_ACTIVE;
         $data['created_at'] = $data['created_at'] ?? date('Y-m-d H:i:s');
         $data['updated_at'] = $data['updated_at'] ?? date('Y-m-d H:i:s');
-
-        // Validate email format if provided
-        if (!empty($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            $this->setLastError('Invalid email format.');
-            return false;
-        }
-
-        // Check if phone number already exists
-        if ($this->phoneNumberExists($data['phone_number'])) {
-            $this->setLastError('Phone number already exists.');
-            return false;
-        }
-
-        // Check if email already exists (if provided)
-        if (!empty($data['email']) && $this->emailExists($data['email'])) {
-            $this->setLastError('Email already exists.');
-            return false;
-        }
-
-        // Check if identification number already exists (if provided)
-        if (!empty($data['identification_number']) && $this->identificationExists($data['identification_number'])) {
-            $this->setLastError('Identification number already exists.');
-            return false;
-        }
-
+        
         // Call parent create method
         return parent::create($data);
     }
 
-    public function getClientsWithOutstandingLoans() {
-        $sql = "SELECT DISTINCT c.*,
-                COUNT(l.id) as active_loans,
-                SUM(l.total_amount - COALESCE(p.total_paid, 0)) as total_outstanding
-                FROM {$this->table} c
-                JOIN loans l ON c.id = l.client_id
-                LEFT JOIN (
-                    SELECT loan_id, SUM(payment_amount) as total_paid
-                    FROM payments
-                    GROUP BY loan_id
-                ) p ON l.id = p.loan_id
-                WHERE c.status = ? AND l.status = 'active'
-                AND (l.total_amount - COALESCE(p.total_paid, 0)) > 0
-                GROUP BY c.id
-                ORDER BY total_outstanding DESC";
-
-        return $this->db->resultSet($sql, [self::$STATUS_ACTIVE]);
-    }
-
-    public function getOverdueClients() {
-        $sql = "SELECT DISTINCT c.*,
-                COUNT(DISTINCT l.id) as overdue_loans,
-                SUM(l.weekly_payment) as total_weekly_payment
-                FROM {$this->table} c
-                JOIN loans l ON c.id = l.client_id
-                LEFT JOIN payments p ON l.id = p.loan_id
-                WHERE c.status = ?
-                AND l.status = 'active'
-                AND l.disbursement_date IS NOT NULL
-                AND DATEDIFF(CURDATE(), l.disbursement_date) > (p.week_number * 7)
-                GROUP BY c.id";
-
-        return $this->db->resultSet($sql, [self::$STATUS_ACTIVE]);
-    }
-
+    /**
+     * Retrieves all active clients for use in HTML <select> elements.
+     * @return array
+     */
     public function getAllForSelect() {
         $sql = "SELECT id, name FROM {$this->table} WHERE status = ? ORDER BY name ASC";
-        return $this->db->resultSet($sql, [self::$STATUS_ACTIVE]);
+        return $this->db->resultSet($sql, [self::STATUS_ACTIVE]);
     }
 }

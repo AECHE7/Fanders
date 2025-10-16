@@ -1,13 +1,17 @@
 <?php
 
-// Database configuration
-define('DB_HOST', 'aws-1-ap-southeast-1.pooler.supabase.com');
-define('DB_PORT', 6543);
-define('DB_NAME', 'postgres');
-define('DB_USER', 'postgres.smzpalngwpwylljdvppb');
-define('DB_PASS', '105489100018Gadiano');
-define('DB_TYPE', 'pgsql');
-define('DB_POOL_MODE', 'transaction');
+// Database Settings
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'fanders');
+define('DB_USER', 'root');
+define('DB_PASS', ''); // Change this!
+define('DB_TYPE', 'mysql');    // New: Database Type
+define('DB_PORT', '3307');     // New: Database Port
+define('DB_POOL_MODE', false); // New: Pool Mode (set to false for a single connection)
+
+// Security Settings
+define('SESSION_NAME', 'lms_session');
+define('PASSWORD_ALGORITHM', PASSWORD_BCRYPT);
 
 // Application configuration
 define('APP_NAME', 'Fanders Microfinance');

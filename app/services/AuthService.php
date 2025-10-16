@@ -1,251 +1,113 @@
 <?php
 /**
- * AuthService - Handles authentication, login, logout, and session management
+ * AuthService - Handles user authentication, session management, and role checks.
  */
 require_once __DIR__ . '/../core/BaseService.php';
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../core/PasswordHash.php';
+require_once __DIR__ . '/../core/Session.php';
 
 class AuthService extends BaseService {
     private $userModel;
-    private $session;
     private $passwordHash;
+    private $session;
 
     public function __construct() {
         parent::__construct();
         $this->userModel = new UserModel();
-        $this->session = new Session();
         $this->passwordHash = new PasswordHash();
+        $this->session = new Session();
     }
-
-
-    public function login($email, $password) {
-        // Get user by email (username is actually email in the new schema)
-        $user = $this->userModel->getUserByEmail($email);
-        
-        if (!$user) {
-            return [
-                'success' => false,
-                'message' => 'Invalid email or password.'
-            ];
-        }
-        
-        // Verify password
-        if (!$this->passwordHash->verify($password, $user['password'])) {
-            return [
-                'success' => false,
-                'message' => 'Invalid email or password.'
-            ];
-        }
-        
-        // Check if user is active
-        if ($user['status'] !== 'active') {
-            return [
-                'success' => false,
-                'message' => 'Your account has been deactivated. Please contact an administrator.'
-            ];
-        }
-
-        // Create session
-        $this->createUserSession($user);
-        
-        return [
-            'success' => true,
-            'message' => 'Login successful.'
-        ];
-    }
-
-
-    public function logout() {
-        $this->session->destroy();
-    }
-
 
     public function isLoggedIn() {
-        return $this->session->get('user_id') !== null;
+        return $this->session->has('user_id');
+    }
+
+    public function checkSessionTimeout() {
+        $this->session->get('user_id');
+        return !$this->isLoggedIn() && $this->session->has('last_activity');
     }
 
     public function getCurrentUser() {
         if (!$this->isLoggedIn()) {
-            return null;
+            return false;
         }
-        
+
         $userId = $this->session->get('user_id');
-        return $this->userModel->getUserWithRoleName($userId);
-    }
+        $user = $this->userModel->findById($userId); 
 
-    public function hasRole($roles) {
-        if (!$this->isLoggedIn()) {
-            return false;
-        }
-        
-        $userRole = $this->session->get('user_role');
-        
-        if (is_array($roles)) {
-            return in_array($userRole, $roles);
-        }
-        
-        return $userRole == $roles;
-    }
-
-    private function createUserSession($user) {
-        $this->session->set('user_id', $user['id']);
-        $this->session->set('user_name', $user['name']);
-        $this->session->set('user_role', $user['role']);
-        $this->session->set('user_email', $user['email']);
-        // Split the name into first and last for backward compatibility
-        $nameParts = explode(' ', $user['name'], 2);
-        $firstName = $nameParts[0];
-        $lastName = isset($nameParts[1]) ? $nameParts[1] : '';
-        $this->session->set('user_first_name', $firstName);
-        $this->session->set('user_last_name', $lastName);
-        $this->session->set('last_activity', time());
-    }
-
-    public function register($userData) {
-        // Validate user data
-        if (!$this->validateUserData($userData)) {
-            return false;
-        }
-        
-        // Hash password
-        $userData['password'] = $this->passwordHash->hash($userData['password']);
-        
-        // Set default role to students if not provided
-        if (!isset($userData['role'])) {
-            $userData['role'] = 'students';
-        }
-        
-        // Set active status and timestamps
-        $userData['status'] = 'active';
-        $userData['created_at'] = date('Y-m-d H:i:s');
-        $userData['updated_at'] = date('Y-m-d H:i:s');
-        
-        // Create user
-        return $this->userModel->create($userData);
-    }
-
-
-    public function changePassword($userId, $currentPassword, $newPassword) {
-        // Get user
-        $user = $this->userModel->findById($userId);
-        
         if (!$user) {
-            $this->setErrorMessage('User not found.');
+            $this->logout();
             return false;
         }
-        
-        // Verify current password
-        if (!$this->passwordHash->verify($currentPassword, $user['password'])) {
-            $this->setErrorMessage('Current password is incorrect.');
-            return false;
-        }
-        
-        // Validate new password
-        if (strlen($newPassword) < 8) {
-            $this->setErrorMessage('New password must be at least 8 characters long.');
-            return false;
-        }
-        
-        // Hash new password
-        $hashedPassword = $this->passwordHash->hash($newPassword);
-        
-        // Update password
-        return $this->userModel->updatePassword($userId, $hashedPassword);
+
+        return $user;
     }
 
-    public function resetPassword($userId, $newPassword) {
-        // Validate new password
-        if (strlen($newPassword) < 8) {
-            $this->setErrorMessage('New password must be at least 8 characters long.');
-            return false;
-        }
+    public function login($email, $password) {
         
-        // Hash new password
-        $hashedPassword = $this->passwordHash->hash($newPassword);
-        
-        // Update password
-        return $this->userModel->updatePassword($userId, $hashedPassword);
-    }
+        // FIX: Use the model's method to retrieve user with password field
+        $user = $this->userModel->getUserWithPassword($email);
 
+        // --- Core Authentication Logic ---
+        
+        // 1. Check for user existence
+        if (!$user) {
+            $this->setErrorMessage('Invalid email or password.');
+            return false;
+        }
 
-    private function validateUserData($userData) {
-        // Check required fields
-        $requiredFields = ['name', 'email', 'password', 'phone_number'];
-        foreach ($requiredFields as $field) {
-            if (!isset($userData[$field]) || empty($userData[$field])) {
-                $this->setErrorMessage(ucfirst($field) . ' is required.');
-                return false;
-            }
-        }
-        
-        // Validate email
-        if (!filter_var($userData['email'], FILTER_VALIDATE_EMAIL)) {
-            $this->setErrorMessage('Invalid email format.');
+        // 2. Check account status
+        if ($user['status'] !== UserModel::$STATUS_ACTIVE) {
+            $this->setErrorMessage('Account is inactive. Please contact an administrator.');
             return false;
         }
-        
-        // Check if email already exists
-        if ($this->userModel->emailExists($userData['email'])) {
-            $this->setErrorMessage('Email already exists.');
+
+        // 3. Verify password (ensure password field exists and is not null)
+        if (!isset($user['password']) || is_null($user['password'])) {
+            $this->setErrorMessage('Invalid email or password.');
             return false;
         }
-        
-        // Check if phone number already exists
-        if ($this->userModel->phoneNumberExists($userData['phone_number'])) {
-            $this->setErrorMessage('Phone number already exists.');
+        if (!$this->passwordHash->verify($password, $user['password'])) {
+            $this->setErrorMessage('Invalid email or password.');
             return false;
         }
-        
-        // Validate password (at least 8 characters)
-        if (strlen($userData['password']) < 8) {
-            $this->setErrorMessage('Password must be at least 8 characters long.');
-            return false;
-        }
-        
+        // --- End Core Authentication Logic ---
+
+        // Authentication successful
+        $this->session->set('user_id', $user['id']);
+        $this->session->set('user_role', $user['role']);
+
+        // Update last login time
+        $this->userModel->updateLastLogin($user['id']);
+
         return true;
     }
 
-    public function checkSessionTimeout() {
+    public function logout() {
+        $this->session->destroy();
+        return true;
+    }
+
+    public function hasRole($allowedRoles) {
         if (!$this->isLoggedIn()) {
             return false;
         }
-        
-        $lastActivity = $this->session->get('last_activity');
-        if ($lastActivity === null) {
-            return false;
+
+        $userRole = $this->session->get('user_role');
+
+        if (is_array($allowedRoles)) {
+            return in_array($userRole, $allowedRoles);
         }
-        
-        // If last activity is older than SESSION_LIFETIME, session has timed out
-        if (time() - $lastActivity > SESSION_LIFETIME) {
-            $this->logout();
-            return true;
-        }
-        
-        // Update last activity
-        $this->session->set('last_activity', time());
-        return false;
+
+        return $userRole === $allowedRoles;
     }
 
-
-    public function isAdmin() {
-        return $this->hasRole(['admin', 'super-admin', 'branch_manager']);
-    }
-
-    public function hasMicrofinanceRole($roles) {
-        $microfinanceRoles = [
-            'super_admin',
-            'admin',
-            'branch_manager',
-            'account_officer',
-            'cashier',
-            'client'
-        ];
-
-        if (is_array($roles)) {
-            return !empty(array_intersect($roles, $microfinanceRoles)) && $this->hasRole($roles);
+    public function checkRoleAccess($allowedRoles) {
+        if (!$this->hasRole($allowedRoles)) {
+            $this->session->setFlash('error', 'Access denied. You do not have permission to view this page.');
+            header('Location: ' . APP_URL . '/public/dashboard.php');
+            exit;
         }
-
-        return in_array($roles, $microfinanceRoles) && $this->hasRole([$roles]);
     }
 }

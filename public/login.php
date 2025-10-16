@@ -50,31 +50,36 @@ if ($auth->isLoggedIn()) {
 }
 
 // Process login form submission
+$email = '';
 $error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate CSRF token
+    // 1. Validate CSRF token
     if (!$csrf->validateRequest()) {
-        $error = 'Invalid form submission. Please try again.';
+        $error = 'Invalid security token. Please refresh and try again.';
     } else {
-        // Get form data
-        $email= isset($_POST['email']) ? trim($_POST['email']) : '';
-        $password = isset($_POST['password']) ? $_POST['password'] : '';
-        
-        // Validate form data
+        // 2. Gather input
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+
         if (empty($email) || empty($password)) {
             $error = 'Please enter both email and password.';
         } else {
-            // Attempt to log in using AuthService
-            $loginResult = $auth->login($email, $password);
-            if ($loginResult['success']) {
-                // Login successful, redirect to dashboard
+            // 3. Attempt login via service
+            if ($auth->login($email, $password)) {
+                // Success: Redirect to dashboard
                 header('Location: ' . APP_URL . '/public/dashboard.php');
                 exit;
             } else {
-                // Login failed, show error message
-                $error = $loginResult['message'];
+                // Failure: Get specific error message from AuthService
+                $error = $auth->getErrorMessage();
             }
         }
+    }
+    
+    // Store error as flash message to display cleanly on reload
+    if ($error) {
+        $session->setFlash('error', $error);
     }
 }
 

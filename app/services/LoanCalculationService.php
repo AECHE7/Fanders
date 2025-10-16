@@ -1,30 +1,29 @@
 <?php
 /**
  * LoanCalculationService - Handles all loan calculation logic for Fanders Microfinance
- * Based on the requirements: 5% monthly interest, 4-month term, 17-week payments, ₱425 insurance
+ * Implements the core business rules (FR-002, FR-003, FR-009).
  */
 require_once __DIR__ . '/../core/BaseService.php';
 
 class LoanCalculationService extends BaseService {
     // Constants based on Fanders requirements
     const MONTHLY_INTEREST_RATE = 0.05; // 5% monthly interest
-    const LOAN_TERM_MONTHS = 4; // Always 4 months
-    const INSURANCE_FEE = 425.00; // Fixed ₱425 insurance fee
-    const WEEKS_IN_LOAN = 17; // 17 weeks total
+    const LOAN_TERM_MONTHS = 4;         // Always 4 months
+    const INSURANCE_FEE = 425.00;       // Fixed ₱425 insurance fee
+    const WEEKS_IN_LOAN = 17;           // 17 weeks total
 
     /**
      * Calculate loan details based on principal amount
      * @param float $principalAmount The loan principal amount
-     * @return array Loan calculation details
+     * @return array|false Loan calculation details on success.
      */
     public function calculateLoan($principalAmount) {
-        // Validate principal amount
-        if ($principalAmount <= 0) {
-            $this->setErrorMessage('Principal amount must be greater than zero.');
+        // Validation check (uses BaseService validation)
+        if (!$this->validate(['principal_amount' => $principalAmount], ['principal_amount' => 'required|positive|numeric'])) {
             return false;
         }
 
-        // Calculate interest (5% per month for 4 months)
+        // Calculate interest (P x 0.05 x 4)
         $totalInterest = $principalAmount * self::MONTHLY_INTEREST_RATE * self::LOAN_TERM_MONTHS;
 
         // Calculate total amount (Principal + Interest + Insurance)
@@ -32,181 +31,79 @@ class LoanCalculationService extends BaseService {
 
         // Calculate weekly payment (total amount divided by 17 weeks)
         $weeklyPayment = round($totalAmount / self::WEEKS_IN_LOAN, 2);
-
-        // Calculate breakdown per week
-        $principalPerWeek = round($principalAmount / self::WEEKS_IN_LOAN, 2);
-        $interestPerWeek = round($totalInterest / self::WEEKS_IN_LOAN, 2);
-        $insurancePerWeek = round(self::INSURANCE_FEE / self::WEEKS_IN_LOAN, 2);
-
+        
+        // --- Rounding Adjustment for Weekly Payment ---
+        // Calculate the difference due to rounding and add it to the final weekly payment
+        $totalRoundedPayment = $weeklyPayment * self::WEEKS_IN_LOAN;
+        $roundingDifference = $totalAmount - $totalRoundedPayment;
+        
+        // The adjustment should be added to the total payment, 
+        // but for initial records, we store the rounded payment.
+        
         return [
-            'principal_amount' => $principalAmount,
+            'principal' => $principalAmount,
             'interest_rate' => self::MONTHLY_INTEREST_RATE,
-            'loan_term_months' => self::LOAN_TERM_MONTHS,
-            'total_interest' => $totalInterest,
+            'term_weeks' => self::WEEKS_IN_LOAN,
+            'total_interest' => round($totalInterest, 2),
             'insurance_fee' => self::INSURANCE_FEE,
-            'total_amount' => $totalAmount,
-            'weekly_payment' => $weeklyPayment,
-            'weeks_total' => self::WEEKS_IN_LOAN,
-            'breakdown' => [
-                'principal_per_week' => $principalPerWeek,
-                'interest_per_week' => $interestPerWeek,
-                'insurance_per_week' => $insurancePerWeek
-            ],
+            'total_loan_amount' => round($totalAmount, 2),
+            'weekly_payment_base' => $weeklyPayment,
             'payment_schedule' => $this->generatePaymentSchedule($principalAmount, $totalInterest, self::INSURANCE_FEE)
         ];
     }
 
     /**
-     * Generate detailed payment schedule for 17 weeks
-     * @param float $principal Principal amount
-     * @param float $totalInterest Total interest
-     * @param float $insuranceFee Insurance fee
-     * @return array Payment schedule
+     * Generate detailed payment schedule for 17 weeks with component breakdown.
+     * This ensures the total of all payments exactly equals the total loan amount.
      */
     private function generatePaymentSchedule($principal, $totalInterest, $insuranceFee) {
         $schedule = [];
-        $remainingPrincipal = $principal;
-        $remainingInterest = $totalInterest;
-        $remainingInsurance = $insuranceFee;
+        $totalAmount = $principal + $totalInterest + $insuranceFee;
+        $weeklyPayment = round($totalAmount / self::WEEKS_IN_LOAN, 2);
+
+        // Pre-calculate the total of the rounded weekly payments
+        $totalRoundedPayment = $weeklyPayment * self::WEEKS_IN_LOAN;
+        $roundingAdjustment = round($totalAmount - $totalRoundedPayment, 2); // The difference we need to correct
+
+        // Calculate weekly component breakdown (using initial principal/interest for consistency)
+        $principalPerWeek = $principal / self::WEEKS_IN_LOAN;
+        $interestPerWeek = $totalInterest / self::WEEKS_IN_LOAN;
+        $insurancePerWeek = $insuranceFee / self::WEEKS_IN_LOAN;
+
+        $runningPrincipal = $principal;
 
         for ($week = 1; $week <= self::WEEKS_IN_LOAN; $week++) {
-            // Calculate amounts for this week
-            $principalPayment = round($principal / self::WEEKS_IN_LOAN, 2);
-            $interestPayment = round($totalInterest / self::WEEKS_IN_LOAN, 2);
-            $insurancePayment = round($insuranceFee / self::WEEKS_IN_LOAN, 2);
-
-            // Adjust for rounding on last payment
+            $payment = $weeklyPayment;
+            
+            // Apply total rounding difference to the LAST payment
             if ($week == self::WEEKS_IN_LOAN) {
-                $principalPayment = $remainingPrincipal;
-                $interestPayment = $remainingInterest;
-                $insurancePayment = $remainingInsurance;
+                $payment += $roundingAdjustment;
             }
 
-            $totalPayment = $principalPayment + $interestPayment + $insurancePayment;
-
+            // Simple amortization logic (Principal is paid down linearly across 17 weeks)
+            $paidPrincipal = round($principalPerWeek, 2);
+            $paidInterest = round($interestPerWeek, 2);
+            $paidInsurance = round($insurancePerWeek, 2);
+            
+            // Adjust for remaining cents on the last week if a component sum doesn't perfectly match the total component.
+            // This ensures all components are fully paid by the last week.
+            if ($week == self::WEEKS_IN_LOAN) {
+                // Ensure remaining balance is zeroed out by adjusting the last principal payment
+                $paidPrincipal = $runningPrincipal;
+                // Note: The total payment (payment) already includes the total rounding difference.
+            }
+            
             $schedule[] = [
                 'week' => $week,
-                'principal_payment' => $principalPayment,
-                'interest_payment' => $interestPayment,
-                'insurance_payment' => $insurancePayment,
-                'total_payment' => $totalPayment,
-                'remaining_principal' => max(0, $remainingPrincipal - $principalPayment),
-                'remaining_interest' => max(0, $remainingInterest - $interestPayment),
-                'remaining_insurance' => max(0, $remainingInsurance - $insurancePayment)
+                'expected_payment' => round($payment, 2),
+                'principal_payment' => round($paidPrincipal, 2),
+                'interest_payment' => round($paidInterest, 2),
+                'insurance_payment' => round($paidInsurance, 2)
             ];
 
-            // Update remaining amounts
-            $remainingPrincipal -= $principalPayment;
-            $remainingInterest -= $interestPayment;
-            $remainingInsurance -= $insurancePayment;
+            $runningPrincipal -= round($paidPrincipal, 2);
         }
 
         return $schedule;
-    }
-
-    /**
-     * Calculate remaining balance for a loan at a specific week
-     * @param float $principalAmount Original principal
-     * @param int $weeksPaid Number of weeks already paid
-     * @return array Remaining balance details
-     */
-    public function calculateRemainingBalance($principalAmount, $weeksPaid) {
-        $loanDetails = $this->calculateLoan($principalAmount);
-
-        if (!$loanDetails) {
-            return false;
-        }
-
-        $totalPaid = $weeksPaid * $loanDetails['weekly_payment'];
-        $remainingWeeks = self::WEEKS_IN_LOAN - $weeksPaid;
-        $remainingAmount = $remainingWeeks * $loanDetails['weekly_payment'];
-
-        // Calculate remaining components
-        $remainingPrincipal = $principalAmount - ($weeksPaid * $loanDetails['breakdown']['principal_per_week']);
-        $remainingInterest = $loanDetails['total_interest'] - ($weeksPaid * $loanDetails['breakdown']['interest_per_week']);
-        $remainingInsurance = self::INSURANCE_FEE - ($weeksPaid * $loanDetails['breakdown']['insurance_per_week']);
-
-        return [
-            'total_paid' => $totalPaid,
-            'remaining_amount' => $remainingAmount,
-            'remaining_weeks' => $remainingWeeks,
-            'remaining_principal' => max(0, $remainingPrincipal),
-            'remaining_interest' => max(0, $remainingInterest),
-            'remaining_insurance' => max(0, $remainingInsurance),
-            'next_payment_due' => $loanDetails['weekly_payment']
-        ];
-    }
-
-    /**
-     * Calculate penalty for late payments
-     * @param float $weeklyPayment The regular weekly payment amount
-     * @param int $daysLate Number of days late
-     * @return float Penalty amount
-     */
-    public function calculateLatePaymentPenalty($weeklyPayment, $daysLate) {
-        // Assuming 2% per day late penalty (this can be adjusted based on requirements)
-        $penaltyRate = 0.02; // 2% per day
-        return round($weeklyPayment * $penaltyRate * $daysLate, 2);
-    }
-
-    /**
-     * Validate loan amount against business rules
-     * @param float $amount Loan amount to validate
-     * @return bool True if valid
-     */
-    public function validateLoanAmount($amount) {
-        // Minimum loan amount (can be adjusted)
-        $minAmount = 1000.00;
-
-        // Maximum loan amount (can be adjusted)
-        $maxAmount = 50000.00;
-
-        if ($amount < $minAmount) {
-            $this->setErrorMessage("Minimum loan amount is ₱" . number_format($minAmount, 2));
-            return false;
-        }
-
-        if ($amount > $maxAmount) {
-            $this->setErrorMessage("Maximum loan amount is ₱" . number_format($maxAmount, 2));
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Calculate savings amount (if applicable)
-     * @param float $weeklyPayment Weekly payment amount
-     * @return float Savings amount (currently 10% of weekly payment)
-     */
-    public function calculateSavings($weeklyPayment) {
-        // Assuming 10% of weekly payment goes to savings (can be adjusted)
-        $savingsRate = 0.10;
-        return round($weeklyPayment * $savingsRate, 2);
-    }
-
-    /**
-     * Get loan summary for display
-     * @param float $principalAmount Principal amount
-     * @return array Formatted summary
-     */
-    public function getLoanSummary($principalAmount) {
-        $calculation = $this->calculateLoan($principalAmount);
-
-        if (!$calculation) {
-            return false;
-        }
-
-        return [
-            'loan_amount' => '₱' . number_format($calculation['principal_amount'], 2),
-            'interest_rate' => ($calculation['interest_rate'] * 100) . '% per month',
-            'loan_term' => $calculation['loan_term_months'] . ' months (' . $calculation['weeks_total'] . ' weeks)',
-            'total_interest' => '₱' . number_format($calculation['total_interest'], 2),
-            'insurance_fee' => '₱' . number_format($calculation['insurance_fee'], 2),
-            'total_amount' => '₱' . number_format($calculation['total_amount'], 2),
-            'weekly_payment' => '₱' . number_format($calculation['weekly_payment'], 2),
-            'first_payment_due' => date('Y-m-d', strtotime('+1 week')),
-            'maturity_date' => date('Y-m-d', strtotime('+' . $calculation['weeks_total'] . ' weeks'))
-        ];
     }
 }

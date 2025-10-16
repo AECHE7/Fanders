@@ -1,81 +1,89 @@
 <?php
 /**
- * UserService - Handles user-related operations
+ * UserService - Handles business logic for user-related operations,
+ * including validation, creation, updating, and status management for
+ * operational staff (Admin, Manager, Cashier, AO).
  */
+require_once __DIR__ . '/../core/BaseService.php';
+require_once __DIR__ . '/../models/UserModel.php';
+require_once __DIR__ . '/../core/PasswordHash.php';
+require_once __DIR__ . '/../core/Session.php';
+
 class UserService extends BaseService {
     private $userModel;
-    private $bookModel;
-    private $transactionModel;
     private $passwordHash;
-    private $validRoles;
-    private $validStatuses;
     private $session;
+    private $validOperationalRoles;
     
     public function __construct() {
         parent::__construct();
         $this->userModel = new UserModel();
-        $this->bookModel = new BookModel();
-        $this->transactionModel = new TransactionModel();
         $this->passwordHash = new PasswordHash();
         $this->session = new Session();
         $this->setModel($this->userModel);
         
-        // Define valid roles and statuses
-        $this->validRoles = [
-            UserModel::$ROLE_SUPER_ADMIN,
+        // Define valid roles for operational staff (excluding 'Client')
+        $this->validOperationalRoles = [
             UserModel::$ROLE_ADMIN,
-            UserModel::$ROLE_STUDENT,
-            UserModel::$ROLE_STAFF,
-            UserModel::$ROLE_OTHER
-        ];
-        
-        $this->validStatuses = [
-            UserModel::$STATUS_ACTIVE,
-            UserModel::$STATUS_INACTIVE,
-            UserModel::$STATUS_SUSPENDED
+            UserModel::$ROLE_MANAGER,
+            UserModel::$ROLE_CASHIER,
+            UserModel::$ROLE_ACCOUNT_OFFICER,
         ];
     }
 
- 
-    public function getAllUsersWithRoleNames($roles = []) {
-        return $this->userModel->getAllUsersWithRoleNames($roles);
+    /**
+     * Retrieves all operational users with readable role names.
+     * @param array $roles Optional filter by specific roles.
+     * @return array
+     */
+    public function getAllOperationalUsersWithRoleNames($roles = []) {
+        return $this->userModel->getAllOperationalUsersWithRoleNames($roles);
     }
 
+    /**
+     * Retrieves a single user with a readable role name.
+     * @param int $id
+     * @return array|false
+     */
     public function getUserWithRoleName($id) {
         return $this->userModel->getUserWithRoleName($id);
     }
 
 
+    /**
+     * Adds a new operational user (Admin, Manager, Cashier, AO).
+     * @param array $userData User data including raw password and role.
+     * @return int|false New user ID on success.
+     */
     public function addUser($userData) {
         try {
-            // Ensure role is present and valid
-            if (!isset($userData['role']) || !in_array($userData['role'], $this->validRoles)) {
-                $this->setErrorMessage('Invalid or missing user role.');
+            // 1. Ensure role is valid for operational staff
+            if (!isset($userData['role']) || !in_array($userData['role'], $this->validOperationalRoles)) {
+                $this->setErrorMessage('Invalid or missing operational user role.');
                 return false;
             }
 
-            // Validate user data
+            // 2. Validate user data and check for unique email/phone
             if (!$this->validateUserData($userData)) {
                 return false;
             }
 
-            // Hash password
+            // 3. Hash password (Security Feature)
             $userData['password'] = $this->passwordHash->hash($userData['password']);
+            
+            // 4. Set default status and cleanup confirmation field
+            $userData['status'] = UserModel::$STATUS_ACTIVE;
+            unset($userData['password_confirmation']);
 
-            // Create user based on role
-            switch ($userData['role']) {
-                case UserModel::$ROLE_ADMIN:
-                    return $this->userModel->createAdmin($userData);
-                case UserModel::$ROLE_STUDENT:
-                case UserModel::$ROLE_STAFF:
-                case UserModel::$ROLE_OTHER:
-                    return $this->userModel->createBorrower($userData);
-                case UserModel::$ROLE_SUPER_ADMIN:
-                    return $this->userModel->create($userData);
-                default:
-                    $this->setErrorMessage('Invalid user role.');
-                    return false;
+            // 5. Create user
+            $newId = $this->userModel->create($userData);
+
+            if (!$newId) {
+                 $this->setErrorMessage($this->userModel->getLastError() ?: 'Failed to create user due to unknown database error.');
             }
+
+            return $newId;
+
         } catch (\Exception $e) {
             $this->setErrorMessage($e->getMessage());
             return false;
@@ -83,9 +91,14 @@ class UserService extends BaseService {
     }
 
 
+    /**
+     * Updates an existing operational user's profile.
+     * @param int $id User ID.
+     * @param array $userData Updated user data.
+     * @return bool
+     */
     public function updateUser($id, $userData) {
         try {
-            // Get existing user
             $existingUser = $this->userModel->findById($id);
 
             if (!$existingUser) {
@@ -93,97 +106,126 @@ class UserService extends BaseService {
                 return false;
             }
 
-            // Validate user data for update
+            // 1. Validate user data (including unique checks, excluding current user ID)
             if (!$this->validateUserDataForUpdate($userData, $id)) {
                 return false;
             }
-
-            // Hash password if provided
+            
+            // 2. Hash password if provided, otherwise unset it.
             if (isset($userData['password']) && !empty($userData['password'])) {
                 $userData['password'] = $this->passwordHash->hash($userData['password']);
             } else {
-                unset($userData['password']); // Remove password if not provided
+                unset($userData['password']); 
             }
+            unset($userData['password_confirmation']); // Always remove confirmation field
 
-            // Update user
+            // 3. Update user
             return $this->userModel->update($id, $userData);
+
         } catch (\Exception $e) {
             $this->setErrorMessage($e->getMessage());
             return false;
         }
     }
 
-   
-    public function deleteUser($id) {
-        try {
-            return $this->userModel->delete($id);
-        } catch (\Exception $e) {
-            $this->setErrorMessage($e->getMessage());
-            return false;
-        }
-    }
-
-
+    
+    /**
+     * Deactivates a user account to preserve historical audit trail (Section 6).
+     * @param int $id
+     * @return bool
+     */
     public function deactivateUser($id) {
-        return $this->userModel->update($id, [
-            'status' => UserModel::$STATUS_INACTIVE,
-            'updated_at' => date('Y-m-d H:i:s')
-        ]);
+        return $this->userModel->updateStatus($id, UserModel::STATUS_INACTIVE);
+    }
+    
+    /**
+     * Activates a user account.
+     * @param int $id
+     * @return bool
+     */
+    public function activateUser($id) {
+        return $this->userModel->updateStatus($id, UserModel::STATUS_ACTIVE);
     }
 
+    /**
+     * Generates a random secure password, hashes it, and updates the user record.
+     * @param int $id User ID
+     * @return array|false Returns ['success' => true, 'password' => 'new_password'] or false on failure.
+     */
+    public function resetPassword($id) {
+        try {
+            $user = $this->userModel->findById($id);
+            
+            if (!$user) {
+                $this->setErrorMessage('User not found.');
+                return false;
+            }
+            
+            // Generate random password (Section 6 Requirement)
+            $newPassword = $this->generateRandomPassword();
+            
+            // Hash and update
+            $hashedPassword = $this->passwordHash->hash($newPassword);
+            $result = $this->userModel->updatePassword($id, $hashedPassword);
+            
+            if ($result) {
+                return [
+                    'success' => true, 
+                    'password' => $newPassword,
+                    'message' => 'Password reset successful.'
+                ];
+            }
+                
+            $this->setErrorMessage('Failed to update password in database.');
+            return false;
+    
+        } catch (\Exception $e) {
+            $this->setErrorMessage('Error resetting password: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Generates a secure, random password string for resets.
+     * @param int $length
+     * @return string
+     */
+    private function generateRandomPassword($length = 12) {
+        $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
+        $password = '';
+        
+        try {
+            $max = strlen($chars) - 1;
+            for ($i = 0; $i < $length; $i++) {
+                $password .= $chars[random_int(0, $max)];
+            }
+        } catch (Exception $e) {
+            // Fallback if random_int fails, though highly unlikely
+            $password = substr(str_shuffle($chars), 0, $length);
+        }
+        
+        return $password;
+    }
+
+
+    /**
+     * Global user statistics helper (for dashboards).
+     * @return array
+     */
     public function getUserStats() {
         return $this->userModel->getUserStats();
     }
 
-    public function getSystemStats() {
-        return $this->userModel->getSystemStats();
-    }
 
-    public function getAdminStats() {
-        $stats = [];
-        
-        // Get book statistics
-        $bookModel = new BookModel();
-        $stats['total_books'] = $bookModel->getTotalBooks();
-        $stats['borrowed_books'] = $bookModel->getBorrowedBooksCount();
-        
-        // Get transaction statistics
-        $transactionModel = new TransactionModel();
-        $stats['overdue_returns'] = $transactionModel->getOverdueLoansCount();
-        $stats['total_penalties'] = $transactionModel->getTotalUnpaidPenalties();
-        
-        // Get user statistics based on role
-        $userRole = $this->session->get('user_role');
-        
-        if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
-            // Super Admin sees all user types
-            $stats['total_students'] = $this->userModel->getUsersCountByRole(UserModel::$ROLE_STUDENT);
-            $stats['total_staff'] = $this->userModel->getUsersCountByRole(UserModel::$ROLE_STAFF);
-            $stats['total_admins'] = $this->userModel->getUsersCountByRole(UserModel::$ROLE_ADMIN);
-            $stats['total_others'] = $this->userModel->getUsersCountByRole(UserModel::$ROLE_OTHER);
-        } else {
-            // Admin sees only total borrowers
-            $stats['total_borrowers'] = $this->userModel->getTotalBorrowersCount();
-        }
-        
-        // Get recent activity
-        $stats['recent_transactions'] = $transactionModel->getRecentTransactions(5);
-        $stats['recently_added_books'] = $bookModel->getRecentlyAddedBooks(5);
-        
-        return $stats;
-    }
+    // --- Validation Logic ---
 
-  
-    public function getAllBorrowers() {
-        return $this->userModel->getAllUsersWithRoleNames([
-            UserModel::$ROLE_STUDENT,
-            UserModel::$ROLE_STAFF,
-            UserModel::$ROLE_OTHER
-        ]);
-    }
-
+    /**
+     * Validates data for a new user creation.
+     * @param array $userData
+     * @return bool
+     */
     private function validateUserData($userData) {
-        // Check required fields
+        // Base required fields
         $requiredFields = ['name', 'email', 'password', 'role', 'phone_number'];
         foreach ($requiredFields as $field) {
             if (!isset($userData[$field]) || trim($userData[$field]) === '') {
@@ -192,25 +234,21 @@ class UserService extends BaseService {
             }
         }
         
-        // Validate email
+        // Validate email format and uniqueness
         if (!filter_var($userData['email'], FILTER_VALIDATE_EMAIL)) {
             $this->setErrorMessage('Invalid email format.');
             return false;
         }
-        
-        // Check if email exists
         if ($this->userModel->emailExists($userData['email'])) {
             $this->setErrorMessage('Email already exists.');
             return false;
         }
         
-        // Validate phone number (basic: digits and length)
+        // Validate phone number format and uniqueness
         if (!preg_match('/^[0-9]{8,15}$/', $userData['phone_number'])) {
             $this->setErrorMessage('Phone Number must be numeric and 8-15 digits.');
             return false;
         }
-        
-        // Check if phone number exists
         if ($this->userModel->phoneNumberExists($userData['phone_number'])) {
             $this->setErrorMessage('Phone Number already exists.');
             return false;
@@ -222,20 +260,9 @@ class UserService extends BaseService {
             return false;
         }
         
-        // Password Confirmation: required and must match
-        if (!isset($userData['password_confirmation']) || trim($userData['password_confirmation']) === '') {
-            $this->setErrorMessage('Password confirmation is required.');
-            return false;
-        }
-        
-        if ($userData['password'] !== $userData['password_confirmation']) {
+        // Password Confirmation
+        if (!isset($userData['password_confirmation']) || $userData['password'] !== $userData['password_confirmation']) {
             $this->setErrorMessage('Password and Password Confirmation do not match.');
-            return false;
-        }
-        
-        // Validate role
-        if (!in_array($userData['role'], $this->validRoles)) {
-            $this->setErrorMessage('Invalid role.');
             return false;
         }
         
@@ -243,8 +270,14 @@ class UserService extends BaseService {
     }
 
 
+    /**
+     * Validates data for updating an existing user.
+     * @param array $userData
+     * @param int $userId
+     * @return bool
+     */
     private function validateUserDataForUpdate($userData, $userId) {
-        // Check required fields
+        // Required fields check (must be present in the update payload)
         $requiredFields = ['name', 'email', 'role', 'phone_number'];
         foreach ($requiredFields as $field) {
             if (!isset($userData[$field]) || trim($userData[$field]) === '') {
@@ -253,25 +286,21 @@ class UserService extends BaseService {
             }
         }
         
-        // Validate email
+        // Validate email format and uniqueness (excluding current user ID)
         if (!filter_var($userData['email'], FILTER_VALIDATE_EMAIL)) {
             $this->setErrorMessage('Invalid email format.');
             return false;
         }
-        
-        // Check if email exists (excluding current user)
         if ($this->userModel->emailExists($userData['email'], $userId)) {
             $this->setErrorMessage('Email already exists.');
             return false;
         }
         
-        // Validate phone number (basic: digits and length)
+        // Validate phone number format and uniqueness (excluding current user ID)
         if (!preg_match('/^[0-9]{8,15}$/', $userData['phone_number'])) {
             $this->setErrorMessage('Phone Number must be numeric and 8-15 digits.');
             return false;
         }
-        
-        // Check if phone number exists (excluding current user)
         if ($this->userModel->phoneNumberExists($userData['phone_number'], $userId)) {
             $this->setErrorMessage('Phone Number already exists.');
             return false;
@@ -283,136 +312,12 @@ class UserService extends BaseService {
                 $this->setErrorMessage('Password must be at least 8 characters long.');
                 return false;
             }
-            
-            // Password Confirmation: required and must match
-            if (!isset($userData['password_confirmation']) || trim($userData['password_confirmation']) === '') {
-                $this->setErrorMessage('Password confirmation is required.');
-                return false;
-            }
-            
-            if ($userData['password'] !== $userData['password_confirmation']) {
+            if (!isset($userData['password_confirmation']) || $userData['password'] !== $userData['password_confirmation']) {
                 $this->setErrorMessage('Password and Password Confirmation do not match.');
                 return false;
             }
         }
         
-        // Validate role
-        if (!in_array($userData['role'], $this->validRoles)) {
-            $this->setErrorMessage('Invalid role.');
-            return false;
-        }
-        
         return true;
     }
-
-
-    public function getBorrowerStats($userId) {
-        $stats = [];
-        
-        // Get total borrowed books
-        $stats['total_borrowed'] = $this->transactionModel->getTotalBorrowedBooks($userId);
-        
-        // Get currently borrowed books
-        $stats['current_borrowed'] = $this->transactionModel->getCurrentBorrowedBooks($userId);
-        
-        // Get overdue books count
-        $stats['overdue_count'] = $this->transactionModel->getOverdueBooksCount($userId);
-        
-        // Get total penalties
-        $stats['total_penalties'] = $this->transactionModel->getTotalUnpaidPenalties($userId);
-        
-        // Get loan history
-        $loanHistory = $this->transactionModel->getUserTransactionHistory($userId);
-        $stats['loan_history'] = is_array($loanHistory) ? $loanHistory : [];
-        
-        // Filter active loans from loan history where return_date is null
-        $activeLoans = array_filter($stats['loan_history'], function($loan) {
-            return empty($loan['return_date']);
-        });
-        $stats['active_loans'] = $activeLoans;
-        
-        // Get available books using BookService to match books/index.php logic
-        $bookService = new BookService();
-        $allBooks = $bookService->getAllBooksWithCategories();
-        // Filter out books with no available copies
-        $availableBooks = array_filter($allBooks, function($book) {
-            return isset($book['available_copies']) && $book['available_copies'] > 0;
-        });
-        error_log("Available books fetched after filtering: " . print_r($availableBooks, true));
-        $stats['available_books'] = is_array($availableBooks) ? $availableBooks : [];
-        
-        return $stats;
-    }
-
-    public function activateUser($userId) {
-        try {
-            return $this->userModel->update($userId, [
-                'status' => UserModel::$STATUS_ACTIVE,
-                'updated_at' => date('Y-m-d H:i:s')
-            ]);
-        } catch (\Exception $e) {
-            $this->setErrorMessage($e->getMessage());
-            return false;
-        }
-    }
-
-
-    public function getUsersByRole($role) {
-        return $this->userModel->getUsersByRole($role);
-    }
-
-    public function getUsersByStatus($status) {
-        return $this->userModel->getUsersByStatus($status);
-    }
-
- 
-    public function getActiveBorrowers() {
-        return $this->userModel->getUsersByStatus('active');
-    }
-
-    // Reset password for a user
-    public function resetPassword($id) {
-        try {
-            $user = $this->model->findById($id);
-            
-            if (!$user) {
-                return ['success' => false, 'message' => 'User not found'];
-            }
-            
-            // Generate random password
-            $newPassword = $this->generateRandomPassword();
-            
-            // Hash and update
-            $hashedPassword = $this->passwordHash->hash($newPassword);
-            $result = $this->model->update($id, ['password' => $hashedPassword]);
-            
-            if ($result) {
-                return [
-                    'success' => true, 
-                    'password' => $newPassword
-                ];
-            }
-                
-            return ['success' => false, 'message' => 'Failed to reset password'];
-    
-            } catch (PDOException $e) {
-                die('Query failed: ' . $e->getMessage());
-            }
-        }
-        
-        // Generate random password
-        private function generateRandomPassword($length = 12) {
-            try {
-                $chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()';
-                $password = '';
-                
-                for ($i = 0; $i < $length; $i++) {
-                    $password .= $chars[rand(0, strlen($chars) - 1)];
-                }
-                
-                return $password;
-            } catch (Exception $e) {
-                die('Error generating password: ' . $e->getMessage());
-            }
-        }
 }

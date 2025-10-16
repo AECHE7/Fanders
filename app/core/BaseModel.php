@@ -1,33 +1,41 @@
 <?php
-
+/**
+ * BaseModel provides common CRUD and utility methods for all application models.
+ * It enforces data filtering and uses the Database class for secure interactions.
+ */
 class BaseModel {
     protected $db;
     protected $table;
     protected $primaryKey = 'id';
     protected $lastError = null;
-    protected $fields = [];
-    protected $fillable = [];
-    protected $hidden = [];
+    protected $fields = []; // Not strictly enforced but good for documentation
+    protected $fillable = []; // Fields allowed for mass assignment (create/update)
+    protected $hidden = ['password']; // Fields to exclude from output results
 
 
     public function __construct() {
+        // Initializes the Database singleton instance
         $this->db = Database::getInstance();
     }
 
 
     public function findById($id) {
         $sql = "SELECT * FROM {$this->table} WHERE {$this->primaryKey} = ?";
-        return $this->db->single($sql, [$id]);
+        $result = $this->db->single($sql, [$id]);
+        return $this->filterHidden($result); // Apply filtering after fetch
     }
 
     public function getAll($orderBy = null, $direction = 'ASC') {
         $sql = "SELECT * FROM {$this->table}";
         
         if ($orderBy) {
-            $sql .= " ORDER BY {$orderBy} {$direction}";
+            // Note: ORDER BY column and direction must be safe/whitelisted in a real app
+            $safeDirection = strtoupper($direction) === 'DESC' ? 'DESC' : 'ASC';
+            $sql .= " ORDER BY {$orderBy} {$safeDirection}";
         }
         
-        return $this->db->resultSet($sql);
+        $results = $this->db->resultSet($sql);
+        return $this->filterHidden($results); // Apply filtering after fetch
     }
 
 
@@ -41,7 +49,7 @@ class BaseModel {
                 return false;
             }
             
-            // Prepare SQL statement
+            // Prepare SQL statement (uses '?' placeholders for security)
             $fields = array_keys($filteredData);
             $fieldStr = implode(', ', $fields);
             $placeholders = implode(', ', array_fill(0, count($fields), '?'));
@@ -65,21 +73,45 @@ class BaseModel {
 
 
     public function update($id, $data) {
-        // Filter data to only include fillable fields
-        $filteredData = array_intersect_key($data, array_flip($this->fillable));
-        
-        // Prepare SQL statement
-        $fields = array_keys($filteredData);
-        $setClause = implode(' = ?, ', $fields) . ' = ?';
-        
-        $sql = "UPDATE {$this->table} SET {$setClause} WHERE {$this->primaryKey} = ?";
-        
-        // Add ID to the end of values array
-        $values = array_values($filteredData);
-        $values[] = $id;
-        
-        // Execute query
-        return $this->db->query($sql, $values) ? true : false;
+        try {
+            // Filter data to only include fillable fields
+            $filteredData = array_intersect_key($data, array_flip($this->fillable));
+
+            if (empty($filteredData)) {
+                $this->setLastError('No valid data provided for update.');
+                return false;
+            }
+            
+            // Prepare SQL statement
+            $fields = array_keys($filteredData);
+            // Create SET clause: field1 = ?, field2 = ?, ...
+            $setClause = implode(' = ?, ', $fields) . ' = ?';
+            
+            $sql = "UPDATE {$this->table} SET {$setClause} WHERE {$this->primaryKey} = ?";
+            
+            // Add ID to the end of values array
+            $values = array_values($filteredData);
+            $values[] = $id;
+            
+            // Execute query
+            return $this->db->query($sql, $values) ? true : false;
+
+        } catch (\Exception $e) {
+            $this->setLastError($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Updates a single status field (e.g., 'active' or 'Overdue').
+     * @param int $id Record ID.
+     * @param string $statusValue The new status value.
+     * @param string $statusField The name of the status field (defaults to 'status').
+     * @return bool
+     */
+    public function updateStatus($id, $statusValue, $statusField = 'status') {
+        $sql = "UPDATE {$this->table} SET {$statusField} = ? WHERE {$this->primaryKey} = ?";
+        return $this->db->query($sql, [$statusValue, $id]) ? true : false;
     }
 
 
@@ -90,12 +122,14 @@ class BaseModel {
 
     public function findByField($field, $value) {
         $sql = "SELECT * FROM {$this->table} WHERE {$field} = ?";
-        return $this->db->resultSet($sql, [$value]);
+        $results = $this->db->resultSet($sql, [$value]);
+        return $this->filterHidden($results);
     }
 
     public function findOneByField($field, $value) {
         $sql = "SELECT * FROM {$this->table} WHERE {$field} = ?";
-        return $this->db->single($sql, [$value]);
+        $result = $this->db->single($sql, [$value]);
+        return $this->filterHidden($result);
     }
 
 
@@ -109,34 +143,39 @@ class BaseModel {
         }
         
         $result = $this->db->single($sql, $params);
-        return $result ? $result['count'] : 0;
+        return $result ? (int)$result['count'] : 0;
     }
 
  
     public function query($sql, $params = [], $single = false) {
         if ($single) {
-            return $this->db->single($sql, $params);
+            $result = $this->db->single($sql, $params);
+            return $this->filterHidden($result);
         } else {
-            return $this->db->resultSet($sql, $params);
+            $results = $this->db->resultSet($sql, $params);
+            return $this->filterHidden($results);
         }
     }
 
+    /**
+     * Internal method to remove fields defined in $this->hidden from the result set.
+     */
     protected function filterHidden($data) {
         if (empty($data) || !is_array($data)) {
             return $data;
         }
         
-        // If it's a single record
+        // Handle array of records (resultSet)
         if (isset($data[0]) && is_array($data[0])) {
-            foreach ($data as &$record) {
+            foreach ($data as $key => $record) {
                 foreach ($this->hidden as $field) {
-                    if (isset($record[$field])) {
-                        unset($record[$field]);
+                    if (isset($data[$key][$field])) {
+                        unset($data[$key][$field]);
                     }
                 }
             }
         } else {
-            // It's a single record
+            // Handle single record (single)
             foreach ($this->hidden as $field) {
                 if (isset($data[$field])) {
                     unset($data[$field]);
@@ -147,7 +186,7 @@ class BaseModel {
         return $data;
     }
 
-  
+ 
     protected function setLastError($msg) {
         $this->lastError = $msg;
     }
@@ -157,16 +196,9 @@ class BaseModel {
         return $this->lastError;
     }
 
-    protected function safeQuery($sql, $params = []) {
-        try {
-            $result = $this->db->query($sql, $params);
-            if (!$result) {
-                $this->setLastError('Unknown DB error.');
-            }
-            return $result;
-        } catch (\Exception $e) {
-            $this->setLastError($e->getMessage());
-            return false;
-        }
+    public function getTable() {
+        return $this->table;
     }
+    
+    // safeQuery logic is now covered by the global try/catch in the public methods.
 }

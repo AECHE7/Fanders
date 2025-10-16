@@ -1,232 +1,282 @@
 <?php
 /**
- * View user details page for the Library Management System
+ * View Client Controller (view.php)
+ * Role: Displays a client's detailed profile and their complete loan history.
  */
 
-// Include configuration
-require_once '../../app/config/config.php';
+// Centralized initialization (handles sessions, auth, CSRF, and autoloader)
+require_once '../../public/init.php';
 
-// Start output buffering
-ob_start();
+// Enforce role-based access control (Staff roles: Admin, Manager, Cashier, AO)
+$auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier', 'account-officer']);
 
-// Include all required files
-function autoload($className) {
-    // Define the directories to look in
-    $directories = [
-        'app/core/',
-        'app/models/',
-        'app/services/',
-        'app/utilities/'
-    ];
-    
-    // Try to find the class file
-    foreach ($directories as $directory) {
-        $file = BASE_PATH . '/' . $directory . $className . '.php';
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
+// --- 1. Get Client ID and Initial Data ---
+$clientId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+if ($clientId <= 0) {
+    $session->setFlash('error', 'Client ID is missing or invalid.');
+    header('Location: ' . APP_URL . '/public/clients/index.php');
+    exit;
+}
+
+// Initialize services
+$clientService = new ClientService();
+$loanService = new LoanService();
+$csrfToken = $csrf->generateToken(); // Pass token to template for status forms
+
+// Fetch client profile
+$clientData = $clientService->getById($clientId);
+
+if (!$clientData) {
+    $session->setFlash('error', 'Client profile not found.');
+    header('Location: ' . APP_URL . '/public/clients/index.php');
+    exit;
+}
+
+// --- 2. Fetch Core Financial Data ---
+// Get all loan history (active, completed, defaulted) for this client
+$loanHistory = $loanService->getLoansByClient($clientId);
+
+// Determine if the client has any active loan (critical for management decisions)
+$hasActiveLoan = false;
+foreach ($loanHistory as $loan) {
+    if ($loan['status'] === LoanModel::$STATUS_ACTIVE) {
+        $hasActiveLoan = true;
+        break;
     }
 }
 
-// Register autoloader
-spl_autoload_register('autoload');
-
-// Initialize session management
-$session = new Session();
-
-// Initialize authentication service
-$auth = new AuthService();
-
-// Initialize CSRF protection
-$csrf = new CSRF();
-
-// Check if user is logged in
-if (!$auth->isLoggedIn()) {
-    // Redirect to login page
-    $session->setFlash('error', 'Please login to access this page.');
-    header('Location: ' . APP_URL . '/public/login.php');
-    exit;
-}
-
-// Check for session timeout
-if ($auth->checkSessionTimeout()) {
-    // Session has timed out, redirect to login page with message
-    $session->setFlash('error', 'Your session has expired. Please login again.');
-    header('Location: ' . APP_URL . '/public/login.php');
-    exit;
-}
-
-// Get current user data
-$user = $auth->getCurrentUser();
-$userRole = $user['role'];
-
-// Check if user ID is provided
-if (!isset($_GET['id']) || empty($_GET['id'])) {
-    // Redirect to users page with error message
-    $session->setFlash('error', 'User ID is required.');
-    header('Location: ' . APP_URL . '/public/users/index.php');
-    exit;
-}
-
-$userId = (int)$_GET['id'];
-
-// Initialize user service
-$userService = new UserService();
-
-// Get user data
-$viewUser = $userService->getUserWithRoleName($userId);
-
-if (!$viewUser) {
-    // User not found
-    $session->setFlash('error', 'User not found.');
-    header('Location: ' . APP_URL . '/public/users/index.php');
-    exit;
-}
-
-// Get borrowed books for the user
-$borrowedBooks = [];
-$activeLoans = [];
-$loanHistory = [];
-if (in_array($viewUser['role'], ['super-admin','student', 'staff', 'other', 'borrower'])) {
-    $bookService = new BookService();
-    $borrowedBooks = $bookService->getUserBorrowedBooks($userId);
-
-    if ($viewUser['role'] == 'borrower') {
-        $stats = $userService->getBorrowerStats($userId);
-        $activeLoans = $stats['active_loans'] ?? [];
-        $loanHistory = $stats['loan_history'] ?? [];
+// --- 3. Handle POST Actions (Status Management) ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if (!$csrf->validateRequest()) {
+        $session->setFlash('error', 'Invalid security token. Please try again.');
+        header('Location: ' . APP_URL . '/public/clients/view.php?id=' . $clientId);
+        exit;
     }
-}
 
-// Check if user has permission to view this user
-// Super Admin can view any user, Admin can only view borrowers or themselves
-if ($userRole == 'admin' && !in_array($viewUser['role'], ['student', 'staff', 'other']) && $userId !== $user['id']) {
-    // Redirect to dashboard with error message
-    $session->setFlash('error', 'You do not have permission to view this user.');
-    header('Location: ' . APP_URL . '/public/dashboard.php');
+    // Only high-level staff can manage client status
+    if (!$auth->hasRole(['super-admin', 'admin'])) {
+        $session->setFlash('error', 'You do not have permission to manage client status.');
+        header('Location: ' . APP_URL . '/public/clients/view.php?id=' . $clientId);
+        exit;
+    }
+
+    $success = false;
+    $action = $_POST['action'];
+
+    switch ($action) {
+        case 'activate':
+            $success = $clientService->activateClient($clientId);
+            break;
+        case 'deactivate':
+            $success = $clientService->deactivateClient($clientId);
+            break;
+        case 'blacklist':
+            $success = $clientService->blacklistClient($clientId);
+            break;
+        case 'delete':
+            $success = $clientService->deleteClient($clientId);
+            if ($success) {
+                $session->setFlash('success', 'Client record deleted and associated data archived.');
+                header('Location: ' . APP_URL . '/public/clients/index.php');
+                exit;
+            }
+            break;
+    }
+
+    if ($success) {
+        $session->setFlash('success', "Client status successfully updated to " . strtoupper($action) . ".");
+    } else {
+        $session->setFlash('error', $clientService->getErrorMessage() ?: "Failed to perform action '{$action}'.");
+    }
+
+    // Redirect back to refresh data
+    header('Location: ' . APP_URL . '/public/clients/view.php?id=' . $clientId);
     exit;
 }
 
-// Get transaction history for borrowers
-$transactions = [];
-if (in_array($viewUser['role'], ['super-admin', 'admin', 'staff', 'staff', 'others'])) {
-    $transactionService = new TransactionService();
-    $transactions = $transactionService->getUserTransactionHistory($userId);
-    
-    // Get borrower stats
-    $borrowerStats = $userService->getBorrowerStats($userId);
-}
-
-// Handle activate/deactivate/delete actions
-if (isset($_POST['action']) && $csrf->validateRequest()) {
-    if ($_POST['action'] == 'activate' && $viewUser['status'] === UserModel::$STATUS_INACTIVE) {
-        if ($userService->activateUser($userId)) {
-            $session->setFlash('success', 'User activated successfully.');
-            header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $userId);
-            exit;
-        } else {
-            $session->setFlash('error', 'Failed to activate user.');
-        }
-    } elseif ($_POST['action'] == 'deactivate' && $viewUser['status'] === UserModel::$STATUS_ACTIVE) {
-        if ($userService->deactivateUser($userId)) {
-            $session->setFlash('success', 'User deactivated successfully.');
-            header('Location: ' . $_SERVER['PHP_SELF'] . '?id=' . $userId);
-            exit;
-        } else {
-            $session->setFlash('error', $userService->getErrorMessage());
-        }
-    } elseif ($_POST['action'] == 'delete') {
-        if ($userService->deleteUser($userId)) {
-            $session->setFlash('success', 'User deleted successfully.');
-            header('Location: ' . APP_URL . '/public/users/index.php');
-            exit;
-        } else {
-            $session->setFlash('error', $userService->getErrorMessage());
-        }
-    }
-}
-
-// Include header
+// --- 4. Display View ---
+$pageTitle = "Client Profile: " . htmlspecialchars($clientData['name'] ?? 'N/A');
 include_once BASE_PATH . '/templates/layout/header.php';
-
-// Include navbar
 include_once BASE_PATH . '/templates/layout/navbar.php';
+
+// Helper function to get status badge class (used in the HTML below)
+function getClientStatusBadgeClass($status) {
+    switch($status) {
+        case 'active': return 'success';
+        case 'inactive': return 'warning';
+        case 'blacklisted': return 'danger';
+        default: return 'secondary';
+    }
+}
 ?>
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">User Details</h1>
+        <h1 class="h2">Client Profile: <?= htmlspecialchars($clientData['name'] ?? 'N/A') ?></h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                    <a href="<?= APP_URL ?>/public/users/edit.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="edit"></i> Edit User Profile
-                    </a>
-                    <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
-                        <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
-                            <i data-feather="arrow-left"></i> Back to Users
-                        </a>
-                    <?php endif; ?>
-                    <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-sm btn-outline-secondary">
-                            <i data-feather="arrow-left"></i> Back to Dashboard
-                        </a>
+                <a href="<?= APP_URL ?>/public/loans/add.php?client_id=<?= $clientId ?>" class="btn btn-sm btn-success <?= $hasActiveLoan ? 'disabled' : '' ?>" title="<?= $hasActiveLoan ? 'Client has an active loan' : 'Create New Loan' ?>">
+                    <i data-feather="plus-circle"></i> Apply New Loan
+                </a>
             </div>
+            <a href="<?= APP_URL ?>/public/clients/edit.php?id=<?= $clientId ?>" class="btn btn-sm btn-outline-primary me-2">
+                <i data-feather="edit"></i> Edit Profile
+            </a>
+            <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-sm btn-outline-secondary">
+                <i data-feather="arrow-left"></i> Back to Clients List
+            </a>
         </div>
     </div>
     
+    <!-- Flash Messages -->
     <?php if ($session->hasFlash('success')): ?>
         <div class="alert alert-success">
             <?= $session->getFlash('success') ?>
         </div>
     <?php endif; ?>
-    
     <?php if ($session->hasFlash('error')): ?>
         <div class="alert alert-danger">
             <?= $session->getFlash('error') ?>
         </div>
     <?php endif; ?>
     
-    <!-- User Details -->
-    <?php include_once BASE_PATH . '/templates/users/view.php'; ?>
-    
-    <!-- Borrower Transactions -->
-    <div class="card mt-4">
-        <div class="card-header">
-            <h5 class="mb-0">Transaction History</h5>
+    <div class="row">
+        <!-- Client Details Card (Left Column) -->
+        <div class="col-md-5">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <h5 class="mb-0">Client Information (ID: <?= $clientId ?>)</h5>
+                    <span class="badge text-bg-<?= getClientStatusBadgeClass($clientData['status']) ?>">
+                        <?= htmlspecialchars(ucfirst($clientData['status'])) ?>
+                    </span>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Full Name:</dt>
+                        <dd class="col-sm-7"><?= htmlspecialchars($clientData['name'] ?? 'N/A') ?></dd>
+                        
+                        <dt class="col-sm-5">Phone Number:</dt>
+                        <dd class="col-sm-7"><?= htmlspecialchars($clientData['phone_number'] ?? 'N/A') ?></dd>
+                        
+                        <dt class="col-sm-5">Email:</dt>
+                        <dd class="col-sm-7"><?= htmlspecialchars($clientData['email'] ?? 'N/A') ?></dd>
+                        
+                        <dt class="col-sm-5">Date of Birth:</dt>
+                        <dd class="col-sm-7"><?= htmlspecialchars($clientData['date_of_birth'] ? date('M d, Y', strtotime($clientData['date_of_birth'])) : 'N/A') ?></dd>
+                        
+                        <dt class="col-sm-5">Address:</dt>
+                        <dd class="col-sm-7"><?= htmlspecialchars($clientData['address'] ?? 'N/A') ?></dd>
+                        
+                        <dt class="col-sm-5">Primary ID:</dt>
+                        <dd class="col-sm-7"><?= htmlspecialchars($clientData['identification_type'] ? ucfirst($clientData['identification_type']) . " - " . $clientData['identification_number'] : 'N/A') ?></dd>
+                        
+                        <dt class="col-sm-5 text-muted">Joined On:</dt>
+                        <dd class="col-sm-7 text-muted small"><?= htmlspecialchars($clientData['created_at'] ? date('M d, Y H:i A', strtotime($clientData['created_at'])) : 'N/A') ?></dd>
+                    </dl>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <?php if (empty($transactions)): ?>
-                <p class="text-muted">No transaction history found.</p>
+
+        <!-- Status Management Card (Right Column) -->
+        <div class="col-md-7">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">Management Actions</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Quick actions to manage client status. Note: **Deactivating** a client prevents new loans but preserves history.</p>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <?php if ($clientData['status'] !== 'active'): ?>
+                            <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" onsubmit="return confirm('Confirm activation of client: <?= htmlspecialchars($clientData['name']) ?>?');">
+                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                <input type="hidden" name="action" value="activate">
+                                <button type="submit" class="btn btn-success"><i data-feather="user-check"></i> Activate</button>
+                            </form>
+                        <?php endif; ?>
+
+                        <?php if ($clientData['status'] === 'active'): ?>
+                            <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" onsubmit="return confirm('WARNING: Deactivating this client prevents new loans. Continue?');">
+                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                <input type="hidden" name="action" value="deactivate">
+                                <button type="submit" class="btn btn-warning"><i data-feather="user-minus"></i> Deactivate</button>
+                            </form>
+                        <?php endif; ?>
+                        
+                        <?php if ($clientData['status'] !== 'blacklisted'): ?>
+                            <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" onsubmit="return confirm('WARNING: Blacklisting is permanent and prevents ALL future loans. Continue?');">
+                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                <input type="hidden" name="action" value="blacklist">
+                                <button type="submit" class="btn btn-danger"><i data-feather="slash"></i> Blacklist</button>
+                            </form>
+                        <?php endif; ?>
+
+                        <?php if (!$hasActiveLoan && $auth->hasRole(['super-admin', 'admin'])): ?>
+                            <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" onsubmit="return confirm('DANGER: This will permanently DELETE the client record and all loan history (if no active loans exist). ARE YOU SURE?');">
+                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                                <input type="hidden" name="action" value="delete">
+                                <button type="submit" class="btn btn-outline-danger"><i data-feather="trash-2"></i> Delete Record</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($hasActiveLoan): ?>
+                        <div class="alert alert-info mt-3 mb-0">
+                            Client has an **Active Loan**. Status changes may be limited, and the record **cannot be deleted**.
+                        </div>
+                    <?php endif; ?>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loan History Card (Bottom Section) -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Loan History (<?= count($loanHistory) ?> total loans)</h5>
+        </div>
+        <div class="card-body p-0">
+            <?php if (empty($loanHistory)): ?>
+                <div class="alert alert-info m-4" role="alert">
+                    This client has no loan history on record.
+                </div>
             <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-striped table-sm">
-                        <thead>
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <th>ID</th>
-                                <th>Book Title</th>
-                                <th>Borrow Date</th>
-                                <th>Due Date</th>
-                                <th>Return Date</th>
-                                <th>Status</th>
+                                <th style="width: 5%;">Loan ID</th>
+                                <th style="width: 15%;">Principal</th>
+                                <th style="width: 15%;">Total Due</th>
+                                <th style="width: 10%;">Weekly Pay</th>
+                                <th style="width: 15%;">Disbursed Date</th>
+                                <th style="width: 15%;">Status</th>
+                                <th style="width: 25%;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($transactions as $transaction): ?>
+                            <?php foreach ($loanHistory as $loan): ?>
                                 <tr>
-                                    <td><?= $transaction['id'] ?></td>
-                                    <td><?= htmlspecialchars($transaction['book_title']) ?></td>
-                                    <td><?= date('Y-m-d', strtotime($transaction['borrow_date'])) ?></td>
-                                    <td><?= date('Y-m-d', strtotime($transaction['due_date'])) ?></td>
+                                    <td><?= htmlspecialchars($loan['id']) ?></td>
+                                    <td>₱<?= number_format($loan['principal'] ?? 0, 2) ?></td>
+                                    <td>₱<?= number_format($loan['total_loan_amount'] ?? 0, 2) ?></td>
+                                    <td>₱<?= number_format($loan['weekly_payment'] ?? 0, 2) ?></td>
+                                    <td><?= htmlspecialchars($loan['disbursement_date'] ? date('M d, Y', strtotime($loan['disbursement_date'])) : 'Pending') ?></td>
                                     <td>
-                                        <?= $transaction['return_date'] ? date('Y-m-d', strtotime($transaction['return_date'])) : 'Not returned' ?>
+                                        <span class="badge text-bg-<?= $loan['status'] === 'active' ? 'primary' : ($loan['status'] === 'completed' ? 'success' : 'secondary') ?>">
+                                            <?= htmlspecialchars(ucfirst($loan['status'])) ?>
+                                        </span>
                                     </td>
                                     <td>
-                                        <?php if ($transaction['status_label'] == 'Overdue'): ?>
-                                            <span class="badge bg-danger">Overdue</span>
-                                        <?php elseif ($transaction['status_label'] == 'Borrowed'): ?>
-                                            <span class="badge bg-primary">Borrowed</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-success">Returned</span>
+                                        <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="btn btn-sm btn-outline-info">
+                                            <i data-feather="file-text"></i> View Loan
+                                        </a>
+                                        <?php if ($loan['status'] === 'active'): ?>
+                                            <a href="<?= APP_URL ?>/public/payments/record.php?loan_id=<?= $loan['id'] ?>" class="btn btn-sm btn-success">
+                                                <i data-feather="dollar-sign"></i> Record Payment
+                                            </a>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -237,62 +287,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <?php endif; ?>
         </div>
     </div>
-
-    
-    <?php if (($userRole == 'super-admin') || 
-             ($userRole == 'admin')): ?>
-        <!-- User Management Actions -->
-        <div class="card mt-4">
-            <div class="card-header bg-<?= $viewUser['status'] ? 'warning' : 'success' ?> text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">User Status Management</h5>
-            </div>
-            <div class="card-body">
-            <?php if ($viewUser['status'] === UserModel::$STATUS_ACTIVE): ?>
-                <p class="card-text">This user is currently active. You can deactivate this account.</p>
-                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" onsubmit="return confirm('Are you sure you want to deactivate this user?');">
-                    <?= $csrf->getTokenField() ?>
-                    <input type="hidden" name="action" value="deactivate">
-                    <button type="submit" class="btn btn-warning">
-                        <i data-feather="user-x"></i> Deactivate User
-                    </button>
-                </form>
-            <?php else: ?>
-                <p class="card-text">This user is currently inactive. You can activate this account.</p>
-                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post">
-                    <?= $csrf->getTokenField() ?>
-                    <input type="hidden" name="action" value="activate">
-                    <button type="submit" class="btn btn-success">
-                        <i data-feather="user-check"></i> Activate User
-                    </button>
-                </form>
-            <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- <div class="card mt-4">
-            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Delete Zone</h5>
-            </div>
-            <div class="card-body">
-            <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
-                <p class="card-text">Deleting this user is irreversible. Please be certain..</p>
-                    <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" onsubmit="return confirm('Are you sure you want to delete this user account? This action cannot be undone.');" style="margin:0;">
-                        <?= $csrf->getTokenField() ?>
-                        <input type="hidden" name="action" value="delete">
-                        <button type="submit" class="btn btn-sm btn-danger">
-                            <i data-feather="trash-2"></i> Delete User
-                        </button>
-                    </form>
-                <?php endif; ?>
-            </div> -->
-        </div>
-    <?php endif; ?>
 </main>
 
 <?php
-// Include footer
 include_once BASE_PATH . '/templates/layout/footer.php';
-
-// End output buffering and flush output
-ob_end_flush();
 ?>

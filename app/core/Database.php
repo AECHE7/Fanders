@@ -8,15 +8,15 @@ class Database {
     private $username = DB_USER;
     private $password = DB_PASS;
     private $dbType = DB_TYPE;
-    private $port = DB_PORT; // Add the port
-    private $poolMode = DB_POOL_MODE; // Add the pool mode
+    private $port = DB_PORT; 
+    private $poolMode = DB_POOL_MODE; 
     private $pdo;
     private $error;
     private static $instance = null;
 
     private function __construct() {
         try {
-            // Build the PDO DSN for PostgreSQL
+            // Build the PDO DSN (e.g., 'mysql:host=localhost;port=3306;dbname=fanders_lms')
             $dsn = "{$this->dbType}:host={$this->host};port={$this->port};dbname={$this->dbName}";
 
             // Set PDO options
@@ -46,6 +46,12 @@ class Database {
         return $this->pdo;
     }
 
+    /**
+     * Executes a prepared SQL statement.
+     * @param string $sql The SQL query string.
+     * @param array $params Optional array of parameters to bind.
+     * @return PDOStatement|false The PDO statement object on success, or false on failure.
+     */
     public function query($sql, $params = []) {
         try {
             $stmt = $this->pdo->prepare($sql);
@@ -58,6 +64,9 @@ class Database {
         }
     }
 
+    /**
+     * Executes a query and fetches a single row.
+     */
     public function single($sql, $params = []) {
         $stmt = $this->query($sql, $params);
         if ($stmt) {
@@ -66,6 +75,9 @@ class Database {
         return false;
     }
 
+    /**
+     * Executes a query and fetches all rows.
+     */
     public function resultSet($sql, $params = []) {
         $stmt = $this->query($sql, $params);
         if ($stmt) {
@@ -74,6 +86,9 @@ class Database {
         return false;
     }
 
+    /**
+     * Executes a query and returns the row count.
+     */
     public function rowCount($sql, $params = []) {
         $stmt = $this->query($sql, $params);
         if ($stmt) {

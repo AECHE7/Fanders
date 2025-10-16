@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin/Super Admin dashboard template for the Library Management System
+ * Admin/Super Admin dashboard template for the Fanders Microfinance Loan Management System
  * Notion-inspired design
  */
 ?>
@@ -21,14 +21,14 @@
                 <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i> 
                 <?= date('l, F j, Y') ?>
             </div>
-            <a href="<?= APP_URL ?>/public/reports/books.php" class="btn btn-sm btn-outline-secondary px-3">
-                <i data-feather="book" class="me-1" style="width: 14px; height: 14px;"></i> Books
+            <a href="<?= APP_URL ?>/public/reports/loans.php" class="btn btn-sm btn-outline-secondary px-3">
+                <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> Loans
             </a>
-            <a href="<?= APP_URL ?>/public/reports/users.php" class="btn btn-sm btn-outline-secondary px-3">
-                <i data-feather="users" class="me-1" style="width: 14px; height: 14px;"></i> Users
+            <a href="<?= APP_URL ?>/public/reports/clients.php" class="btn btn-sm btn-outline-secondary px-3">
+                <i data-feather="users" class="me-1" style="width: 14px; height: 14px;"></i> Clients
             </a>
-            <a href="<?= APP_URL ?>/public/reports/transactions.php" class="btn btn-sm btn-outline-secondary px-3">
-                <i data-feather="repeat" class="me-1" style="width: 14px; height: 14px;"></i> Transactions
+            <a href="<?= APP_URL ?>/public/reports/payments.php" class="btn btn-sm btn-outline-secondary px-3">
+                <i data-feather="dollar-sign" class="me-1" style="width: 14px; height: 14px;"></i> Payments
             </a>
         </div>
     </div>
@@ -38,47 +38,47 @@
 <!-- Stats Overview with Color-coded Icons like Notion -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">📈 Library Statistics</h5>
+        <h5 class="mb-0 me-2">📈 Microfinance Statistics</h5>
         <div class="notion-divider flex-grow-1"></div>
     </div>
     <div class="row g-4 dashboard-stats-container">
-        <!-- Total Books -->
+        <!-- Total Loans -->
         <div class="col-md-3">
             <div class="p-4 rounded" style="background-color: #F5F4FF;">
                 <div class="d-flex mb-3 align-items-center">
                     <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #9d71ea; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="book" style="width: 20px; height: 20px; color: white;"></i>
+                        <i data-feather="file-text" style="width: 20px; height: 20px; color: white;"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0">Total Books</h6>
+                        <h6 class="mb-0">Total Loans</h6>
                     </div>
                 </div>
                 <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['total_books'] ?? 0 ?></p>
-                    <p class="card-text text-muted mb-0 small">Books in library</p>
+                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['total_loans'] ?? 0 ?></p>
+                    <p class="card-text text-muted mb-0 small">All loans</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Borrowed Books -->
+
+        <!-- Active Loans -->
         <div class="col-md-3">
             <div class="p-4 rounded" style="background-color: #E0F2FE;">
                 <div class="d-flex mb-3 align-items-center">
                     <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #0b76ef; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="book-open" style="width: 20px; height: 20px; color: white;"></i>
+                        <i data-feather="activity" style="width: 20px; height: 20px; color: white;"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0">Borrowed Books</h6>
+                        <h6 class="mb-0">Active Loans</h6>
                     </div>
                 </div>
                 <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['borrowed_books'] ?? 0 ?></p>
-                    <p class="card-text text-muted mb-0 small">Currently on loan</p>
+                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['active_loans'] ?? 0 ?></p>
+                    <p class="card-text text-muted mb-0 small">Currently active</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Overdue Returns -->
+
+        <!-- Overdue Payments -->
         <div class="col-md-3">
             <div class="p-4 rounded" style="background-color: #FEF3E4;">
                 <div class="d-flex mb-3 align-items-center">
@@ -86,7 +86,7 @@
                         <i data-feather="alert-circle" style="width: 20px; height: 20px; color: white;"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0">Overdue Returns</h6>
+                        <h6 class="mb-0">Overdue Payments</h6>
                     </div>
                 </div>
                 <div class="d-flex justify-content-between align-items-end">
@@ -95,8 +95,8 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Total Penalties -->
+
+        <!-- Total Portfolio -->
         <div class="col-md-3">
             <div class="p-4 rounded" style="background-color: #FEE2E2;">
                 <div class="d-flex mb-3 align-items-center">
@@ -104,12 +104,12 @@
                         <i data-feather="dollar-sign" style="width: 20px; height: 20px; color: white;"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0">Total Penalties</h6>
+                        <h6 class="mb-0">Total Portfolio</h6>
                     </div>
                 </div>
                 <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0">₱<?= number_format($stats['total_penalties'] ?? 0) ?></p>
-                    <p class="card-text text-muted mb-0 small">Unpaid penalties</p>
+                    <p class="stat-value display-5 fw-bold mb-0">₱<?= number_format($stats['total_disbursed'] ?? 0, 2) ?></p>
+                    <p class="card-text text-muted mb-0 small">Outstanding balance</p>
                 </div>
             </div>
         </div>
@@ -232,40 +232,36 @@
         <div class="notion-divider flex-grow-1"></div>
     </div>
     <div class="row g-4">
-        <!-- Recent Borrowing/Return Activity -->
+        <!-- Recent Payments -->
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent py-3 border-bottom">
                     <div class="d-flex align-items-center">
                         <div class="rounded d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; background-color: #0b76ef;">
-                            <i data-feather="repeat" style="width: 14px; height: 14px; color: white;"></i>
+                            <i data-feather="dollar-sign" style="width: 14px; height: 14px; color: white;"></i>
                         </div>
-                        <h5 class="card-title mb-0">Recent Transactions</h5>
+                        <h5 class="card-title mb-0">Recent Payments</h5>
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <?php if (isset($recentTransactions) && !empty($recentTransactions)): ?>
+                    <?php if (isset($recentPayments) && !empty($recentPayments)): ?>
                     <div class="table-responsive">
                         <table class="table mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-4">Book</th>
-                                    <th>Borrower</th>
-                                    <th>Type</th>
+                                    <th class="ps-4">Client</th>
+                                    <th>Amount</th>
+                                    <th>Week</th>
                                     <th>Date</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($recentTransactions as $transaction): ?>
+                                <?php foreach ($recentPayments as $payment): ?>
                                 <tr>
-                                    <td class="ps-4"><?= htmlspecialchars($transaction['book_title']) ?></td>
-                                    <td><?= htmlspecialchars($transaction['borrower_name']) ?></td>
-                                    <td>
-                                        <span class="badge bg-<?= $transaction['type'] === 'borrow' ? 'primary' : 'success' ?>">
-                                            <?= ucfirst($transaction['type']) ?>
-                                        </span>
-                                    </td>
-                                    <td><?= date('M d, Y', strtotime($transaction['date'])) ?></td>
+                                    <td class="ps-4"><?= htmlspecialchars($payment['client_name']) ?></td>
+                                    <td>₱<?= number_format($payment['payment_amount'], 2) ?></td>
+                                    <td>Week <?= $payment['week_number'] ?></td>
+                                    <td><?= date('M d, Y', strtotime($payment['payment_date'])) ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -273,42 +269,47 @@
                     </div>
                     <?php else: ?>
                     <div class="text-center p-4 text-muted">
-                        <i data-feather="repeat" style="width: 24px; height: 24px;" class="mb-2"></i>
-                        <p>No recent transactions.</p>
+                        <i data-feather="dollar-sign" style="width: 24px; height: 24px;" class="mb-2"></i>
+                        <p>No recent payments.</p>
                     </div>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
         
-        <!-- Recently Added Books -->
+        <!-- Recently Added Loans -->
+        <!-- Active Loans -->
         <div class="col-md-6">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent py-3 border-bottom">
                     <div class="d-flex align-items-center">
                         <div class="rounded d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; background-color: #9d71ea;">
-                            <i data-feather="book" style="width: 14px; height: 14px; color: white;"></i>
+                            <i data-feather="activity" style="width: 14px; height: 14px; color: white;"></i>
                         </div>
-                        <h5 class="card-title mb-0">Recently Added Books</h5>
+                        <h5 class="card-title mb-0">Active Loans</h5>
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <?php if (isset($recentlyAddedBooks) && !empty($recentlyAddedBooks)): ?>
+                    <?php if (isset($activeLoans) && !empty($activeLoans)): ?>
                     <div class="table-responsive">
                         <table class="table mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-4">Title</th>
-                                    <th>Author</th>
-                                    <th>Added On</th>
+                                    <th class="ps-4">Client</th>
+                                    <th>Loan Amount</th>
+                                    <th>Status</th>
+                                    <th>Next Payment</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($recentlyAddedBooks as $book): ?>
+                                <?php foreach (array_slice($activeLoans, 0, 5) as $loan): ?>
                                 <tr>
-                                    <td class="ps-4"><?= htmlspecialchars($book['title']) ?></td>
-                                    <td><?= htmlspecialchars($book['author']) ?></td>
-                                    <td><?= date('M d, Y', strtotime($book['created_at'])) ?></td>
+                                    <td class="ps-4"><?= htmlspecialchars($loan['client_name']) ?></td>
+                                    <td>₱<?= number_format($loan['loan_amount'], 2) ?></td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                    <td>Week <?= $loan['current_week'] ?? 1 ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -316,8 +317,8 @@
                     </div>
                     <?php else: ?>
                     <div class="text-center p-4 text-muted">
-                        <i data-feather="book" style="width: 24px; height: 24px;" class="mb-2"></i>
-                        <p>No books have been added recently.</p>
+                        <i data-feather="activity" style="width: 24px; height: 24px;" class="mb-2"></i>
+                        <p>No active loans.</p>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -334,16 +335,16 @@
     </div>
     <div class="row g-3 stagger-fade-in">
         <div class="col-md-3">
-            <a href="<?= APP_URL ?>/public/books/add.php" class="text-decoration-none">
+            <a href="<?= APP_URL ?>/public/loans/add.php" class="text-decoration-none">
                 <div class="card border-0 h-100" style="background-color: #f7ecff;">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center">
                             <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background-color: #9d71ea;">
-                                <i data-feather="book" style="width: 20px; height: 20px; color: white;"></i>
+                                <i data-feather="plus" style="width: 20px; height: 20px; color: white;"></i>
                             </div>
                             <div>
-                                <h6 class="mb-0">Add New Book</h6>
-                                <p class="card-text small mb-0 text-muted">Create book record</p>
+                                <h6 class="mb-0">New Loan Application</h6>
+                                <p class="card-text small mb-0 text-muted">Create loan request</p>
                             </div>
                         </div>
                     </div>
@@ -351,7 +352,7 @@
             </a>
         </div>
         <div class="col-md-3">
-            <a href="<?= APP_URL ?>/public/users/add.php" class="text-decoration-none">
+            <a href="<?= APP_URL ?>/public/clients/add.php" class="text-decoration-none">
                 <div class="card border-0 h-100" style="background-color: #eaf8f6;">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center">
@@ -359,7 +360,7 @@
                                 <i data-feather="user-plus" style="width: 20px; height: 20px; color: white;"></i>
                             </div>
                             <div>
-                                <h6 class="mb-0">Add New User</h6>
+                                <h6 class="mb-0">Add New Client</h6>
                                 <p class="card-text small mb-0 text-muted">Register borrower</p>
                             </div>
                         </div>
@@ -368,16 +369,16 @@
             </a>
         </div>
         <div class="col-md-3">
-            <a href="<?= APP_URL ?>/public/transactions/borrow.php" class="text-decoration-none">
+            <a href="<?= APP_URL ?>/public/loans/index.php" class="text-decoration-none">
                 <div class="card border-0 h-100" style="background-color: #edf2fc;">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center">
                             <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background-color: #0b76ef;">
-                                <i data-feather="log-in" style="width: 20px; height: 20px; color: white;"></i>
+                                <i data-feather="file-text" style="width: 20px; height: 20px; color: white;"></i>
                             </div>
                             <div>
-                                <h6 class="mb-0">Issue Book</h6>
-                                <p class="card-text small mb-0 text-muted">Lend to borrower</p>
+                                <h6 class="mb-0">Manage Loans</h6>
+                                <p class="card-text small mb-0 text-muted">View all loans</p>
                             </div>
                         </div>
                     </div>
@@ -385,16 +386,16 @@
             </a>
         </div>
         <div class="col-md-3">
-            <a href="<?= APP_URL ?>/public/transactions/return.php" class="text-decoration-none">
+            <a href="<?= APP_URL ?>/public/payments/add.php" class="text-decoration-none">
                 <div class="card border-0 h-100" style="background-color: #fff3e9;">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center">
                             <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background-color: #ec7211;">
-                                <i data-feather="check-square" style="width: 20px; height: 20px; color: white;"></i>
+                                <i data-feather="dollar-sign" style="width: 20px; height: 20px; color: white;"></i>
                             </div>
                             <div>
-                                <h6 class="mb-0">Return Book</h6>
-                                <p class="card-text small mb-0 text-muted">Process returns</p>
+                                <h6 class="mb-0">Record Payment</h6>
+                                <p class="card-text small mb-0 text-muted">Process payments</p>
                             </div>
                         </div>
                     </div>
@@ -407,7 +408,7 @@
 <!-- Analytics Summary Section -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">📉 Monthly Activity</h5>
+        <h5 class="mb-0 me-2">📊 Monthly Performance</h5>
         <div class="notion-divider flex-grow-1"></div>
     </div>
     
@@ -433,22 +434,22 @@
         <div class="row g-4 mt-2">
             <?php
             $analyticMetrics = $analytics['monthly'] ?? [
-                ['label' => 'New Books Added', 'value' => 0, 'bg' => '#edf2fc', 'dot' => '#0b76ef'],
-                ['label' => 'Books Borrowed', 'value' => 0, 'bg' => '#f1ebfc', 'dot' => '#9d71ea'],
-                ['label' => 'Books Returned', 'value' => 0, 'bg' => '#fff3e9', 'dot' => '#ec7211'],
-                ['label' => 'New Borrowers', 'value' => 0, 'bg' => '#ebfef6', 'dot' => '#0ca789']
+                ['label' => 'New Loans Disbursed', 'value' => $stats['loans_this_month'] ?? 0, 'bg' => '#edf2fc', 'dot' => '#0b76ef'],
+                ['label' => 'Payments Collected', 'value' => '₱' . number_format($stats['total_disbursed'] ?? 0, 2), 'bg' => '#f1ebfc', 'dot' => '#9d71ea'],
+                ['label' => 'New Clients', 'value' => $stats['total_clients'] ?? 0, 'bg' => '#fff3e9', 'dot' => '#ec7211'],
+                ['label' => 'Portfolio Growth', 'value' => '₱' . number_format($stats['total_disbursed'] ?? 0, 2), 'bg' => '#ebfef6', 'dot' => '#0ca789']
             ];
             foreach ($analyticMetrics as $metric):
             ?>
                 <div class="col-md-3">
-                    <div class="p-3 rounded" style="background-color: <?= htmlspecialchars($metric['bg'] ?? '#f8f9fa') ?>;">
+                    <div class="p-3 rounded" style="background-color: <?= htmlspecialchars($metric['bg']) ?>;">
                         <div class="d-flex align-items-center mb-2">
                             <div class="rounded-circle me-2"
-                                 style="width: 8px; height: 8px; background-color: <?= htmlspecialchars($metric['dot'] ?? '#ccc') ?>;">
+                                 style="width: 8px; height: 8px; background-color: <?= htmlspecialchars($metric['dot']) ?>;">
                             </div>
-                            <p class="mb-0 small"><?= htmlspecialchars($metric['label'] ?? '-') ?></p>
+                            <p class="mb-0 small"><?= htmlspecialchars($metric['label']) ?></p>
                         </div>
-                        <h3 class="mb-0"><?= htmlspecialchars($metric['value'] ?? 0) ?></h3>
+                        <h3 class="mb-0"><?= htmlspecialchars($metric['value']) ?></h3>
                     </div>
                 </div>
             <?php endforeach; ?>

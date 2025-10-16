@@ -1,4 +1,4 @@
-<?php
+zz<?php
 /**
  * Dashboard page for the Library Management System
  * Notion-inspired design
@@ -60,62 +60,93 @@ $user = $auth->getCurrentUser();
 $userRole = isset($user['role']) ? $user['role'] : null;
 
 // Initialize services
-$userService = new UserService();
-$bookService = new BookService();
-$transactionService = new TransactionService();
-$penaltyService = new PenaltyService();
-$reportService = new ReportService();
-
-// Initialize models
-$userModel = new UserModel();
-$transactionModel = new TransactionModel();
+$loanService = new LoanService();
+$clientService = new ClientService();
+$paymentService = new PaymentService();
 
     // Get role-specific dashboard data
-    if (in_array($userRole, [UserModel::$ROLE_STUDENT, UserModel::$ROLE_STAFF, UserModel::$ROLE_OTHER])) {
-        // Borrower Dashboard
-        error_log("User ID for borrower stats: " . $user['id']);
-        $stats = $userService->getBorrowerStats($user['id']);
-        error_log("Active loans from getBorrowerStats: " . print_r($stats['active_loans'], true));
-        $activeLoans = $stats['active_loans'] ?? [];
-        $loanHistory = $stats['loan_history'] ?? [];
-        $overdueBooks = $transactionModel->getUserOverdueLoans($user['id']);
-$penalties = $penaltyService->getUserPenalties($user['id']);
+    if (in_array($userRole, [UserModel::$ROLE_CLIENT, UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER, UserModel::$ROLE_STUDENT, UserModel::$ROLE_STAFF, UserModel::$ROLE_OTHER])) {
+        // Client/Borrower Dashboard
+        $clientId = $user['id']; // Assuming user ID maps to client ID, or need to get client by user ID
+        $stats = [];
 
-// Calculate total penalties due from penalties array
-$totalPenaltiesDue = 0;
-if (is_array($penalties)) {
-    foreach ($penalties as $penalty) {
-        if (isset($penalty['penalty_amount'])) {
-            $totalPenaltiesDue += floatval($penalty['penalty_amount']);
+        // Get client's loans
+        $clientLoans = $loanService->getLoansByClient($clientId);
+        $activeLoans = array_filter($clientLoans, function($loan) {
+            return $loan['status'] === 'active';
+        });
+        $loanHistory = $clientLoans;
+
+        // Get overdue payments (simplified - loans with missed payments)
+        $overduePayments = [];
+        foreach ($activeLoans as $loan) {
+            $nextWeek = $paymentService->getNextPaymentWeek($loan['id']);
+            if ($nextWeek && $nextWeek < date('W')) {
+                $overduePayments[] = $loan;
+            }
         }
-    }
-}
-$stats['total_penalties'] = $totalPenaltiesDue;
 
-$availableBooks = $stats['available_books'] ?? [];
-$dashboardTemplate = BASE_PATH . '/templates/dashboard/borrower.php';
-        } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_SUPER_ADMIN])) {
-        // Admin Dashboard
-        $stats = $userService->getAdminStats();
-        $activeLoans = $transactionModel->getActiveLoans();
-        $overdueBooks = $transactionModel->getOverdueLoans();
-        $recentlyAddedBooks = $bookService->getRecentlyAddedBooks(5);
-        $recentTransactions = $stats['recent_transactions'] ?? [];
+        // Get penalties (assuming penalty service exists for loans)
+        $penalties = $penaltyService->getUserPenalties($clientId) ?? [];
+        $totalPenaltiesDue = 0;
+        if (is_array($penalties)) {
+            foreach ($penalties as $penalty) {
+                if (isset($penalty['penalty_amount'])) {
+                    $totalPenaltiesDue += floatval($penalty['penalty_amount']);
+                }
+            }
+        }
+        $stats['total_penalties'] = $totalPenaltiesDue;
+        $stats['active_loans'] = $activeLoans;
+        $stats['loan_history'] = $loanHistory;
+        $stats['overdue_count'] = count($overduePayments);
+
+        // Get total borrowed (loan amounts)
+        $stats['total_borrowed'] = array_sum(array_column($clientLoans, 'loan_amount'));
+        $stats['current_borrowed'] = array_sum(array_column($activeLoans, 'loan_amount'));
+
+        $dashboardTemplate = BASE_PATH . '/templates/dashboard/client.php';
+        } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_SUPER_ADMIN, UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER])) {
+        // Admin/Staff Dashboard
+        $stats = [];
+
+        // Get loan statistics
+        $loanStats = $loanService->getLoanStats();
+        $stats = array_merge($stats, $loanStats);
+
+        // Get active loans
+        $activeLoans = $loanService->getAllActiveLoansWithClients();
+
+        // Get overdue payments
+        $overduePayments = $paymentService->getOverduePayments();
+        $stats['overdue_returns'] = count($overduePayments);
+
+        // Get recent payments
+        $recentPayments = $paymentService->getRecentPayments(5);
+        $stats['recent_transactions'] = $recentPayments;
+
+        // Get analytics
         $analytics = $reportService->getMonthlyActivitySummary();
 
         // Fetch total penalties amount from all penalty records
         $totalPenaltiesDue = $penaltyService->getTotalPenalties();
         $stats['total_penalties'] = $totalPenaltiesDue;
-        
+
         if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
             // Additional super admin data
             $users = $userService->getAllUsersWithRoleNames();
-            $mostBorrowedBooks = $bookService->getMostBorrowedBooks(5);
+            $clients = $clientService->getAllClients();
+            $stats['total_clients'] = count($clients);
+        } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_MANAGER])) {
+            // Additional admin/branch manager data
+            $clients = $clientService->getAllClients();
+            $stats['total_clients'] = count($clients);
         } else {
-            // Additional admin data
-            $borrowers = $userService->getAllBorrowers();
+            // Account officer/cashier data
+            $clients = $clientService->getAllClients();
+            $stats['total_clients'] = count($clients);
         }
-        
+
         $dashboardTemplate = BASE_PATH . '/templates/dashboard/admin.php';
     } else {
     // Unknown role

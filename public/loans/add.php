@@ -1,193 +1,158 @@
 <?php
 /**
- * Add new loan application page for the Fanders Microfinance System
+ * New Loan Application Controller (add.php)
+ * Role: Allows authorized staff to submit a new loan application for a client.
+ * Integrates: LoanService, LoanCalculationService, ClientService
  */
 
-// Include configuration
-require_once '../../app/config/config.php';
+// Centralized initialization (handles sessions, auth, CSRF, and autoloader)
+require_once '../../public/init.php';
 
-// Start output buffering
-ob_start();
+// Enforce role-based access control (Staff roles allowed to apply for loans)
+$auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account-officer']);
 
-// Include all required files
-function autoload($className) {
-    // Define the directories to look in
-    $directories = [
-        'app/core/',
-        'app/models/',
-        'app/services/',
-        'app/utilities/'
-    ];
+// Initialize services
+$loanService = new LoanService();
+$loanCalculationService = new LoanCalculationService();
+$clientService = new ClientService();
 
-    // Try to find the class file
-    foreach ($directories as $directory) {
-        $file = BASE_PATH . '/' . $directory . $className . '.php';
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
+// --- 1. Initial Data Setup ---
+$loan = [
+    'client_id' => isset($_GET['client_id']) ? (int)$_GET['client_id'] : '', // Pre-select if linked from client page
+    'loan_amount' => ''
+];
+$loanCalculation = null;
+$error = $session->getFlash('error'); // Retrieve any previous error
+$clients = $clientService->getAllForSelect(); // Fetch active clients for dropdown
+
+// If a client_id is passed, check if they are eligible for a loan
+if (!empty($loan['client_id'])) {
+    if (!$loanService->canClientApplyForLoan($loan['client_id'])) {
+        $session->setFlash('error', $loanService->getErrorMessage() ?: "Client is ineligible for a new loan.");
+        header('Location: ' . APP_URL . '/public/clients/view.php?id=' . $loan['client_id']);
+        exit;
     }
 }
 
-// Register autoloader
-spl_autoload_register('autoload');
-
-// Initialize session management
-$session = new Session();
-
-// Initialize authentication service
-$auth = new AuthService();
-
-// Initialize CSRF protection
-$csrf = new CSRF();
-
-// Check if user is logged in
-if (!$auth->isLoggedIn()) {
-    // Redirect to login page
-    $session->setFlash('error', 'Please login to access this page.');
-    header('Location: ' . APP_URL . '/public/login.php');
-    exit;
-}
-
-// Check for session timeout
-if ($auth->checkSessionTimeout()) {
-    // Session has timed out, redirect to login page with message
-    $session->setFlash('error', 'Your session has expired. Please login again.');
-    header('Location: ' . APP_URL . '/public/login.php');
-    exit;
-}
-
-// Check if user has permission to add loans (Super Admin, Admin, Manager, Account Officer)
-if (!$auth->hasRole(['super-admin', 'admin', 'manager', 'account_officer'])) {
-    // Redirect to dashboard with error message
-    $session->setFlash('error', 'You do not have permission to access this page.');
-    header('Location: ' . APP_URL . '/public/dashboard.php');
-    exit;
-}
-
-// Get current user data
-$user = $auth->getCurrentUser();
-
-// Initialize loan service
-$loanService = new LoanService();
-
-// Get all clients for the dropdown
-$clients = $loanService->getAllClientsForSelect();
-
-// Process form submission
-$loan = [
-    'client_id' => '',
-    'loan_amount' => ''
-];
-
-$loanCalculation = null;
-$error = '';
-
+// --- 2. Process Form Submission ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate CSRF token
     if (!$csrf->validateRequest()) {
-        $error = 'Invalid form submission. Please try again.';
+        $error = 'Invalid security token. Please refresh and try again.';
     } else {
-        // Get form data
+        // Gather and sanitize input
         $loan = [
             'client_id' => isset($_POST['client_id']) ? (int)$_POST['client_id'] : '',
             'loan_amount' => isset($_POST['loan_amount']) ? (float)$_POST['loan_amount'] : ''
         ];
 
-        // Calculate loan details for preview
-        if (!empty($loan['loan_amount'])) {
-            $loanCalculationService = new LoanCalculationService();
+        // --- Calculate Preview (Run regardless of submission type) ---
+        if ($loan['loan_amount'] > 0) {
             $loanCalculation = $loanCalculationService->calculateLoan($loan['loan_amount']);
         }
-
-        // If submit button was clicked (not calculate)
+        
+        // Check if the "Apply" button was pressed (not just the 'Calculate' preview)
         if (isset($_POST['submit_loan'])) {
+            
             // Apply for the loan
             $loanId = $loanService->applyForLoan($loan, $user['id']);
 
             if ($loanId) {
-                // Loan application submitted successfully
-                $session->setFlash('success', 'Loan application submitted successfully.');
+                // Success: Redirect to the loan list page
+                $session->setFlash('success', 'Loan application submitted successfully. Pending Manager approval.');
                 header('Location: ' . APP_URL . '/public/loans/index.php');
                 exit;
             } else {
-                // Failed to submit loan application
-                $error = $loanService->getErrorMessage();
+                // Failure: Store the specific error message from the service
+                $error = $loanService->getErrorMessage() ?: "Failed to submit loan application.";
             }
         }
     }
+    
+    // Re-set error flash if an error occurred during POST
+    if ($error) {
+        $session->setFlash('error', $error);
+    }
 }
 
-// Include header
+// --- 3. Display View ---
+$pageTitle = "New Loan Application";
 include_once BASE_PATH . '/templates/layout/header.php';
-
-// Include navbar
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">New Loan Application</h1>
+        <h1 class="h2">New Loan Application (17-Week Term)</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-secondary">
-                <i data-feather="arrow-left"></i> Back to Loans
+                <i data-feather="arrow-left"></i> Back to Loans List
             </a>
         </div>
     </div>
     
-    <?php if ($error): ?>
-        <div class="alert alert-danger">
-            <?= $error ?>
+    <!-- Flash Messages -->
+    <?php if ($session->hasFlash('success')): ?>
+        <div class="alert alert-success">
+            <?= $session->getFlash('success') ?>
         </div>
     <?php endif; ?>
-    
+    <?php if ($session->hasFlash('error')): ?>
+        <div class="alert alert-danger">
+            <?= $session->getFlash('error') ?>
+        </div>
+    <?php endif; ?>
+
     <!-- Loan Application Form -->
-    <div class="card">
+    <div class="card shadow-sm">
         <div class="card-body">
-            <?php include_once BASE_PATH . '/templates/loans/form.php'; ?>
+            <?php 
+            // The loan form template handles the input and the final submission.
+            include_once BASE_PATH . '/templates/loans/form.php'; 
+            ?>
         </div>
     </div>
 
-    <!-- Loan Calculation Preview -->
-    <?php if ($loanCalculation): ?>
-    <div class="card mt-4">
-        <div class="card-header">
-            <h5 class="mb-0">Loan Calculation Preview</h5>
+    <!-- Loan Calculation Preview (Displayed only if successful calculation exists) -->
+    <?php if ($loanCalculation && !isset($_POST['submit_loan']) && empty($error)): ?>
+    <div class="card mt-4 shadow-sm border-primary">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Loan Calculation Preview - Ready to Submit</h5>
         </div>
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6">
                     <h6>Loan Summary</h6>
-                    <table class="table table-sm">
+                    <table class="table table-sm table-borderless mb-3">
                         <tr>
-                            <td>Principal Amount:</td>
+                            <td class="fw-medium">Principal Amount:</td>
                             <td class="text-end">₱<?= number_format($loanCalculation['principal_amount'], 2) ?></td>
                         </tr>
                         <tr>
-                            <td>Total Interest (5%):</td>
-                            <td class="text-end">₱<?= number_format($loanCalculation['total_interest'], 2) ?></td>
+                            <td class="fw-medium">Total Interest (4 months @ 5%):</td>
+                            <td class="text-end text-danger">₱<?= number_format($loanCalculation['total_interest'], 2) ?></td>
                         </tr>
                         <tr>
-                            <td>Insurance Fee:</td>
-                            <td class="text-end">₱<?= number_format($loanCalculation['insurance_fee'], 2) ?></td>
+                            <td class="fw-medium">Fixed Insurance Fee:</td>
+                            <td class="text-end text-danger">₱<?= number_format($loanCalculation['insurance_fee'], 2) ?></td>
                         </tr>
-                        <tr class="table-primary">
-                            <td><strong>Total Amount:</strong></td>
-                            <td class="text-end"><strong>₱<?= number_format($loanCalculation['total_amount'], 2) ?></strong></td>
-                        </tr>
-                        <tr>
-                            <td>Weekly Payment:</td>
-                            <td class="text-end">₱<?= number_format($loanCalculation['weekly_payment'], 2) ?></td>
+                        <tr class="table-info">
+                            <td class="fw-bold">Total Repayment Amount:</td>
+                            <td class="text-end fw-bold">₱<?= number_format($loanCalculation['total_amount'], 2) ?></td>
                         </tr>
                         <tr>
-                            <td>Term:</td>
-                            <td class="text-end">17 weeks (4 months)</td>
+                            <td class="fw-bold text-success">Mandatory Weekly Payment (17 weeks):</td>
+                            <td class="text-end fw-bold text-success">₱<?= number_format($loanCalculation['weekly_payment'], 2) ?></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Term:</td>
+                            <td class="text-end text-muted">17 weeks (4 months)</td>
                         </tr>
                     </table>
                 </div>
                 <div class="col-md-6">
-                    <h6>Payment Breakdown</h6>
-                    <table class="table table-sm">
+                    <h6>Weekly Breakdown (Approximate)</h6>
+                    <table class="table table-sm table-borderless">
                         <tr>
                             <td>Principal per week:</td>
                             <td class="text-end">₱<?= number_format($loanCalculation['breakdown']['principal_per_week'], 2) ?></td>
@@ -200,9 +165,31 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                             <td>Insurance per week:</td>
                             <td class="text-end">₱<?= number_format($loanCalculation['breakdown']['insurance_per_week'], 2) ?></td>
                         </tr>
+                        <tr>
+                            <td class="fw-bold">Total Weekly Components:</td>
+                            <td class="text-end fw-bold">₱<?= number_format(
+                                $loanCalculation['breakdown']['principal_per_week'] + 
+                                $loanCalculation['breakdown']['interest_per_week'] + 
+                                $loanCalculation['breakdown']['insurance_per_week'], 2
+                            ) ?></td>
+                        </tr>
                     </table>
+                     <p class="small text-muted mt-3">Note: The weekly amounts shown here are approximate. The final amount of the last payment will adjust for rounding.</p>
                 </div>
             </div>
+            
+            <!-- Submit Button (appears after successful calculation) -->
+             <div class="d-flex justify-content-end">
+                <form action="<?= APP_URL ?>/public/loans/add.php" method="post" id="submitLoanForm">
+                    <?= $csrf->getTokenField() ?>
+                    <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
+                    <input type="hidden" name="loan_amount" value="<?= htmlspecialchars($loan['loan_amount']) ?>">
+                    <button type="submit" name="submit_loan" class="btn btn-success btn-lg">
+                        <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
+                    </button>
+                </form>
+            </div>
+            
         </div>
     </div>
     <?php endif; ?>
@@ -210,9 +197,5 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 </main>
 
 <?php
-// Include footer
 include_once BASE_PATH . '/templates/layout/footer.php';
-
-// End output buffering and flush output
-ob_end_flush();
 ?>

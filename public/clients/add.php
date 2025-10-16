@@ -1,192 +1,100 @@
 <?php
 /**
- * Add user page for the Library Management System
- * 
- * FIXED: Uses addBorrower from UserService, ensures fields and roles align with service and models.
+ * Add Client Controller (add.php)
+ * Role: Handles the form submission for creating a new client account.
  */
 
-// Include configuration
-require_once '../../app/config/config.php';
+// Centralized initialization (handles sessions, auth, CSRF, and autoloader)
+require_once '../../public/init.php';
 
-// Start output buffering
-ob_start();
+// Enforce role-based access control (Only Admin/Manager can create new clients)
+$auth->checkRoleAccess(['super-admin', 'admin', 'manager']);
 
-// Include all required files
-function autoload($className) {
-    // Define the directories to look in
-    $directories = [
-        'app/core/',
-        'app/models/',
-        'app/services/',
-        'app/utilities/'
-    ];
-    
-    // Try to find the class file
-    foreach ($directories as $directory) {
-        $file = BASE_PATH . '/' . $directory . $className . '.php';
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
-    }
-}
+// Initialize client service
+$clientService = new ClientService();
 
-// Register autoloader
-spl_autoload_register('autoload');
-
-// Initialize session management
-$session = new Session();
-
-// Initialize authentication service
-$auth = new AuthService();
-
-// Initialize CSRF protection
-$csrf = new CSRF();
-
-// Check if user is logged in
-if (!$auth->isLoggedIn()) {
-    // Redirect to login page
-    $session->setFlash('error', 'Please login to access this page.');
-    header('Location: ' . APP_URL . '/public/login.php');
-    exit;
-}
-
-// Check for session timeout
-if ($auth->checkSessionTimeout()) {
-    // Session has timed out, redirect to login page with message
-    $session->setFlash('error', 'Your session has expired. Please login again.');
-    header('Location: ' . APP_URL . '/public/login.php');
-    exit;
-}
-
-// Get current user data
-$user = $auth->getCurrentUser();
-$userRole = $user['role'];
-
-// Check if user has permission to add users (Super Admin can add any user, Admin can only add borrowers)
-if (!$auth->hasRole(['super-admin', 'admin'])) {
-    // Redirect to dashboard with error message
-    $session->setFlash('error', 'You do not have permission to access this page.');
-    header('Location: ' . APP_URL . '/public/dashboard.php');
-    exit;
-}
-
-// Initialize user service
-$userService = new UserService();
-
-// Initialize password hash utility for generating random password
-$passwordHash = new PasswordHash();
-
-// Default structure for the form
-$newUser = [
+// Default structure for the form (used to retain values after a failed submission)
+$newClient = [
     'name' => '',
     'email' => '',
     'phone_number' => '',
-    'password' => '',
-    'password_confirmation' => '',
-    'role' => '',  // Will be set based on user role and form input
+    'address' => '',
+    'date_of_birth' => '',
+    'identification_type' => '',
+    'identification_number' => '',
     'status' => 'active',
 ];
 
-$error = '';
-$formSubmitted = false;
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $formSubmitted = true;
-    
-    // Validate CSRF token
+    // 1. Validate CSRF token
     if (!$csrf->validateRequest()) {
-        $error = 'Invalid form submission. Please try again.';
+        $session->setFlash('error', 'Invalid security token. Please refresh and try again.');
+        header('Location: ' . APP_URL . '/public/clients/add.php');
+        exit;
+    }
+
+    // 2. Gather and sanitize input
+    $newClient = [
+        'name' => $_POST['name'] ?? '',
+        'email' => $_POST['email'] ?? '',
+        'phone_number' => $_POST['phone_number'] ?? '',
+        'address' => $_POST['address'] ?? '',
+        'date_of_birth' => $_POST['date_of_birth'] ?? '',
+        'identification_type' => $_POST['identification_type'] ?? '',
+        'identification_number' => $_POST['identification_number'] ?? '',
+        // Status is forced to active upon creation
+        'status' => ClientModel::$STATUS_ACTIVE, 
+    ];
+
+    // 3. Attempt to create client via service
+    $clientId = $clientService->createClient($newClient);
+
+    if ($clientId) {
+        // Success: Redirect to the index page with a success message
+        $session->setFlash('success', "Client '{$newClient['name']}' added successfully (ID: {$clientId}).");
+        header('Location: ' . APP_URL . '/public/clients/index.php');
+        exit;
     } else {
-        // Gather form input, ensure they match UserService expectations
-        $newUser = [
-            'name' => isset($_POST['name']) ? trim($_POST['name']) : '',
-            'email' => isset($_POST['email']) ? trim($_POST['email']) : '',
-            'phone_number' => isset($_POST['phone_number']) ? trim($_POST['phone_number']) : '',
-            'password' => isset($_POST['password']) ? $_POST['password'] : '',
-            'password_confirmation' => isset($_POST['password_confirmation']) ? $_POST['password_confirmation'] : '',
-            'role' => isset($_POST['role']) ? strtolower(trim($_POST['role'])) : '',
-            'status' => isset($_POST['status']) ? trim($_POST['status']) : 'active',
-        ];
-        
-        // Role validation and restriction
-        if ($userRole === 'admin') {
-            // Admin can only add borrowers (students, staff, others)
-            if (!in_array($newUser['role'], ['student', 'staff', 'other'])) {
-                $error = 'Admins can only add borrower accounts (Students, Staff, or Others).';
-            }
-        } else if ($userRole === 'super-admin') {
-            // Super Admin can add any role
-            if (!in_array($newUser['role'], ['super-admin', 'admin', 'student', 'staff', 'other'])) {
-                $error = 'Invalid role selected.';
-            }
-        }
-        
-        if (empty($error)) {
-            // Now call UserService's addUser to handle all roles properly
-            $userId = $userService->addUser($newUser);
-            
-            if ($userId) {
-                // User added successfully
-                $session->setFlash('success', 'User added successfully.');
-                header('Location: ' . APP_URL . '/public/users/index.php');
-                exit;
-            } else {
-                // Failed to add user
-                $error = $userService->getErrorMessage();
-            }
-        }
+        // Failure: Store the specific error message from the service
+        $error = $clientService->getErrorMessage() ?: "Failed to add client due to an unknown error.";
+        $session->setFlash('error', $error);
+        // Note: $newClient still holds the submitted data for repopulating the form
     }
 }
 
-// Include header
+// --- Display View ---
+$pageTitle = "Add New Client";
 include_once BASE_PATH . '/templates/layout/header.php';
-
-// Include navbar
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Add User</h1>
+        <h1 class="h2">Add New Client Account</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
-                <i data-feather="arrow-left"></i> Back to Users
+            <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-sm btn-outline-secondary">
+                <i data-feather="arrow-left"></i> Back to Clients List
             </a>
         </div>
     </div>
     
-    <?php if ($error): ?>
+    <?php if ($session->hasFlash('error')): ?>
         <div class="alert alert-danger">
-            <?= $error ?>
+            <?= $session->getFlash('error') ?>
         </div>
     <?php endif; ?>
     
-    <?php if ($formSubmitted && !$error): ?>
-        <div class="alert alert-success">
-            User added successfully.
-        </div>
-    <?php endif; ?>
-    
-    <!-- User Form -->
-    <div class="card">
+    <!-- Client Form -->
+    <div class="card shadow-sm">
         <div class="card-body">
             <?php
-            $formPath = BASE_PATH . '/templates/users/form.php';
-            if (file_exists($formPath)) {
-                include_once $formPath;
-            } else {
-                echo '<div class="alert alert-danger">User form template is missing: ' . htmlspecialchars($formPath) . '</div>';
-            }
+            // The form template handles the HTML structure, using the $newClient variable for default values.
+            include_once BASE_PATH . '/templates/clients/form.php';
             ?>
         </div>
     </div>
 </main>
 
 <?php
-// Include footer
 include_once BASE_PATH . '/templates/layout/footer.php';
-
-// End output buffering and flush output
-ob_end_flush();
 ?>

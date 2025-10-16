@@ -1,6 +1,6 @@
 <?php
 /**
- * Edit book page for the Library Management System
+ * Edit loan page for the Fanders Microfinance System
  */
 
 // Include configuration
@@ -18,7 +18,7 @@ function autoload($className) {
         'app/services/',
         'app/utilities/'
     ];
-    
+
     // Try to find the class file
     foreach ($directories as $directory) {
         $file = BASE_PATH . '/' . $directory . $className . '.php';
@@ -57,42 +57,57 @@ if ($auth->checkSessionTimeout()) {
     exit;
 }
 
-// Check if user has permission to edit books (Super Admin or Admin)
-if (!$auth->hasRole(['super-admin', 'admin'])) {
+// Check if user has permission to edit loans (Super Admin, Admin, Manager, Account Officer)
+if (!$auth->hasRole(['super-admin', 'admin', 'manager', 'account_officer'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
     exit;
 }
 
-// Check if book ID is provided
+// Check if loan ID is provided
 if (!isset($_GET['id']) || empty($_GET['id'])) {
-    // Redirect to books page with error message
-    $session->setFlash('error', 'Book ID is required.');
-    header('Location: ' . APP_URL . '/public/books/index.php');
+    // Redirect to loans page with error message
+    $session->setFlash('error', 'Loan ID is required.');
+    header('Location: ' . APP_URL . '/public/loans/index.php');
     exit;
 }
 
-$bookId = (int)$_GET['id'];
+$loanId = (int)$_GET['id'];
 
-// Initialize book service
-$bookService = new BookService();
+// Get current user data
+$user = $auth->getCurrentUser();
 
-// Get book data
-$book = $bookService->getBookWithCategory($bookId);
+// Initialize loan service
+$loanService = new LoanService();
 
-if (!$book) {
-    // Book not found
-    $session->setFlash('error', 'Book not found.');
-    header('Location: ' . APP_URL . '/public/books/index.php');
+// Get loan data with client information
+$loan = $loanService->getLoanWithClient($loanId);
+
+if (!$loan) {
+    // Loan not found
+    $session->setFlash('error', 'Loan not found.');
+    header('Location: ' . APP_URL . '/public/loans/index.php');
     exit;
 }
 
-// Get all categories for the dropdown
-$categoryModel = new CategoryModel();
-$categories = $categoryModel->getAll(); // Changed to use getAll() instead of undefined getAllForSelect()
+// Check if loan can be edited (only applications and approved loans)
+if (!in_array($loan['status'], ['application', 'approved'])) {
+    $session->setFlash('error', 'Only loan applications and approved loans can be edited.');
+    header('Location: ' . APP_URL . '/public/loans/view.php?id=' . $loanId);
+    exit;
+}
+
+// Get all clients for the dropdown
+$clients = $loanService->getAllClientsForSelect();
 
 // Process form submission
+$loanData = [
+    'client_id' => $loan['client_id'],
+    'loan_amount' => $loan['loan_amount']
+];
+
+$loanCalculation = null;
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -100,30 +115,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$csrf->validateRequest()) {
         $error = 'Invalid form submission. Please try again.';
     } else {
-        // Standardize on published_year, but allow publication_year for form compatibility
-        $yearField = isset($_POST['publication_year']) ? 'publication_year' : (isset($_POST['published_year']) ? 'published_year' : null);
-        $bookYear = $yearField ? trim($_POST[$yearField]) : '';
-
-        // Get form data with fallbacks to existing book data
-        $updatedBook = [
-            'title' => isset($_POST['title']) ? trim($_POST['title']) : '',
-            'author' => isset($_POST['author']) ? trim($_POST['author']) : '',
-            'published_year' => $bookYear,
-            'publisher' => isset($_POST['publisher']) ? trim($_POST['publisher']) : ($book['publisher'] ?? ''),
-            'category_id' => isset($_POST['category_id']) ? (int)$_POST['category_id'] : ($book['category_id'] ?? ''),
-            'total_copies' => isset($_POST['total_copies']) ? (int)$_POST['total_copies'] : ($book['total_copies'] ?? 1),
-            'available_copies' => isset($_POST['available_copies']) ? (int)$_POST['available_copies'] : ($book['available_copies'] ?? 1)
+        // Get form data
+        $loanData = [
+            'client_id' => isset($_POST['client_id']) ? (int)$_POST['client_id'] : $loan['client_id'],
+            'loan_amount' => isset($_POST['loan_amount']) ? (float)$_POST['loan_amount'] : $loan['loan_amount']
         ];
-        
-        // Update the book
-        if ($bookService->updateBook($bookId, $updatedBook)) {
-            // Book updated successfully
-            $session->setFlash('success', 'Book updated successfully.');
-            header('Location: ' . APP_URL . '/public/books/view.php?id=' . $bookId);
-            exit;
-        } else {
-            // Failed to update book
-            $error = $bookService->getErrorMessage();
+
+        // Calculate loan details for preview
+        if (!empty($loanData['loan_amount'])) {
+            $loanCalculationService = new LoanCalculationService();
+            $loanCalculation = $loanCalculationService->calculateLoan($loanData['loan_amount']);
+        }
+
+        // If submit button was clicked
+        if (isset($_POST['submit_loan'])) {
+            // Update the loan
+            if ($loanService->updateLoan($loanId, $loanData)) {
+                // Loan updated successfully
+                $session->setFlash('success', 'Loan updated successfully.');
+                header('Location: ' . APP_URL . '/public/loans/view.php?id=' . $loanId);
+                exit;
+            } else {
+                // Failed to update loan
+                $error = $loanService->getErrorMessage();
+            }
         }
     }
 }
@@ -137,31 +152,91 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Edit Book</h1>
+        <h1 class="h2">Edit Loan Application</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <a href="<?= APP_URL ?>/public/books/view.php?id=<?= $bookId ?>" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="eye"></i> View Book
+                <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loanId ?>" class="btn btn-sm btn-outline-secondary">
+                    <i data-feather="eye"></i> View Loan
                 </a>
-                <a href="<?= APP_URL ?>/public/books/index.php" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="arrow-left"></i> Back to Books
+                <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-secondary">
+                    <i data-feather="arrow-left"></i> Back to Loans
                 </a>
             </div>
         </div>
     </div>
-    
+
     <?php if ($error): ?>
         <div class="alert alert-danger">
             <?= $error ?>
         </div>
     <?php endif; ?>
-    
-    <!-- Book Edit Form -->
+
+    <!-- Loan Edit Form -->
     <div class="card">
         <div class="card-body">
-            <?php include_once BASE_PATH . '/templates/books/form.php'; ?>
+            <?php include_once BASE_PATH . '/templates/loans/form.php'; ?>
         </div>
     </div>
+
+    <!-- Loan Calculation Preview -->
+    <?php if ($loanCalculation): ?>
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Updated Loan Calculation Preview</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Loan Summary</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td>Principal Amount:</td>
+                            <td class="text-end">₱<?= number_format($loanCalculation['principal_amount'], 2) ?></td>
+                        </tr>
+                        <tr>
+                            <td>Total Interest (5%):</td>
+                            <td class="text-end">₱<?= number_format($loanCalculation['total_interest'], 2) ?></td>
+                        </tr>
+                        <tr>
+                            <td>Insurance Fee:</td>
+                            <td class="text-end">₱<?= number_format($loanCalculation['insurance_fee'], 2) ?></td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>Total Amount:</strong></td>
+                            <td class="text-end"><strong>₱<?= number_format($loanCalculation['total_amount'], 2) ?></strong></td>
+                        </tr>
+                        <tr>
+                            <td>Weekly Payment:</td>
+                            <td class="text-end">₱<?= number_format($loanCalculation['weekly_payment'], 2) ?></td>
+                        </tr>
+                        <tr>
+                            <td>Term:</td>
+                            <td class="text-end">17 weeks (4 months)</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6>Payment Breakdown</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td>Principal per week:</td>
+                            <td class="text-end">₱<?= number_format($loanCalculation['breakdown']['principal_per_week'], 2) ?></td>
+                        </tr>
+                        <tr>
+                            <td>Interest per week:</td>
+                            <td class="text-end">₱<?= number_format($loanCalculation['breakdown']['interest_per_week'], 2) ?></td>
+                        </tr>
+                        <tr>
+                            <td>Insurance per week:</td>
+                            <td class="text-end">₱<?= number_format($loanCalculation['breakdown']['insurance_per_week'], 2) ?></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
 </main>
 
 <?php
