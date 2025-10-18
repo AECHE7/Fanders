@@ -6,6 +6,15 @@
  */
 class Session {
     public function __construct() {
+        // If running in CLI (tests) or headers already sent, skip session cookie setup/start
+        if (PHP_SAPI === 'cli' || headers_sent()) {
+            if (session_status() === PHP_SESSION_NONE) {
+                // In CLI we can still use $_SESSION array without starting cookies
+                @session_start();
+            }
+            return;
+        }
+
         // Only set session cookie parameters if session is not active
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
@@ -16,11 +25,6 @@ class Session {
                 'httponly' => true,
                 'samesite' => 'Strict'
             ]);
-            session_start();
-        }
-
-        // Start the session if not already started
-        if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
     }

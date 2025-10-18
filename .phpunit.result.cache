@@ -1,0 +1,1 @@
+{"version":1,"defects":{"TestScriptsTest::testAddUserService":3,"TestScriptsTest::testAddAdminUserService":3,"TestScriptsTest::testTransactionServiceLoggingAndRetrieval":3},"times":{"TestScriptsTest::testAddUserService":0.073,"TestScriptsTest::testAddAdminUserService":0.077,"TestScriptsTest::testTransactionServiceLoggingAndRetrieval":0.013}}

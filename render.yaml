@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: fanders-app
+    env: docker
+    plan: free
+    repo: https://github.com/AECHE7/Fanders
+    branch: feature/dev-docker-ci
+    dockerfilePath: ./Dockerfile
+    envVars:
+      # Set these in the Render dashboard (do NOT commit secrets to the repo)
+      - key: DB_HOST
+        value: ""
+      - key: DB_NAME
+        value: "fanders"
+      - key: DB_USER
+        value: "root"
+      - key: DB_PASS
+        value: ""
+      - key: DB_PORT
+        value: "3306"
+      - key: APP_URL
+        value: "https://your-app.onrender.com"
+      - key: COMPOSER_ALLOW_SUPERUSER
+        value: "1"
+      - key: DATABASE_URL
+        value: "" # Optional: postgres://user:pass@host:5432/dbname
+      - key: SUPABASE_URL
+        value: "" # set in Render dashboard if you use Supabase
+      - key: SUPABASE_KEY
+        value: "" # set in Render dashboard as a secret
+    healthCheckPath: /health.php
