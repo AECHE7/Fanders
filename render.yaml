@@ -3,8 +3,8 @@ services:
     name: fanders-app
     env: docker
     plan: free
-  repo: https://github.com/AECHE7/Fanders
-  branch: feature/dev-docker-ci
+    repo: https://github.com/AECHE7/Fanders
+    branch: feature/dev-docker-ci
     dockerfilePath: ./Dockerfile
     envVars:
       # Set these in the Render dashboard (do NOT commit secrets to the repo)
