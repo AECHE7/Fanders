@@ -1,13 +1,13 @@
 <?php
 
-// Database Settings
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'fanders');
-define('DB_USER', 'root');
-define('DB_PASS', ''); // Change this!
-define('DB_TYPE', 'mysql');    // New: Database Type
-define('DB_PORT', '3307');     // New: Database Port
-define('DB_POOL_MODE', false); // New: Pool Mode (set to false for a single connection)
+// Database Settings - prefer environment variables where present
+define('DB_HOST', getenv('DB_HOST') !== false ? getenv('DB_HOST') : 'localhost');
+define('DB_NAME', getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'fanders');
+define('DB_USER', getenv('DB_USER') !== false ? getenv('DB_USER') : 'root');
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : ''); // Change this!
+define('DB_TYPE', getenv('DB_TYPE') !== false ? getenv('DB_TYPE') : 'mysql');
+define('DB_PORT', getenv('DB_PORT') !== false ? getenv('DB_PORT') : '3307');
+define('DB_POOL_MODE', getenv('DB_POOL_MODE') !== false ? getenv('DB_POOL_MODE') : false); // Pool Mode
 
 // Security Settings
 define('SESSION_NAME', 'lms_session');
