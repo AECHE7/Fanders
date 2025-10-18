@@ -2,13 +2,22 @@ FROM php:8.1-apache
 
 # Install system dependencies and PHP extensions needed for the app
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends default-mysql-client libzip-dev unzip git zlib1g-dev libonig-dev libxml2-dev netcat-openbsd \
-    && docker-php-ext-install pdo pdo_mysql mbstring zip xml \
+    && apt-get install -y --no-install-recommends \
+        default-mysql-client \
+        libpq-dev \
+        libzip-dev \
+        unzip \
+        git \
+        zlib1g-dev \
+        libonig-dev \
+        libxml2-dev \
+        netcat-openbsd \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring zip xml \
     && rm -rf /var/lib/apt/lists/*
 
 # Enable apache mods and set document root
 RUN a2enmod rewrite headers
-ENV APACHE_DOCUMENT_ROOT /app/public
+ENV APACHE_DOCUMENT_ROOT=/app/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 

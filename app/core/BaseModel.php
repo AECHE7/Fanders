@@ -3,6 +3,8 @@
  * BaseModel provides common CRUD and utility methods for all application models.
  * It enforces data filtering and uses the Database class for secure interactions.
  */
+require_once __DIR__ . '/Database.php';
+
 class BaseModel {
     protected $db;
     protected $table;

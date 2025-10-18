@@ -32,3 +32,17 @@ Notes:
 - I added `.env.example`. Copy to `.env` and edit values for local dev. Consider integrating `vlucas/phpdotenv` to load `.env` in `app/config/config.php` (already required in composer.json).
 - Database initialization: any SQL files placed under `scripts/initdb/` will be executed automatically by the MySQL container on first initialization. Use this folder to add migration SQL files.
 
+Supabase / Postgres support
+---------------------------
+This project now supports connecting to Postgres (e.g. Supabase) via a DATABASE_URL or individual env vars. You can set either:
+
+- DATABASE_URL (recommended): postgres://user:pass@host:5432/dbname
+- or set these individually: DB_TYPE=pgsql DB_HOST DB_PORT DB_NAME DB_USER DB_PASS
+
+If you're using Supabase, you can also keep your Supabase project URL and anon/public key in `.env`:
+
+SUPABASE_URL="https://<project>.supabase.co"
+SUPABASE_KEY="<anon-or-service-role-key>"
+
+When using Docker/Render, expose the DATABASE_URL or individual DB_* variables in the environment for the PHP container.
+

@@ -16,8 +16,15 @@ class Database {
 
     private function __construct() {
         try {
-            // Build the PDO DSN (e.g., 'mysql:host=localhost;port=3306;dbname=fanders_lms')
-            $dsn = "{$this->dbType}:host={$this->host};port={$this->port};dbname={$this->dbName}";
+            // Build the PDO DSN depending on DB type
+            if ($this->dbType === 'pgsql' || $this->dbType === 'postgres' || $this->dbType === 'postgresql') {
+                // Allow overriding sslmode via DB_SSLMODE env var; Supabase requires sslmode=require
+                $sslmode = getenv('DB_SSLMODE') !== false ? getenv('DB_SSLMODE') : 'require';
+                $dsn = "pgsql:host={$this->host};port={$this->port};dbname={$this->dbName};sslmode={$sslmode}";
+            } else {
+                // default to mysql style
+                $dsn = "{$this->dbType}:host={$this->host};port={$this->port};dbname={$this->dbName}";
+            }
 
             // Set PDO options
             $options = [
@@ -31,7 +38,9 @@ class Database {
 
         } catch (PDOException $e) {
             // Handle the connection error
-            die("Database connection error: " . $e->getMessage());
+            // Provide a helpful message but avoid leaking secrets in production
+            error_log("Database connection error: " . $e->getMessage());
+            die("Database connection error. Check configuration and environment variables.");
         }
     }
 

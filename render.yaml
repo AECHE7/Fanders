@@ -7,8 +7,9 @@ services:
     branch: main
     dockerfilePath: ./Dockerfile
     envVars:
+      # Set these in the Render dashboard (do NOT commit secrets to the repo)
       - key: DB_HOST
-        value: "" # set in Render dashboard to your DB host
+        value: ""
       - key: DB_NAME
         value: "fanders"
       - key: DB_USER
@@ -21,3 +22,10 @@ services:
         value: "https://your-app.onrender.com"
       - key: COMPOSER_ALLOW_SUPERUSER
         value: "1"
+      - key: DATABASE_URL
+        value: "" # Optional: postgres://user:pass@host:5432/dbname
+      - key: SUPABASE_URL
+        value: "postgresql://postgres:[Gadiano1107042000011070420000!@]@db.smzpalngwpwylljdvppb.supabase.co:5432/postgres"
+      - key: SUPABASE_KEY
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtenBhbG5nd3B3eWxsamR2cHBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjg4NzYsImV4cCI6MjA3Mjc0NDg3Nn0.mZHwmd79LB6xY-dw1YpIYSMdbjWMGHWhOGawSf6pHY8"
+    healthCheckPath: /health.php

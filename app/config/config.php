@@ -1,13 +1,56 @@
 <?php
 
+if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') !== false ? getenv('DB_HOST') : 'localhost');
+if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'fanders');
+if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') !== false ? getenv('DB_USER') : 'root');
+if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : ''); // Change this!
+if (!defined('DB_TYPE')) define('DB_TYPE', getenv('DB_TYPE') !== false ? getenv('DB_TYPE') : 'mysql');
+if (!defined('DB_PORT')) define('DB_PORT', getenv('DB_PORT') !== false ? getenv('DB_PORT') : '3306');
+if (!defined('DB_POOL_MODE')) define('DB_POOL_MODE', getenv('DB_POOL_MODE') !== false ? getenv('DB_POOL_MODE') : false); // Pool Mode
 // Database Settings - prefer environment variables where present
-define('DB_HOST', getenv('DB_HOST') !== false ? getenv('DB_HOST') : 'localhost');
-define('DB_NAME', getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'fanders');
-define('DB_USER', getenv('DB_USER') !== false ? getenv('DB_USER') : 'root');
-define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : ''); // Change this!
-define('DB_TYPE', getenv('DB_TYPE') !== false ? getenv('DB_TYPE') : 'mysql');
-define('DB_PORT', getenv('DB_PORT') !== false ? getenv('DB_PORT') : '3306');
-define('DB_POOL_MODE', getenv('DB_POOL_MODE') !== false ? getenv('DB_POOL_MODE') : false); // Pool Mode
+// Support full DATABASE_URL (e.g. postgres://user:pass@host:5432/dbname)
+$databaseUrl = getenv('DATABASE_URL') !== false ? getenv('DATABASE_URL') : (getenv('SUPABASE_DB_URL') !== false ? getenv('SUPABASE_DB_URL') : false);
+
+if ($databaseUrl) {
+    $parsed = parse_url($databaseUrl);
+    if ($parsed !== false) {
+        $scheme = isset($parsed['scheme']) ? $parsed['scheme'] : '';
+        // Normalize postgres scheme to pgsql for PDO DSN
+        $normalizedType = in_array($scheme, ['postgres', 'postgresql'], true) ? 'pgsql' : $scheme;
+
+        // Resolve DB_TYPE with explicit checks to avoid unparenthesized ternary issues on PHP 8
+        if (getenv('DB_TYPE') !== false) {
+            $finalDbType = getenv('DB_TYPE');
+        } else {
+            $finalDbType = $normalizedType ? $normalizedType : 'pgsql';
+        }
+    if (!defined('DB_TYPE')) define('DB_TYPE', $finalDbType);
+    if (!defined('DB_HOST')) define('DB_HOST', $parsed['host'] ?? 'localhost');
+    if (!defined('DB_PORT')) define('DB_PORT', $parsed['port'] ?? (DB_TYPE === 'pgsql' ? '5432' : '3306'));
+    if (!defined('DB_NAME')) define('DB_NAME', isset($parsed['path']) ? ltrim($parsed['path'], '/') : 'fanders');
+    if (!defined('DB_USER')) define('DB_USER', $parsed['user'] ?? '');
+    if (!defined('DB_PASS')) define('DB_PASS', $parsed['pass'] ?? '');
+    if (!defined('DB_POOL_MODE')) define('DB_POOL_MODE', getenv('DB_POOL_MODE') !== false ? getenv('DB_POOL_MODE') : false);
+    } else {
+        // Fallback to individual env vars if parse fails
+    if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') !== false ? getenv('DB_HOST') : 'localhost');
+    if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'fanders');
+    if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') !== false ? getenv('DB_USER') : 'root');
+    if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : ''); // Change this!
+    if (!defined('DB_TYPE')) define('DB_TYPE', getenv('DB_TYPE') !== false ? getenv('DB_TYPE') : 'mysql');
+    if (!defined('DB_PORT')) define('DB_PORT', getenv('DB_PORT') !== false ? getenv('DB_PORT') : '3306');
+    if (!defined('DB_POOL_MODE')) define('DB_POOL_MODE', getenv('DB_POOL_MODE') !== false ? getenv('DB_POOL_MODE') : false); // Pool Mode
+    }
+} else {
+    // No DATABASE_URL provided, use individual env vars (backwards compatible)
+    if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') !== false ? getenv('DB_HOST') : 'localhost');
+    if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'fanders');
+    if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') !== false ? getenv('DB_USER') : 'root');
+    if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : ''); // Change this!
+    if (!defined('DB_TYPE')) define('DB_TYPE', getenv('DB_TYPE') !== false ? getenv('DB_TYPE') : 'mysql');
+    if (!defined('DB_PORT')) define('DB_PORT', getenv('DB_PORT') !== false ? getenv('DB_PORT') : '3306');
+    if (!defined('DB_POOL_MODE')) define('DB_POOL_MODE', getenv('DB_POOL_MODE') !== false ? getenv('DB_POOL_MODE') : false); // Pool Mode
+}
 
 // Security Settings
 define('SESSION_NAME', 'lms_session');
