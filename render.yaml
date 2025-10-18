@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: fanders-app
+    env: docker
+    plan: free
+    repo: https://github.com/OWNER/REPO
+    branch: main
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DB_HOST
+        value: "" # set in Render dashboard to your DB host
+      - key: DB_NAME
+        value: "fanders"
+      - key: DB_USER
+        value: "root"
+      - key: DB_PASS
+        value: ""
+      - key: DB_PORT
+        value: "3306"
+      - key: APP_URL
+        value: "https://your-app.onrender.com"
+      - key: COMPOSER_ALLOW_SUPERUSER
+        value: "1"

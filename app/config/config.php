@@ -6,7 +6,7 @@ define('DB_NAME', getenv('DB_NAME') !== false ? getenv('DB_NAME') : 'fanders');
 define('DB_USER', getenv('DB_USER') !== false ? getenv('DB_USER') : 'root');
 define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : ''); // Change this!
 define('DB_TYPE', getenv('DB_TYPE') !== false ? getenv('DB_TYPE') : 'mysql');
-define('DB_PORT', getenv('DB_PORT') !== false ? getenv('DB_PORT') : '3307');
+define('DB_PORT', getenv('DB_PORT') !== false ? getenv('DB_PORT') : '3306');
 define('DB_POOL_MODE', getenv('DB_POOL_MODE') !== false ? getenv('DB_POOL_MODE') : false); // Pool Mode
 
 // Security Settings
@@ -15,7 +15,8 @@ define('PASSWORD_ALGORITHM', PASSWORD_BCRYPT);
 
 // Application configuration
 define('APP_NAME', 'Fanders Microfinance');
-define('APP_URL', 'http://localhost/FandersMicrofinance');
+// Prefer APP_URL from environment when available (useful for hosted environments)
+define('APP_URL', getenv('APP_URL') !== false ? getenv('APP_URL') : 'http://localhost/FandersMicrofinance');
 define('SESSION_LIFETIME', 1800); // 30 minutes in seconds
 if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(dirname(__DIR__)));

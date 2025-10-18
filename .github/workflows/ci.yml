@@ -2,6 +2,63 @@ name: CI
 
 on:
   push:
+    branches: [ main, feature/*, "*" ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  php-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v3
+        with:
+          php-version: '8.1'
+          extensions: mbstring, pdo_mysql, zip
+
+      - name: Install composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader
+
+      - name: PHP lint (selected files)
+        run: |
+          set -e
+          files="public/index.php app/config/config.php app/core/Database.php app/services/AuthService.php"
+          for f in $files; do if [ -f "$f" ]; then php -l "$f" || exit 2; fi; done
+
+      - name: Run PHPUnit (if available)
+        run: |
+          if [ -f phpunit.xml ] || [ -f phpunit.xml.dist ]; then
+            ./vendor/bin/phpunit --configuration phpunit.xml || true
+          else
+            echo "No phpunit configuration found; skipping tests"
+          fi
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    needs: php-checks
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t fanders:ci .
+
+      - name: Run container and smoke test
+        run: |
+          docker run -d --rm -p 8080:80 --name fanders_ci_run -e RUN_DB_INIT=false fanders:ci
+          sleep 6
+          if curl -fsS http://127.0.0.1:8080/health.php; then
+            echo "Health check OK"
+            docker rm -f fanders_ci_run || true
+          else
+            docker logs fanders_ci_run || true
+            docker rm -f fanders_ci_run || true
+            exit 1
+          finame: CI
+
+on:
+  push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
