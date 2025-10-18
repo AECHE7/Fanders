@@ -3,8 +3,8 @@ services:
     name: fanders-app
     env: docker
     plan: free
-    repo: https://github.com/OWNER/REPO
-    branch: main
+  repo: https://github.com/AECHE7/Fanders
+  branch: feature/dev-docker-ci
     dockerfilePath: ./Dockerfile
     envVars:
       # Set these in the Render dashboard (do NOT commit secrets to the repo)
@@ -25,7 +25,7 @@ services:
       - key: DATABASE_URL
         value: "" # Optional: postgres://user:pass@host:5432/dbname
       - key: SUPABASE_URL
-        value: "postgresql://postgres:[Gadiano1107042000011070420000!@]@db.smzpalngwpwylljdvppb.supabase.co:5432/postgres"
+        value: "" # set in Render dashboard if you use Supabase
       - key: SUPABASE_KEY
-        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNtenBhbG5nd3B3eWxsamR2cHBiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcxNjg4NzYsImV4cCI6MjA3Mjc0NDg3Nn0.mZHwmd79LB6xY-dw1YpIYSMdbjWMGHWhOGawSf6pHY8"
+        value: "" # set in Render dashboard as a secret
     healthCheckPath: /health.php
