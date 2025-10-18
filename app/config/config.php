@@ -17,7 +17,9 @@ define('PASSWORD_ALGORITHM', PASSWORD_BCRYPT);
 define('APP_NAME', 'Fanders Microfinance');
 define('APP_URL', 'http://localhost/FandersMicrofinance');
 define('SESSION_LIFETIME', 1800); // 30 minutes in seconds
-define('BASE_PATH', dirname(dirname(__DIR__)));
+if (!defined('BASE_PATH')) {
+    define('BASE_PATH', dirname(dirname(__DIR__)));
+}
 
 // Error reporting
 ini_set('display_errors', 1);

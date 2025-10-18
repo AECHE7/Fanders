@@ -120,13 +120,13 @@ $userId = $currentUser;
                                         <option value="super-admin" <?= $selectedRole === 'super-admin' ? 'selected' : '' ?>>Super Admin</option>
                                         <option value="admin" <?= $selectedRole === 'admin' ? 'selected' : '' ?>>Admin</option>
                                     <?php endif; ?>
-                                    <option value="student" <?= $selectedRole === 'student' ? 'selected' : '' ?>>Student</option>
-                                    <option value="staff" <?= $selectedRole === 'staff' ? 'selected' : '' ?>>Staff</option>
-                                    <option value="other" <?= $selectedRole === 'other' ? 'selected' : '' ?>>Other</option>
+                                    <option value="manager" <?= $selectedRole === 'manager' ? 'selected' : '' ?>>Manager</option>
+                                    <option value="cashier" <?= $selectedRole === 'cashier' ? 'selected' : '' ?>>Cashier</option>
+                                    <option value="account-officer" <?= $selectedRole === 'account-officer' ? 'selected' : '' ?>>Account Officer</option>
                                 </select>
                                 <div class="invalid-feedback">Please select a role.</div>
                                 <?php if ($userRole === 'admin'): ?>
-                                    <small class="form-text text-muted">Admins can only add borrower accounts (Students, Staff, or Others).</small>
+                                    <small class="form-text text-muted">Admins can only add operational staff accounts (Manager, Cashier, or Account Officer).</small>
                                 <?php endif; ?>
                             </div>
                         </div>

@@ -16,12 +16,20 @@ $loanService = new LoanService();
 $clientService = new ClientService();
 
 // --- 1. Prepare Filters from GET parameters ---
-$filters = [];
-$filters['search'] = $_GET['search'] ?? '';
-$filters['status'] = $_GET['status'] ?? '';
-$filters['client_id'] = isset($_GET['client_id']) ? (int)$_GET['client_id'] : '';
-$filters['start_date'] = $_GET['start_date'] ?? '';
-$filters['end_date'] = $_GET['end_date'] ?? '';
+require_once '../../app/utilities/FilterUtility.php';
+$filters = FilterUtility::sanitizeFilters($_GET);
+
+// Rename start_date/end_date to date_from/date_to for consistency
+if (isset($filters['start_date'])) {
+    $filters['date_from'] = $filters['start_date'];
+    unset($filters['start_date']);
+}
+if (isset($filters['end_date'])) {
+    $filters['date_to'] = $filters['end_date'];
+    unset($filters['end_date']);
+}
+
+$filters = FilterUtility::validateDateRange($filters);
 
 // --- 2. Fetch Core Data ---
 
@@ -49,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header('Location: ' . APP_URL . '/public/loans/index.php');
         exit;
     }
-    
+
     $loanId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     $success = false;
     $message = 'Action failed.';
@@ -170,7 +178,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         <div>
                             <h6 class="card-title text-uppercase small">Overdue Loans</h6>
                             <!-- NOTE: Total Outstanding is a Phase 2 calculation, using basic count for now -->
-                            <h3 class="mb-0"><?= $loanStats['overdue_loans_count'] ?? 0 ?></h3> 
+                            <h3 class="mb-0"><?= $loanStats['overdue_loans_count'] ?? 0 ?></h3>
                         </div>
                         <i data-feather="alert-triangle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                     </div>
@@ -178,7 +186,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </div>
         </div>
     </div>
-    
+
     <!-- Filters Card -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
@@ -210,6 +218,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                             </option>
                         <?php endforeach; ?>
                     </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from"
+                        value="<?= htmlspecialchars($filters['date_from']) ?>">
+                </div>
+                <div class="col-md-3">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to"
+                        value="<?= htmlspecialchars($filters['date_to']) ?>">
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">Filter</button>

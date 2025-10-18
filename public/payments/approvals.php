@@ -30,15 +30,15 @@ if ($loanId <= 0) {
 // Fetch loan data and check status
 $loanData = $loanService->getLoanWithClient($loanId);
 
-if (!$loanData || $loanData['status'] !== LoanModel::$STATUS_ACTIVE) {
+if (!$loanData || $loanData['status'] !== LoanModel::STATUS_ACTIVE) {
     $session->setFlash('error', 'Loan not found or is not currently active for payments.');
     header('Location: ' . APP_URL . '/public/loans/index.php');
     exit;
 }
 
 // Get payment summary data for display (total paid, outstanding)
-$paymentSummary = $paymentService->getLoanPaymentSummary($loanId);
-$nextExpectedPayment = $loanData['weekly_payment'];
+$paymentSummary = $paymentService->getPaymentSummaryByLoan($loanId);
+$nextExpectedPayment = round($loanData['total_loan_amount'] / 17, 2);
 $remainingBalance = $loanData['total_loan_amount'] - ($paymentSummary['total_paid'] ?? 0);
 
 // --- 2. Process Form Submission ---
@@ -149,7 +149,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <h5 class="mb-0">Record Payment Transaction</h5>
         </div>
         <div class="card-body">
-            <form method="POST" action="<?= APP_URL ?>/public/payments/record.php?loan_id=<?= $loanId ?>" class="needs-validation" novalidate>
+            <form method="POST" action="<?= APP_URL ?>/public/payments/record-payment.php?loan_id=<?= $loanId ?>" class="needs-validation" novalidate>
                 <?= $csrf->getTokenField() ?>
                 <input type="hidden" name="loan_id" value="<?= $loanId ?>">
 

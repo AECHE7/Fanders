@@ -49,7 +49,7 @@ class PaymentService extends BaseService {
             $this->setErrorMessage('Cannot record payment: Loan is not currently active.');
             return false;
         }
-        
+
         $totalPaid = $this->paymentModel->getTotalPaymentsForLoan($loanId);
         $remainingBalance = $loan['total_loan_amount'] - $totalPaid;
 
@@ -59,7 +59,7 @@ class PaymentService extends BaseService {
             // Optionally set a message indicating the amount was capped
             // $this->setErrorMessage("Payment amount capped to final balance of ₱" . number_format($amount, 2));
         }
-        
+
         // This MUST be an atomic transaction to ensure data integrity
         $paymentId = $this->transaction(function() use ($loanId, $amount, $recordedBy, $loan) {
             $data = [
@@ -86,9 +86,22 @@ class PaymentService extends BaseService {
                 }
             }
 
-            // 3. Log Transaction (Phase 2/3 - Placeholder for Audit Trail)
-            // $transactionService = new TransactionService();
-            // $transactionService->log('PAYMENT_RECORDED', $newPaymentId, $recordedBy);
+            // 3. Log transaction for audit trail
+            if (class_exists('TransactionService')) {
+                $transactionService = new TransactionService();
+                $transactionService->logPaymentTransaction($newPaymentId, $recordedBy, [
+                    'loan_id' => $loanId,
+                    'amount' => $amount,
+                    'payment_date' => date('Y-m-d H:i:s'),
+                    'remaining_balance_before' => $remainingBalance
+                ]);
+            }
+
+            // 4. Update cash blotter for the payment date
+            if (class_exists('CashBlotterService')) {
+                $cashBlotterService = new CashBlotterService();
+                $cashBlotterService->updateBlotterForDate(date('Y-m-d'));
+            }
 
             return $newPaymentId;
         });
@@ -114,7 +127,7 @@ class PaymentService extends BaseService {
         $remainingBalance = $loan['total_loan_amount'] - $totalPaid;
         $payments = $this->paymentModel->getPaymentsByLoan($loanId);
         $nextWeekNumber = count($payments) + 1;
-        
+
         $summary = [
             'loan' => $loan,
             'total_paid' => $totalPaid,
@@ -123,7 +136,7 @@ class PaymentService extends BaseService {
             'next_payment_week' => $nextWeekNumber,
             'is_complete' => round($remainingBalance, 2) <= 0.01,
         ];
-        
+
         // Determine overdue status
         if ($loan['status'] === LoanModel::STATUS_ACTIVE) {
              // Logic to determine expected due date based on disbursement date (Phase 2 logic)
@@ -142,5 +155,198 @@ class PaymentService extends BaseService {
 
     public function getPaymentWithDetails($paymentId) {
         return $this->paymentModel->getPaymentWithDetails($paymentId);
+    }
+
+    /**
+     * Get overdue payments (loans with missed payments)
+     * @return array
+     */
+    public function getOverduePayments() {
+        // Get active loans that are overdue
+        $sql = "SELECT l.*, c.name as client_name, c.phone_number
+                FROM loans l
+                JOIN clients c ON l.client_id = c.id
+                WHERE l.status = 'active'
+                AND l.due_date < CURDATE()
+                ORDER BY l.due_date ASC";
+
+        return $this->db->resultSet($sql);
+    }
+
+    /**
+     * Get recent payments
+     * @param int $limit
+     * @return array
+     */
+    public function getRecentPayments($limit = 10) {
+        $sql = "SELECT p.*, l.total_loan_amount, c.name as client_name,
+                (SELECT COUNT(*) FROM payments p2 WHERE p2.loan_id = p.loan_id AND p2.payment_date <= p.payment_date) as week_number
+                FROM payments p
+                JOIN loans l ON p.loan_id = l.id
+                JOIN clients c ON l.client_id = c.id
+                ORDER BY p.payment_date DESC
+                LIMIT ?";
+
+        return $this->db->resultSet($sql, [$limit]);
+    }
+
+    /**
+     * Get next payment week for a loan
+     * @param int $loanId
+     * @return int|null
+     */
+    public function getNextPaymentWeek($loanId) {
+        $loan = $this->loanModel->findById($loanId);
+        if (!$loan || $loan['status'] !== 'active') {
+            return null;
+        }
+
+        $payments = $this->paymentModel->getPaymentsByLoan($loanId);
+        $nextWeek = count($payments) + 1;
+
+        return $nextWeek;
+    }
+
+    /**
+     * Get payment summary for a loan (total paid and payment count)
+     * @param int $loanId
+     * @return array
+     */
+    public function getPaymentSummaryByLoan($loanId) {
+        $totalPaid = $this->paymentModel->getTotalPaymentsForLoan($loanId);
+        $payments = $this->paymentModel->getPaymentsByLoan($loanId);
+
+        return [
+            'total_paid' => $totalPaid,
+            'payment_count' => count($payments)
+        ];
+    }
+
+    /**
+     * Get all payments with filtering support
+     * @param array $filters Array of filters (date_from, date_to, client_id, loan_id, recorded_by, search)
+     * @param int $limit Optional limit for pagination
+     * @param int $offset Optional offset for pagination
+     * @return array
+     */
+    public function getAllPayments(array $filters = [], $limit = null, $offset = 0) {
+        $sql = "SELECT p.*,
+                l.principal, l.total_loan_amount, l.status as loan_status,
+                c.name AS client_name, c.phone_number,
+                u.name AS recorded_by_name
+                FROM {$this->paymentModel->getTable()} p
+                JOIN loans l ON p.loan_id = l.id
+                JOIN clients c ON l.client_id = c.id
+                JOIN users u ON p.user_id = u.id";
+
+        $conditions = [];
+        $params = [];
+
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $conditions[] = "(c.name LIKE ? OR c.phone_number LIKE ? OR l.id = ?)";
+            $searchParam = '%' . $filters['search'] . '%';
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+            $params[] = $filters['search'];
+        }
+
+        if (!empty($filters['date_from'])) {
+            $conditions[] = "p.payment_date >= ?";
+            $params[] = $filters['date_from'] . ' 00:00:00';
+        }
+
+        if (!empty($filters['date_to'])) {
+            $conditions[] = "p.payment_date <= ?";
+            $params[] = $filters['date_to'] . ' 23:59:59';
+        }
+
+        if (!empty($filters['client_id'])) {
+            $conditions[] = "l.client_id = ?";
+            $params[] = $filters['client_id'];
+        }
+
+        if (!empty($filters['loan_id'])) {
+            $conditions[] = "p.loan_id = ?";
+            $params[] = $filters['loan_id'];
+        }
+
+        if (!empty($filters['recorded_by'])) {
+            $conditions[] = "p.user_id = ?";
+            $params[] = $filters['recorded_by'];
+        }
+
+        if (!empty($conditions)) {
+            $sql .= " WHERE " . implode(' AND ', $conditions);
+        }
+
+        $sql .= " ORDER BY p.payment_date DESC, p.id DESC";
+
+        if ($limit !== null) {
+            $sql .= " LIMIT ?";
+            $params[] = $limit;
+
+            if ($offset > 0) {
+                $sql .= " OFFSET ?";
+                $params[] = $offset;
+            }
+        }
+
+        return $this->db->resultSet($sql, $params);
+    }
+
+    /**
+     * Get total count of payments with filters
+     * @param array $filters Array of filters
+     * @return int
+     */
+    public function getTotalPaymentsCount(array $filters = []) {
+        $sql = "SELECT COUNT(*) as total FROM {$this->paymentModel->getTable()} p
+                JOIN loans l ON p.loan_id = l.id
+                JOIN clients c ON l.client_id = c.id";
+
+        $conditions = [];
+        $params = [];
+
+        // Apply same filters as getAllPayments
+        if (!empty($filters['search'])) {
+            $conditions[] = "(c.name LIKE ? OR c.phone_number LIKE ? OR l.id = ?)";
+            $searchParam = '%' . $filters['search'] . '%';
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+            $params[] = $filters['search'];
+        }
+
+        if (!empty($filters['date_from'])) {
+            $conditions[] = "p.payment_date >= ?";
+            $params[] = $filters['date_from'] . ' 00:00:00';
+        }
+
+        if (!empty($filters['date_to'])) {
+            $conditions[] = "p.payment_date <= ?";
+            $params[] = $filters['date_to'] . ' 23:59:59';
+        }
+
+        if (!empty($filters['client_id'])) {
+            $conditions[] = "l.client_id = ?";
+            $params[] = $filters['client_id'];
+        }
+
+        if (!empty($filters['loan_id'])) {
+            $conditions[] = "p.loan_id = ?";
+            $params[] = $filters['loan_id'];
+        }
+
+        if (!empty($filters['recorded_by'])) {
+            $conditions[] = "p.user_id = ?";
+            $params[] = $filters['recorded_by'];
+        }
+
+        if (!empty($conditions)) {
+            $sql .= " WHERE " . implode(' AND ', $conditions);
+        }
+
+        $result = $this->db->single($sql, $params);
+        return (int)($result ? $result['total'] : 0);
     }
 }

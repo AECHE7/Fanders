@@ -14,8 +14,9 @@ $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account-officer']);
 $clientService = new ClientService();
 
 // --- 1. Process Filters ---
-$statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
-$searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
+require_once '../../app/utilities/FilterUtility.php';
+$filters = FilterUtility::sanitizeFilters($_GET);
+$filters = FilterUtility::validateDateRange($filters);
 
 // --- 2. Handle POST Actions (Status Change, Delete) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -74,15 +75,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 // --- 3. Fetch Data for View ---
 
-if (!empty($searchTerm)) {
+if (!empty($filters['search'])) {
     // Use the search method if a term is provided
-    $clients = $clientService->searchClients($searchTerm);
-} else if (!empty($statusFilter) && in_array($statusFilter, ['active', 'inactive', 'blacklisted'])) {
+    $clients = $clientService->searchClients($filters['search']);
+} elseif (!empty($filters['status']) && in_array($filters['status'], ['active', 'inactive', 'blacklisted'])) {
     // Use the status filter method if a valid status is provided
-    $clients = $clientService->getClientsByStatus($statusFilter);
+    $clients = $clientService->getClientsByStatus($filters['status']);
 } else {
     // Default: Get all clients
     $clients = $clientService->getAllClients();
+}
+
+// Apply date filtering if specified (client-side for now, can be moved to service later)
+if (!empty($filters['date_from']) || !empty($filters['date_to'])) {
+    $clients = array_filter($clients, function($client) use ($filters) {
+        $createdDate = strtotime($client['created_at']);
+        $fromCheck = empty($filters['date_from']) || $createdDate >= strtotime($filters['date_from']);
+        $toCheck = empty($filters['date_to']) || $createdDate <= strtotime($filters['date_to'] . ' 23:59:59');
+        return $fromCheck && $toCheck;
+    });
 }
 
 // Prepare client status display map for the view
@@ -106,7 +117,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </a>
         </div>
     </div>
-    
+
     <!-- Flash Messages -->
     <?php if ($session->hasFlash('success')): ?>
         <div class="alert alert-success">
@@ -124,29 +135,41 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
             <form action="<?= APP_URL ?>/public/clients/index.php" method="get" class="row g-3 align-items-center">
-                <div class="col-md-5">
-                    <label for="search" class="form-label visually-hidden">Search</label>
-                    <input type="text" class="form-control" id="search" name="search" value="<?= htmlspecialchars($searchTerm) ?>" placeholder="Search by Name, Email, or Phone...">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" value="<?= htmlspecialchars($filters['search']) ?>" placeholder="Name, email, or phone...">
                 </div>
 
-                <div class="col-md-4">
-                    <label for="status" class="form-label visually-hidden">Status</label>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
                     <select name="status" id="status" class="form-select">
-                        <option value="" <?= $statusFilter == '' ? 'selected' : '' ?>>— Filter by Status —</option>
-                        <option value="active" <?= $statusFilter == 'active' ? 'selected' : '' ?>>Active</option>
-                        <option value="inactive" <?= $statusFilter == 'inactive' ? 'selected' : '' ?>>Inactive</option>
-                        <option value="blacklisted" <?= $statusFilter == 'blacklisted' ? 'selected' : '' ?>>Blacklisted</option>
+                        <option value="" <?= $filters['status'] == '' ? 'selected' : '' ?>>All Status</option>
+                        <option value="active" <?= $filters['status'] == 'active' ? 'selected' : '' ?>>Active</option>
+                        <option value="inactive" <?= $filters['status'] == 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                        <option value="blacklisted" <?= $filters['status'] == 'blacklisted' ? 'selected' : '' ?>>Blacklisted</option>
                     </select>
                 </div>
 
+                <div class="col-md-2">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from"
+                        value="<?= htmlspecialchars($filters['date_from']) ?>">
+                </div>
+
+                <div class="col-md-2">
+                    <label for="date_to" class="form-label">To Date</label>
+                    <input type="date" class="form-control" id="date_to" name="date_to"
+                        value="<?= htmlspecialchars($filters['date_to']) ?>">
+                </div>
+
                 <div class="col-md-3">
-                    <button type="submit" class="btn btn-dark me-2">Filter</button>
-                    <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-outline-secondary">Reset</a>
+                    <button type="submit" class="btn btn-primary me-2">Filter</button>
+                    <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-outline-secondary">Clear</a>
                 </div>
             </form>
         </div>
     </div>
-    
+
     <!-- Clients List Table -->
     <?php include_once BASE_PATH . '/templates/clients/list.php'; ?>
 </main>

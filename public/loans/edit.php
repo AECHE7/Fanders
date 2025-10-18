@@ -78,8 +78,9 @@ $loanId = (int)$_GET['id'];
 // Get current user data
 $user = $auth->getCurrentUser();
 
-// Initialize loan service
+// Initialize services
 $loanService = new LoanService();
+$clientService = new ClientService();
 
 // Get loan data with client information
 $loan = $loanService->getLoanWithClient($loanId);
@@ -99,7 +100,7 @@ if (!in_array($loan['status'], ['application', 'approved'])) {
 }
 
 // Get all clients for the dropdown
-$clients = $loanService->getAllClientsForSelect();
+$clients = $clientService->getAllForSelect();
 
 // Process form submission
 $loanData = [

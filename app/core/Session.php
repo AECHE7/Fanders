@@ -5,14 +5,11 @@
  * Session - Manages user sessions
  */
 class Session {
-    private $sessionLifetime = 1800; // 30 minutes
-    
-
     public function __construct() {
         // Only set session cookie parameters if session is not active
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
-                'lifetime' => $this->sessionLifetime,
+                'lifetime' => 0, // Session cookie, expires when browser closes
                 'path' => '/',
                 'domain' => '',
                 'secure' => false, // Set to true in production with HTTPS
@@ -26,9 +23,6 @@ class Session {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
-        
-        // Check if session needs to be regenerated
-        $this->checkSessionLifetime();
     }
 
     public function set($key, $value) {
@@ -78,31 +72,6 @@ class Session {
  
     public function regenerate($deleteOldSession = true) {
         session_regenerate_id($deleteOldSession);
-        // Update last activity time on regeneration
-        $this->set('last_activity', time());
-    }
-    
-
-    private function checkSessionLifetime() {
-        $lastActivity = $this->get('last_activity');
-        $currentTime = time();
-        
-        // If last activity timestamp is set
-        if ($lastActivity) {
-            // If session has expired
-            if (($currentTime - $lastActivity) > $this->sessionLifetime) {
-                // Clear session data
-                $this->clear();
-                // Regenerate session ID
-                $this->regenerate();
-            } else if (($currentTime - $lastActivity) > ($this->sessionLifetime / 2)) {
-                // Regenerate session ID halfway through the lifetime as well
-                $this->regenerate();
-            }
-        }
-        
-        // Update last activity time
-        $this->set('last_activity', $currentTime);
     }
 
     public function setFlash($key, $value) {
@@ -132,7 +101,7 @@ class Session {
         $this->set('csrf_token', $token);
         return $token;
     }
-    
+
 
     public function getCsrfToken() {
         if (!$this->has('csrf_token')) {
@@ -140,9 +109,15 @@ class Session {
         }
         return $this->get('csrf_token');
     }
-    
+
 
     public function validateCsrfToken($token) {
-        return $token === $this->getCsrfToken();
+        $storedToken = $this->get('csrf_token');
+        if (!$storedToken || !$token || !hash_equals($storedToken, $token)) {
+            return false;
+        }
+        // Regenerate token after successful validation
+        $this->setCsrfToken();
+        return true;
     }
 }

@@ -1,8 +1,8 @@
 <?php
 /**
- * Add user page for the Library Management System
- * 
- * FIXED: Uses addBorrower from UserService, ensures fields and roles align with service and models.
+ * Add Staff User page for the Fanders Microfinance Loan Management System
+ *
+ * Creates operational staff accounts (Admin, Manager, Cashier, Account Officer) with proper role-based access.
  */
 
 // Include configuration
@@ -63,7 +63,7 @@ if ($auth->checkSessionTimeout()) {
 $user = $auth->getCurrentUser();
 $userRole = $user['role'];
 
-// Check if user has permission to add users (Super Admin can add any user, Admin can only add borrowers)
+// Check if user has permission to add staff users (Super Admin can add any staff, Admin can add operational staff)
 if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
@@ -111,13 +111,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Role validation and restriction
         if ($userRole === 'admin') {
-            // Admin can only add borrowers (students, staff, others)
-            if (!in_array($newUser['role'], ['student', 'staff', 'other'])) {
-                $error = 'Admins can only add borrower accounts (Students, Staff, or Others).';
+            // Admin can only add operational staff (manager, cashier, account-officer)
+            if (!in_array($newUser['role'], ['manager', 'cashier', 'account-officer'])) {
+                $error = 'Admins can only add operational staff accounts (Manager, Cashier, or Account Officer).';
             }
         } else if ($userRole === 'super-admin') {
-            // Super Admin can add any role
-            if (!in_array($newUser['role'], ['super-admin', 'admin', 'student', 'staff', 'other'])) {
+            // Super Admin can add any operational role
+            if (!in_array($newUser['role'], ['super-admin', 'admin', 'manager', 'cashier', 'account-officer'])) {
                 $error = 'Invalid role selected.';
             }
         }
@@ -148,10 +148,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Add User</h1>
+        <h1 class="h2">Add Staff User</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
-                <i data-feather="arrow-left"></i> Back to Users
+                <i data-feather="arrow-left"></i> Back to Staff
             </a>
         </div>
     </div>

@@ -1,11 +1,103 @@
 <?php
 /**
- * Loan Detail View Template (templates/loans/view.php)
+ * Loan Detail View Controller (public/loans/view.php)
  * Displays detailed information about a single loan and its payment history.
- * @var array $viewData Contains: loanData, paymentSummary, paymentHistory, loanCalculation, remainingBalance, isComplete
  */
 
-extract($viewData);
+// Centralized initialization (handles sessions, auth, CSRF, and autoloader)
+require_once '../../public/init.php';
+
+// Enforce role-based access control (All staff roles can view loans)
+$auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account-officer', 'cashier']);
+
+// Get loan ID from URL parameter
+$loanId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+if ($loanId <= 0) {
+    $session->setFlash('error', 'Invalid loan ID.');
+    header('Location: ' . APP_URL . '/public/loans/index.php');
+    exit;
+}
+
+// Initialize services
+$loanService = new LoanService();
+$paymentService = new PaymentService();
+
+// Fetch loan data with client information
+$loanData = $loanService->getLoanWithClient($loanId);
+
+if (!$loanData) {
+    $session->setFlash('error', 'Loan not found.');
+    header('Location: ' . APP_URL . '/public/loans/index.php');
+    exit;
+}
+
+// Fetch payment history for this loan
+$paymentHistory = $paymentService->getPaymentsByLoan($loanId);
+
+// Calculate payment summary
+$paymentSummary = $paymentService->getPaymentSummaryByLoan($loanId);
+
+// Calculate remaining balance
+$totalLoanAmount = $loanData['total_loan_amount'];
+$totalPaid = $paymentSummary['total_paid'] ?? 0;
+$remainingBalance = $totalLoanAmount - $totalPaid;
+
+// Check if loan is complete
+$isComplete = $loanData['status'] === 'Completed' || $remainingBalance <= 0;
+
+// Prepare loan calculation data (for display purposes)
+$loanCalculation = [
+    'weeks_total' => $loanData['term_weeks']
+];
+
+// Prepare view data for template
+$viewData = [
+    'loanData' => $loanData,
+    'paymentSummary' => $paymentSummary,
+    'paymentHistory' => $paymentHistory,
+    'loanCalculation' => $loanCalculation,
+    'remainingBalance' => $remainingBalance,
+    'isComplete' => $isComplete
+];
+
+// Display the view
+$pageTitle = "Loan Details - #" . $loanData['id'];
+
+include_once BASE_PATH . '/templates/layout/header.php';
+include_once BASE_PATH . '/templates/layout/navbar.php';
+?>
+
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Loan Details</h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-secondary">
+                <i data-feather="arrow-left"></i> Back to Loans
+            </a>
+            <?php if ($auth->hasRole(['super-admin', 'admin', 'manager']) && in_array($loanData['status'], ['application', 'approved'])): ?>
+                <a href="<?= APP_URL ?>/public/loans/edit.php?id=<?= $loanId ?>" class="btn btn-sm btn-warning ms-2">
+                    <i data-feather="edit"></i> Edit Loan
+                </a>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <?php if ($session->hasFlash('success')): ?>
+        <div class="alert alert-success">
+            <?= $session->getFlash('success') ?>
+        </div>
+    <?php endif; ?>
+    <?php if ($session->hasFlash('error')): ?>
+        <div class="alert alert-danger">
+            <?= $session->getFlash('error') ?>
+        </div>
+    <?php endif; ?>
+
+    <?php
+    // Extract view data for template use
+    extract($viewData);
 
 // Helper function to get loan status badge class (copied from index.php for consistency)
 if (!function_exists('getLoanStatusBadgeClass')) {
@@ -47,7 +139,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                     <dd class="col-sm-6">₱<?= number_format($loanData['total_loan_amount'], 2) ?></dd>
 
                     <dt class="col-sm-6">Weekly Payment:</dt>
-                    <dd class="col-sm-6 fw-bold text-success">₱<?= number_format($loanData['weekly_payment'], 2) ?></dd>
+                    <dd class="col-sm-6 fw-bold text-success">₱<?= number_format($loanData['total_loan_amount'] / $loanData['term_weeks'], 2) ?></dd>
                     
                     <dt class="col-sm-6 text-muted">Term:</dt>
                     <dd class="col-sm-6 text-muted"><?= $loanData['term_weeks'] ?> Weeks (4 Mos)</dd>
@@ -158,3 +250,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
         <?php endif; ?>
     </div>
 </div>
+
+<?php
+include_once BASE_PATH . '/templates/layout/footer.php';
+?>

@@ -53,6 +53,23 @@ class LoanCalculationService extends BaseService {
     }
 
     /**
+     * Validate loan amount against business rules.
+     * @param float $principal The loan principal amount
+     * @return bool True if valid, false otherwise
+     */
+    public function validateLoanAmount($principal) {
+        if ($principal < 1000) {
+            $this->setErrorMessage('Loan amount must be at least ₱1,000.');
+            return false;
+        }
+        if ($principal > 50000) {
+            $this->setErrorMessage('Loan amount cannot exceed ₱50,000.');
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Generate detailed payment schedule for 17 weeks with component breakdown.
      * This ensures the total of all payments exactly equals the total loan amount.
      */

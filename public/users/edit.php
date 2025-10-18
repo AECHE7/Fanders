@@ -1,6 +1,6 @@
 <?php
 /**
- * Edit user page for the Library Management System
+ * Edit Staff User page for the Fanders Microfinance Loan Management System
  */
 
 // Include configuration
@@ -18,7 +18,7 @@ function autoload($className) {
         'app/services/',
         'app/utilities/'
     ];
-    
+
     // Try to find the class file
     foreach ($directories as $directory) {
         $file = BASE_PATH . '/' . $directory . $className . '.php';
@@ -85,8 +85,8 @@ if (!$editUser) {
 }
 
 // Check if user has permission to edit this user
-// Super Admin can edit any user, Admin can only edit borrowers or themselves
-if ($userRole === 'admin' && !in_array($editUser['role'], ['student', 'staff', 'other']) && $userId !== $user['id']) {
+// Super Admin can edit any staff user, Admin can only edit operational staff or themselves
+if ($userRole === 'admin' && !in_array($editUser['role'], ['manager', 'cashier', 'account-officer']) && $userId !== $user['id']) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to edit this user.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
@@ -109,22 +109,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'role' => isset($_POST['role']) ? trim($_POST['role']) : ($editUser['role'] ?? ''),
             'status' => isset($_POST['status']) ? trim($_POST['status']) : ($editUser['status'] ?? 'active')
         ];
-        
+
         // Handle password update
         if (!empty($_POST['password'])) {
             $updatedUser['password'] = $_POST['password'];
             $updatedUser['password_confirmation'] = $_POST['password_confirmation'];
         }
-        
-        // Admin can only edit borrowers and can't change role
+
+        // Admin can only edit operational staff and can't change role
         if ($userRole === 'admin') {
             $updatedUser['role'] = $editUser['role']; // Keep existing role
         }
-        
+
         // Update the user
         if ($userService->updateUser($userId, $updatedUser)) {
             // User updated successfully
-            $session->setFlash('success', 'User updated successfully.');
+            $session->setFlash('success', 'Staff user updated successfully.');
             header('Location: ' . APP_URL . '/public/users/view.php?id=' . $userId);
             exit;
         } else {
@@ -143,37 +143,37 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Edit User Information</h1>
+        <h1 class="h2">Edit Staff User Information</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <?php if (in_array($userRole, ['student', 'staff', 'other'])): ?>
+                <?php if (in_array($userRole, ['manager', 'cashier', 'account-officer'])): ?>
                     <a href="<?= APP_URL ?>/public/users/view.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-secondary">
-                        <i data-feather="arrow-left"></i> Back to User Profile
+                        <i data-feather="arrow-left"></i> Back to Staff Profile
                     </a>
                 <?php elseif (in_array($userRole, ['super-admin', 'admin'])): ?>
                     <a href="<?= APP_URL ?>/public/users/view.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-secondary">
-                        <i data-feather="eye"></i> View User Profile
+                        <i data-feather="eye"></i> View Staff Profile
                     </a>
                     <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
-                        <i data-feather="arrow-left"></i> Back to Users
+                        <i data-feather="arrow-left"></i> Back to Staff
                     </a>
                 <?php endif; ?>
             </div>
         </div>
     </div>
-    
+
     <?php if ($error): ?>
         <div class="alert alert-danger">
             <?= $error ?>
         </div>
     <?php endif; ?>
-    
+
     <!-- User Edit Form -->
     <div class="card">
         <div class="card-body">
-            <?php 
+            <?php
                 global $userRole, $editUser, $userId;
-                include_once BASE_PATH . '/templates/users/form.php'; 
+                include_once BASE_PATH . '/templates/users/form.php';
             ?>
         </div>
     </div>

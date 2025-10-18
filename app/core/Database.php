@@ -116,4 +116,19 @@ class Database {
     public function getError() {
         return $this->error;
     }
+
+    /**
+     * Prepares a SQL statement for execution.
+     * @param string $sql The SQL query string.
+     * @return PDOStatement|false The PDO statement object on success, or false on failure.
+     */
+    public function prepare($sql) {
+        try {
+            return $this->pdo->prepare($sql);
+        } catch (PDOException $e) {
+            $this->error = $e->getMessage();
+            error_log("Database Prepare Error: {$this->error}");
+            return false;
+        }
+    }
 }

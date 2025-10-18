@@ -12,6 +12,8 @@ class CSRF {
      */
     public function __construct() {
         $this->session = new Session();
+        // Ensure token is generated on construction if not exists
+        $this->getToken();
     }
 
     /**

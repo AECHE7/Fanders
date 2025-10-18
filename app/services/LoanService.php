@@ -45,18 +45,50 @@ class LoanService extends BaseService {
     public function getAllActiveLoansWithClients() {
         return $this->loanModel->getAllActiveLoansWithClients();
     }
+
+    public function getLoansByStatus($status) {
+        return $this->loanModel->getLoansByStatus($status);
+    }
     
     public function getLoanStats() {
         return $this->loanModel->getLoanStats();
     }
 
     /**
+     * Checks if a client is eligible to apply for a new loan.
+     * @param int $clientId
+     * @return bool True if eligible, false otherwise.
+     */
+    public function canClientApplyForLoan($clientId) {
+        // Check if client exists
+        if (!$this->clientModel->findById($clientId)) {
+            $this->setErrorMessage('Selected client does not exist.');
+            return false;
+        }
+
+        // Check for active loan
+        if ($this->loanModel->getClientActiveLoan($clientId)) {
+            $this->setErrorMessage('Client already has an active loan and cannot apply for another.');
+            return false;
+        }
+
+        // Check for defaulted loan
+        if ($this->loanModel->hasClientDefaultedLoan($clientId)) {
+            $this->setErrorMessage('Client has defaulted loans and must settle their account before applying.');
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Creates a new loan application.
      * Enforces business rule: Client cannot have an active or defaulted loan.
      * @param array $loanData Must contain 'client_id' and 'principal'.
+     * @param int $userId User creating the application
      * @return int|false New loan ID on success.
      */
-    public function applyForLoan(array $loanData) {
+    public function applyForLoan(array $loanData, $userId) {
         $principal = $loanData['principal'] ?? null;
         $clientId = $loanData['client_id'] ?? null;
 
@@ -87,9 +119,19 @@ class LoanService extends BaseService {
 
         // 4. Create loan application
         $newId = $this->loanModel->create($dataToCreate);
-        
+
         if (!$newId) {
              $this->setErrorMessage($this->loanModel->getLastError() ?: 'Failed to save loan application.');
+             return false;
+        }
+
+        // 5. Log transaction for audit trail
+        if (class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logLoanTransaction('created', $newId, $userId, [
+                'principal' => $principal,
+                'client_id' => $clientId
+            ]);
         }
 
         return $newId;
@@ -138,15 +180,28 @@ class LoanService extends BaseService {
             $this->setErrorMessage('Only approved loans can be disbursed.');
             return false;
         }
-        
+
         // This is a crucial financial transaction, so we use the transactional wrapper
-        return $this->transaction(function() use ($id) {
+        return $this->transaction(function() use ($id, $disbursedBy) {
             // 1. Update loan status
             $success = $this->loanModel->disburseLoan($id);
-            
-            // 2. Add Transaction/Audit Log (Phase 2/3 - Placeholder for now)
-            // if ($success) { $this->transactionService->log('LOAN_DISBURSEMENT', $id, $disbursedBy); }
-            
+
+            // 2. Add Transaction/Audit Log
+            if ($success && class_exists('TransactionService')) {
+                $transactionService = new TransactionService();
+                $transactionService->logLoanTransaction('disbursed', $id, $disbursedBy, [
+                    'disbursement_date' => date('Y-m-d H:i:s'),
+                    'disbursed_by' => $disbursedBy,
+                    'loan_amount' => $loan['total_loan_amount']
+                ]);
+            }
+
+            // 3. Update cash blotter for disbursement (inflow)
+            if ($success && class_exists('CashBlotterService')) {
+                $cashBlotterService = new CashBlotterService();
+                $cashBlotterService->updateBlotterForDate(date('Y-m-d'));
+            }
+
             return $success;
         });
     }
@@ -158,7 +213,59 @@ class LoanService extends BaseService {
      * @return bool
      */
     public function completeLoan($id) {
-        return $this->loanModel->completeLoan($id);
+        $success = $this->loanModel->completeLoan($id);
+
+        // Log transaction for audit trail
+        if ($success && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logLoanTransaction('completed', $id, null, [
+                'completion_date' => date('Y-m-d H:i:s')
+            ]);
+        }
+
+        return $success;
+    }
+
+    /**
+     * Cancels a loan application (moves to 'cancelled' status).
+     * Only loan applications can be cancelled.
+     * @param int $id Loan ID.
+     * @param int $cancelledBy User ID who cancelled the loan.
+     * @return bool
+     */
+    public function cancelLoan($id, $cancelledBy) {
+        $loan = $this->loanModel->findById($id);
+        if (!$loan) {
+            $this->setErrorMessage('Loan not found.');
+            return false;
+        }
+
+        if ($loan['status'] !== LoanModel::STATUS_APPLICATION) {
+            $this->setErrorMessage('Only loan applications can be cancelled.');
+            return false;
+        }
+
+        return $this->loanModel->update($id, ['status' => 'cancelled']);
+    }
+
+    /**
+     * Restores a cancelled loan application back to application status.
+     * @param int $id Loan ID.
+     * @return bool
+     */
+    public function restoreLoan($id) {
+        $loan = $this->loanModel->findById($id);
+        if (!$loan) {
+            $this->setErrorMessage('Loan not found.');
+            return false;
+        }
+
+        if ($loan['status'] !== 'cancelled') {
+            $this->setErrorMessage('Only cancelled loan applications can be restored.');
+            return false;
+        }
+
+        return $this->loanModel->update($id, ['status' => LoanModel::STATUS_APPLICATION]);
     }
 
     /**
@@ -170,7 +277,7 @@ class LoanService extends BaseService {
     private function validateLoanData(array $loanData, $excludeId = null) {
         $clientId = $loanData['client_id'] ?? null;
         $principal = $loanData['principal'] ?? null;
-        
+
         // Use BaseService validation for basic requirements
         if (!$this->validate(['client_id' => $clientId, 'principal' => $principal], [
             'client_id' => 'required|numeric',
@@ -186,7 +293,7 @@ class LoanService extends BaseService {
         }
 
         // --- CORE BUSINESS RULE ENFORCEMENT ---
-        
+
         // 1. Check for active loan
         if ($this->loanModel->getClientActiveLoan($clientId)) {
             $this->setErrorMessage('Client already has an active loan and cannot apply for another.');

@@ -11,75 +11,82 @@
     </div>
 <?php endif; ?>
 
-<!-- Payments Table -->
+<!-- Active Loans Table -->
 <div class="card">
     <div class="card-header">
-        <h5 class="mb-0">Payment Records</h5>
+        <h5 class="mb-0">Active Loans & Payment Progress</h5>
     </div>
     <div class="card-body">
-        <?php if (empty($payments)): ?>
+        <?php if (empty($loansWithProgress)): ?>
             <div class="text-center py-5">
                 <i data-feather="credit-card" class="text-muted mb-3" style="width:48px;height:48px;"></i>
-                <h5 class="text-muted">No Payments Found</h5>
-                <p class="text-muted">No payment records match your criteria.</p>
+                <h5 class="text-muted">No Active Loans Found</h5>
+                <p class="text-muted">No active loans match your criteria.</p>
             </div>
         <?php else: ?>
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead class="table-light">
                         <tr>
-                            <th>ID</th>
+                            <th>Loan ID</th>
                             <th>Client</th>
                             <th>Loan Amount</th>
-                            <th>Payment Amount</th>
-                            <th>Week</th>
-                            <th>Payment Date</th>
-                            <th>Method</th>
-                            <th>Collected By</th>
+                            <th>Progress</th>
+                            <th>Weeks Paid</th>
+                            <th>Total Paid</th>
+                            <th>Remaining Balance</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($payments as $payment): ?>
+                        <?php foreach ($loansWithProgress as $loan): ?>
                             <tr>
-                                <td>#<?= htmlspecialchars($payment['id']) ?></td>
+                                <td>#<?= htmlspecialchars($loan['id']) ?></td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="avatar-circle bg-primary text-white me-2" style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;">
-                                            <?= strtoupper(substr($payment['client_name'], 0, 1)) ?>
+                                            <?= strtoupper(substr($loan['client_name'], 0, 1)) ?>
                                         </div>
                                         <div>
-                                            <div class="fw-bold"><?= htmlspecialchars($payment['client_name']) ?></div>
-                                            <small class="text-muted"><?= htmlspecialchars($payment['phone_number']) ?></small>
+                                            <div class="fw-bold"><?= htmlspecialchars($loan['client_name']) ?></div>
+                                            <small class="text-muted"><?= htmlspecialchars($loan['phone_number']) ?></small>
                                         </div>
                                     </div>
                                 </td>
-                                <td>₱<?= number_format($payment['loan_amount'], 2) ?></td>
+                                <td>₱<?= number_format($loan['total_loan_amount'], 2) ?></td>
                                 <td>
-                                    <span class="badge bg-success">₱<?= number_format($payment['payment_amount'], 2) ?></span>
+                                    <?php
+                                    $progressPercent = ($loan['weeks_paid'] / 17) * 100;
+                                    $progressClass = $progressPercent >= 80 ? 'bg-success' : ($progressPercent >= 50 ? 'bg-warning' : 'bg-danger');
+                                    ?>
+                                    <div class="progress" style="width: 100px;">
+                                        <div class="progress-bar <?= $progressClass ?>" role="progressbar"
+                                             style="width: <?= $progressPercent ?>%"
+                                             aria-valuenow="<?= $progressPercent ?>" aria-valuemin="0" aria-valuemax="100">
+                                            <?= round($progressPercent) ?>%
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">Week <?= htmlspecialchars($payment['week_number']) ?></span>
-                                </td>
-                                <td><?= date('M d, Y', strtotime($payment['payment_date'])) ?></td>
-                                <td>
-                                    <span class="badge bg-secondary"><?= ucfirst(htmlspecialchars($payment['payment_method'])) ?></span>
+                                    <span class="badge bg-info"><?= htmlspecialchars($loan['weeks_paid']) ?>/17</span>
                                 </td>
                                 <td>
-                                    <?php if ($payment['collected_by_name']): ?>
-                                        <?= htmlspecialchars($payment['collected_by_name']) ?>
-                                    <?php else: ?>
-                                        <span class="text-muted">N/A</span>
-                                    <?php endif; ?>
+                                    <span class="badge bg-success">₱<?= number_format($loan['total_paid'], 2) ?></span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">₱<?= number_format($loan['remaining_balance'], 2) ?></span>
                                 </td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a href="<?= APP_URL ?>/public/payments/view.php?id=<?= $payment['id'] ?>" class="btn btn-sm btn-outline-primary" title="View Details">
-                                            <i data-feather="eye" style="width:14px;height:14px;"></i>
+                                        <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="btn btn-sm btn-outline-primary" title="View Loan Details">
+                                            <i data-feather="eye"></i>
+                                        </a>
+                                        <a href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loan['id'] ?>" class="btn btn-sm btn-outline-success" title="Record Payment">
+                                            <i data-feather="credit-card"></i>
                                         </a>
                                         <?php if ($userRole == 'administrator' || $userRole == 'manager'): ?>
-                                            <a href="<?= APP_URL ?>/public/payments/edit.php?id=<?= $payment['id'] ?>" class="btn btn-sm btn-outline-warning" title="Edit Payment">
-                                                <i data-feather="edit" style="width:14px;height:14px;"></i>
+                                            <a href="<?= APP_URL ?>/public/loans/edit.php?id=<?= $loan['id'] ?>" class="btn btn-sm btn-outline-warning" title="Edit Loan">
+                                                <i data-feather="edit"></i>
                                             </a>
                                         <?php endif; ?>
                                     </div>
@@ -91,8 +98,8 @@
             </div>
 
             <!-- Pagination (if needed) -->
-            <?php if (count($payments) >= 50): ?>
-                <nav aria-label="Payment pagination" class="mt-3">
+            <?php if (count($loansWithProgress) >= 50): ?>
+                <nav aria-label="Loan pagination" class="mt-3">
                     <ul class="pagination justify-content-center">
                         <li class="page-item disabled">
                             <span class="page-link">Previous</span>

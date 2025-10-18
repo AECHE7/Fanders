@@ -37,6 +37,22 @@ class ClientService extends BaseService {
     }
 
     /**
+     * Retrieves all clients formatted for select dropdowns.
+     * @return array
+     */
+    public function getAllForSelect() {
+        $clients = $this->clientModel->getAll('name', 'ASC');
+        $formatted = [];
+        foreach ($clients as $client) {
+            $formatted[] = [
+                'id' => $client['id'],
+                'name' => $client['name']
+            ];
+        }
+        return $formatted;
+    }
+
+    /**
      * Searches clients by name, email, or phone number.
      * @param string $term
      * @return array
@@ -92,9 +108,10 @@ class ClientService extends BaseService {
     /**
      * Creates a new client record after business validation.
      * @param array $clientData
+     * @param int $createdBy User ID who created the client
      * @return int|false New client ID on success.
      */
-    public function createClient($clientData) {
+    public function createClient($clientData, $createdBy = null) {
         // 1. Validate client data (uniqueness, required fields, age)
         if (!$this->validateClientData($clientData)) {
             return false;
@@ -108,6 +125,15 @@ class ClientService extends BaseService {
 
         if (!$newId) {
              $this->setErrorMessage($this->clientModel->getLastError() ?: 'Failed to create client due to unknown database error.');
+             return false;
+        }
+
+        // 4. Log transaction for audit trail
+        if (class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logClientTransaction('created', $newId, $createdBy, [
+                'client_data' => $clientData
+            ]);
         }
 
         return $newId;
@@ -225,6 +251,7 @@ class ClientService extends BaseService {
         // Validate date of birth and age requirement
         if (!empty($clientData['date_of_birth'])) {
             $dob = DateTime::createFromFormat('Y-m-d', $clientData['date_of_birth']);
+            $today = new DateTime();
             // Basic date format validation and age check (must be at least 18)
             if (!$dob || $dob->format('Y-m-d') !== $clientData['date_of_birth'] || $today->diff($dob)->y < 18) {
                 $this->setErrorMessage('Client must be at least 18 years old and Date of Birth must be valid (Y-m-d).');

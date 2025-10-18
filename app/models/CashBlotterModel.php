@@ -1,189 +1,174 @@
 <?php
 /**
- * CashBlotterModel - Handles daily cash flow tracking for Fanders Microfinance (FR-004)
- * This model is the core of the daily cash management system.
+ * CashBlotterModel - Handles cash flow management operations
+ * This model manages the data for the 'cash_blotter' table and provides
+ * functionality for tracking daily cash inflows and outflows.
  */
 require_once __DIR__ . '/../core/BaseModel.php';
 
 class CashBlotterModel extends BaseModel {
     protected $table = 'cash_blotter';
     protected $primaryKey = 'id';
+
     protected $fillable = [
-        'blotter_date', 'opening_balance', 'total_collections', 'total_loan_releases',
-        'total_expenses', 'closing_balance', 'recorded_by', 'status',
-        'created_at', 'updated_at'
+        'blotter_date',
+        'total_inflow',
+        'total_outflow',
+        'calculated_balance',
+        'created_at',
+        'updated_at'
     ];
     protected $hidden = [];
 
-    // Status definitions
-    public static $STATUS_DRAFT = 'draft';
-    public static $STATUS_FINALIZED = 'finalized';
-
     /**
-     * Finds a cash blotter record by its date.
-     * @param string $date Y-m-d format
+     * Gets or creates a cash blotter entry for a specific date.
+     * @param string $date Date in Y-m-d format
      * @return array|false
      */
     public function getBlotterByDate($date) {
-        return $this->findOneByField('blotter_date', $date);
+        $sql = "SELECT * FROM {$this->table} WHERE blotter_date = ?";
+        return $this->db->single($sql, [$date]);
     }
 
     /**
-     * Calculates the closing balance based on the blotter's components.
-     * Uses ROUND to prevent floating point errors.
-     * @param array $blotterData
-     * @return float
+     * Creates a new cash blotter entry for a date.
+     * @param string $date Date in Y-m-d format
+     * @return int|false
      */
-    protected function calculateClosingBalance(array $blotterData) {
-        $opening = $blotterData['opening_balance'] ?? 0;
-        $collections = $blotterData['total_collections'] ?? 0;
-        $releases = $blotterData['total_loan_releases'] ?? 0;
-        $expenses = $blotterData['total_expenses'] ?? 0;
-
-        $closingBalance = $opening + $collections - $releases - $expenses;
-        
-        // Round to 2 decimal places for financial accuracy
-        return round($closingBalance, 2);
-    }
-
-    /**
-     * Creates a cash blotter for the specified date, using the previous day's closing balance.
-     * @param string $date Y-m-d format
-     * @param int $recordedBy User ID
-     * @return int|false New blotter ID or false on failure.
-     */
-    public function createDailyBlotter($date, $recordedBy) {
-        // Check if blotter already exists for this date
+    public function createBlotterForDate($date) {
+        // Check if already exists
         if ($this->getBlotterByDate($date)) {
-            $this->setLastError('Cash blotter already exists for this date.');
             return false;
         }
 
-        // Get previous day's closing balance as opening balance
-        $previousDay = date('Y-m-d', strtotime($date . ' -1 day'));
-        $previousBlotter = $this->getBlotterByDate($previousDay);
-        // If the previous blotter exists and is finalized, use its closing balance. Otherwise, start at 0.
-        $openingBalance = ($previousBlotter && $previousBlotter['status'] === self::$STATUS_FINALIZED) 
-                          ? $previousBlotter['closing_balance'] : 0.00;
-
         $data = [
             'blotter_date' => $date,
-            'opening_balance' => $openingBalance,
-            'total_collections' => 0.00,
-            'total_loan_releases' => 0.00,
-            'total_expenses' => 0.00,
-            'closing_balance' => $openingBalance,
-            'recorded_by' => $recordedBy,
-            'status' => self::$STATUS_DRAFT,
+            'total_inflow' => 0.00,
+            'total_outflow' => 0.00,
+            'calculated_balance' => 0.00
         ];
 
         return $this->create($data);
     }
 
     /**
-     * Updates the blotter's collections based on recorded payments.
-     * @param string $date Y-m-d format
-     */
-    public function updateBlotterCollections($date) {
-        // Calculate total collections for the date
-        $sql = "SELECT SUM(amount) as total FROM payments WHERE DATE(payment_date) = ?";
-        $result = $this->db->single($sql, [$date]);
-        $totalCollections = round($result ? $result['total'] : 0, 2);
-
-        // Fetch current blotter data
-        $blotter = $this->getBlotterByDate($date);
-        if ($blotter) {
-            $updateData = ['total_collections' => $totalCollections];
-            
-            // Recalculate closing balance by merging current data with new collections
-            $recalcData = array_merge($blotter, $updateData);
-            $updateData['closing_balance'] = $this->calculateClosingBalance($recalcData);
-
-            $this->update($blotter['id'], $updateData);
-        }
-    }
-
-    /**
-     * Updates the blotter's loan releases based on disbursements.
-     * @param string $date Y-m-d format
-     */
-    public function updateBlotterReleases($date) {
-        // Calculate total loan releases for the date (loans table uses 'principal' for amount)
-        $sql = "SELECT SUM(principal) as total FROM loans WHERE DATE(disbursement_date) = ? AND status = ?";
-        $result = $this->db->single($sql, [$date, LoanModel::$STATUS_ACTIVE]);
-        $totalReleases = round($result ? $result['total'] : 0, 2);
-
-        // Fetch current blotter data
-        $blotter = $this->getBlotterByDate($date);
-        if ($blotter) {
-            $updateData = ['total_loan_releases' => $totalReleases];
-
-            // Recalculate closing balance by merging current data with new releases
-            $recalcData = array_merge($blotter, $updateData);
-            $updateData['closing_balance'] = $this->calculateClosingBalance($recalcData);
-
-            $this->update($blotter['id'], $updateData);
-        }
-    }
-    
-    /**
-     * Overrides BaseModel update to enforce closing balance recalculation.
-     */
-    public function update($id, $data) {
-        // If any key financial field is being updated, fetch existing data and recalculate balance
-        if (isset($data['opening_balance']) || isset($data['total_collections']) || 
-            isset($data['total_loan_releases']) || isset($data['total_expenses'])) {
-            
-            $blotter = $this->findById($id);
-            if ($blotter) {
-                // Merge existing data with new data for recalculation
-                $recalcData = array_merge($blotter, $data);
-                $data['closing_balance'] = $this->calculateClosingBalance($recalcData);
-            }
-        }
-
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        return parent::update($id, $data);
-    }
-    
-    /**
-     * Finalizes the blotter status (using inherited updateStatus)
-     * @param int $blotterId
+     * Updates the cash blotter for a specific date with calculated totals.
+     * @param string $date Date in Y-m-d format
      * @return bool
      */
-    public function finalizeBlotter($blotterId) {
-        return $this->updateStatus($blotterId, self::$STATUS_FINALIZED);
+    public function updateBlotterTotals($date) {
+        // Calculate inflows (loan disbursements + other income)
+        $inflowSql = "SELECT COALESCE(SUM(amount), 0) as total_inflow
+                      FROM (
+                          SELECT l.total_loan_amount as amount
+                          FROM loans l
+                          WHERE DATE(l.disbursement_date) = ?
+                          UNION ALL
+                          SELECT 0 as amount -- Placeholder for other income sources
+                      ) as inflows";
+
+        $inflowResult = $this->db->single($inflowSql, [$date]);
+        $totalInflow = $inflowResult ? $inflowResult['total_inflow'] : 0;
+
+        // Calculate outflows (payments made + expenses)
+        $outflowSql = "SELECT COALESCE(SUM(amount), 0) as total_outflow
+                       FROM payments
+                       WHERE DATE(payment_date) = ?";
+
+        $outflowResult = $this->db->single($outflowSql, [$date]);
+        $totalOutflow = $outflowResult ? $outflowResult['total_outflow'] : 0;
+
+        // Get previous day's balance
+        $prevDate = date('Y-m-d', strtotime($date . ' -1 day'));
+        $prevBlotter = $this->getBlotterByDate($prevDate);
+        $openingBalance = $prevBlotter ? $prevBlotter['calculated_balance'] : 0;
+
+        $calculatedBalance = $openingBalance + $totalInflow - $totalOutflow;
+
+        // Update or create blotter entry
+        $existing = $this->getBlotterByDate($date);
+        if ($existing) {
+            return $this->update($existing['id'], [
+                'total_inflow' => $totalInflow,
+                'total_outflow' => $totalOutflow,
+                'calculated_balance' => $calculatedBalance
+            ]);
+        } else {
+            return $this->create([
+                'blotter_date' => $date,
+                'total_inflow' => $totalInflow,
+                'total_outflow' => $totalOutflow,
+                'calculated_balance' => $calculatedBalance
+            ]);
+        }
     }
 
-    // --- Data Retrieval Methods ---
-    
-    // Remaining retrieval methods (getBlotterSummary, getMonthlyCashFlow, etc.) are omitted for brevity but remain functional.
-    
-    public function getBlotterWithDetails($id) {
-        $sql = "SELECT cb.*,
-                u.name as recorded_by_name
-                FROM {$this->table} cb
-                LEFT JOIN users u ON cb.recorded_by = u.id
-                WHERE cb.id = ?";
-
-        return $this->db->single($sql, [$id]);
-    }
-
-    public function getBlottersByDateRange($startDate, $endDate) {
-        $sql = "SELECT cb.*,
-                u.name as recorded_by_name
-                FROM {$this->table} cb
-                LEFT JOIN users u ON cb.recorded_by = u.id
-                WHERE cb.blotter_date BETWEEN ? AND ?
-                ORDER BY cb.blotter_date DESC";
+    /**
+     * Gets cash blotter entries for a date range.
+     * @param string $startDate Start date in Y-m-d format
+     * @param string $endDate End date in Y-m-d format
+     * @return array
+     */
+    public function getBlotterRange($startDate, $endDate) {
+        $sql = "SELECT * FROM {$this->table}
+                WHERE blotter_date BETWEEN ? AND ?
+                ORDER BY blotter_date ASC";
 
         return $this->db->resultSet($sql, [$startDate, $endDate]);
     }
-    
-    public function getLatestBlotter() {
-        $sql = "SELECT * FROM {$this->table}
+
+    /**
+     * Gets the current cash balance (latest calculated balance).
+     * @return float
+     */
+    public function getCurrentBalance() {
+        $sql = "SELECT calculated_balance FROM {$this->table}
                 ORDER BY blotter_date DESC LIMIT 1";
 
-        return $this->db->single($sql);
+        $result = $this->db->single($sql);
+        return $result ? (float)$result['calculated_balance'] : 0.00;
+    }
+
+    /**
+     * Gets cash flow summary for a period.
+     * @param string $startDate
+     * @param string $endDate
+     * @return array
+     */
+    public function getCashFlowSummary($startDate, $endDate) {
+        $sql = "SELECT
+                    SUM(total_inflow) as total_inflow,
+                    SUM(total_outflow) as total_outflow,
+                    (SUM(total_inflow) - SUM(total_outflow)) as net_flow
+                FROM {$this->table}
+                WHERE blotter_date BETWEEN ? AND ?";
+
+        $result = $this->db->single($sql, [$startDate, $endDate]);
+
+        return [
+            'total_inflow' => $result ? (float)$result['total_inflow'] : 0,
+            'total_outflow' => $result ? (float)$result['total_outflow'] : 0,
+            'net_flow' => $result ? (float)$result['net_flow'] : 0
+        ];
+    }
+
+    /**
+     * Recalculates all blotter entries from a start date.
+     * This is useful when historical data changes.
+     * @param string $startDate
+     * @return bool
+     */
+    public function recalculateFromDate($startDate) {
+        $sql = "SELECT blotter_date FROM {$this->table}
+                WHERE blotter_date >= ?
+                ORDER BY blotter_date ASC";
+
+        $dates = $this->db->resultSet($sql, [$startDate]);
+
+        foreach ($dates as $dateRow) {
+            $this->updateBlotterTotals($dateRow['blotter_date']);
+        }
+
+        return true;
     }
 }

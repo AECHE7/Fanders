@@ -60,4 +60,153 @@ class UserModel extends BaseModel {
         $data['status'] = $data['status'] ?? self::$STATUS_ACTIVE;
         return parent::create($data);
     }
+
+    /**
+     * Get all users with readable role names.
+     * @param array $roles Optional filter by specific roles.
+     * @return array
+     */
+    public function getAllUsersWithRoleNames($roles = []) {
+        $sql = "SELECT u.*, CASE
+            WHEN u.role = 'super-admin' THEN 'Super Admin'
+            WHEN u.role = 'admin' THEN 'Admin'
+            WHEN u.role = 'manager' THEN 'Manager'
+            WHEN u.role = 'cashier' THEN 'Cashier'
+            WHEN u.role = 'account-officer' THEN 'Account Officer'
+            WHEN u.role = 'client' THEN 'Client'
+            WHEN u.role = 'student' THEN 'Student'
+            WHEN u.role = 'staff' THEN 'Staff'
+            WHEN u.role = 'other' THEN 'Other'
+            ELSE u.role
+        END as role_name FROM users u";
+
+        $params = [];
+        if (!empty($roles)) {
+            $placeholders = str_repeat('?,', count($roles) - 1) . '?';
+            $sql .= " WHERE u.role IN ($placeholders)";
+            $params = $roles;
+        }
+
+        $sql .= " ORDER BY u.created_at DESC";
+
+        return $this->query($sql, $params);
+    }
+
+    /**
+     * Get user stats for dashboard.
+     * @return array
+     */
+    public function getUserStats() {
+        $stats = [];
+
+        // Total users
+        $stats['total_users'] = $this->count();
+
+        // Active users
+        $stats['active_users'] = $this->count('status', self::$STATUS_ACTIVE);
+
+        // Users by role
+        $stats['role_counts'] = [];
+        $roles = [
+            self::$ROLE_SUPER_ADMIN,
+            self::$ROLE_ADMIN,
+            self::$ROLE_MANAGER,
+            self::$ROLE_CASHIER,
+            self::$ROLE_ACCOUNT_OFFICER,
+            self::$ROLE_CLIENT,
+            self::$ROLE_STUDENT,
+            self::$ROLE_STAFF,
+            self::$ROLE_OTHER
+        ];
+
+        foreach ($roles as $role) {
+            $stats['role_counts'][$role] = $this->count('role', $role);
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Get all operational users with readable role names.
+     * @param array $roles Optional filter by specific roles.
+     * @return array
+     */
+    public function getAllOperationalUsersWithRoleNames($roles = []) {
+        $operationalRoles = [
+            self::$ROLE_SUPER_ADMIN,
+            self::$ROLE_ADMIN,
+            self::$ROLE_MANAGER,
+            self::$ROLE_CASHIER,
+            self::$ROLE_ACCOUNT_OFFICER
+        ];
+
+        if (empty($roles)) {
+            $roles = $operationalRoles;
+        } else {
+            $roles = array_intersect($roles, $operationalRoles);
+        }
+
+        return $this->getAllUsersWithRoleNames($roles);
+    }
+
+    /**
+     * Get a single user with a readable role name.
+     * @param int $id
+     * @return array|false
+     */
+    public function getUserWithRoleName($id) {
+        $sql = "SELECT u.*, CASE
+            WHEN u.role = 'super-admin' THEN 'Super Admin'
+            WHEN u.role = 'admin' THEN 'Admin'
+            WHEN u.role = 'manager' THEN 'Manager'
+            WHEN u.role = 'cashier' THEN 'Cashier'
+            WHEN u.role = 'account-officer' THEN 'Account Officer'
+            WHEN u.role = 'client' THEN 'Client'
+            WHEN u.role = 'student' THEN 'Student'
+            WHEN u.role = 'staff' THEN 'Staff'
+            WHEN u.role = 'other' THEN 'Other'
+            ELSE u.role
+        END as role_name FROM users u WHERE u.id = ?";
+
+        $result = $this->query($sql, [$id], true);
+        return $result;
+    }
+
+    /**
+     * Check if email exists (for uniqueness validation).
+     * @param string $email
+     * @param int|null $excludeId
+     * @return bool
+     */
+    public function emailExists($email, $excludeId = null) {
+        $sql = "SELECT COUNT(*) as count FROM users WHERE email = ?";
+        $params = [$email];
+
+        if ($excludeId) {
+            $sql .= " AND id != ?";
+            $params[] = $excludeId;
+        }
+
+        $result = $this->query($sql, $params, true);
+        return $result && $result['count'] > 0;
+    }
+
+    /**
+     * Check if phone number exists (for uniqueness validation).
+     * @param string $phoneNumber
+     * @param int|null $excludeId
+     * @return bool
+     */
+    public function phoneNumberExists($phoneNumber, $excludeId = null) {
+        $sql = "SELECT COUNT(*) as count FROM users WHERE phone_number = ?";
+        $params = [$phoneNumber];
+
+        if ($excludeId) {
+            $sql .= " AND id != ?";
+            $params[] = $excludeId;
+        }
+
+        $result = $this->query($sql, $params, true);
+        return $result && $result['count'] > 0;
+    }
 }

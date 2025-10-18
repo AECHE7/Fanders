@@ -53,9 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Check if the "Apply" button was pressed (not just the 'Calculate' preview)
         if (isset($_POST['submit_loan'])) {
-            
+
+            // Map form data to service expected format
+            $loanData = [
+                'client_id' => $loan['client_id'],
+                'principal' => $loan['loan_amount']
+            ];
+
             // Apply for the loan
-            $loanId = $loanService->applyForLoan($loan, $user['id']);
+            $loanId = $loanService->applyForLoan($loanData, $user['id']);
 
             if ($loanId) {
                 // Success: Redirect to the loan list page
@@ -115,6 +121,12 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
     <!-- Loan Calculation Preview (Displayed only if successful calculation exists) -->
     <?php if ($loanCalculation && !isset($_POST['submit_loan']) && empty($error)): ?>
+        <?php
+        // Calculate approximate weekly breakdown
+        $principal_per_week = round($loanCalculation['principal'] / $loanCalculation['term_weeks'], 2);
+        $interest_per_week = round($loanCalculation['total_interest'] / $loanCalculation['term_weeks'], 2);
+        $insurance_per_week = round($loanCalculation['insurance_fee'] / $loanCalculation['term_weeks'], 2);
+        ?>
     <div class="card mt-4 shadow-sm border-primary">
         <div class="card-header bg-primary text-white">
             <h5 class="mb-0">Loan Calculation Preview - Ready to Submit</h5>
@@ -126,7 +138,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <table class="table table-sm table-borderless mb-3">
                         <tr>
                             <td class="fw-medium">Principal Amount:</td>
-                            <td class="text-end">₱<?= number_format($loanCalculation['principal_amount'], 2) ?></td>
+                            <td class="text-end">₱<?= number_format($loanCalculation['principal'], 2) ?></td>
                         </tr>
                         <tr>
                             <td class="fw-medium">Total Interest (4 months @ 5%):</td>
@@ -138,11 +150,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         </tr>
                         <tr class="table-info">
                             <td class="fw-bold">Total Repayment Amount:</td>
-                            <td class="text-end fw-bold">₱<?= number_format($loanCalculation['total_amount'], 2) ?></td>
+                            <td class="text-end fw-bold">₱<?= number_format($loanCalculation['total_loan_amount'], 2) ?></td>
                         </tr>
                         <tr>
                             <td class="fw-bold text-success">Mandatory Weekly Payment (17 weeks):</td>
-                            <td class="text-end fw-bold text-success">₱<?= number_format($loanCalculation['weekly_payment'], 2) ?></td>
+                            <td class="text-end fw-bold text-success">₱<?= number_format($loanCalculation['weekly_payment_base'], 2) ?></td>
                         </tr>
                         <tr>
                             <td class="text-muted">Term:</td>
@@ -155,29 +167,29 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <table class="table table-sm table-borderless">
                         <tr>
                             <td>Principal per week:</td>
-                            <td class="text-end">₱<?= number_format($loanCalculation['breakdown']['principal_per_week'], 2) ?></td>
+                            <td class="text-end">₱<?= number_format($principal_per_week, 2) ?></td>
                         </tr>
                         <tr>
                             <td>Interest per week:</td>
-                            <td class="text-end">₱<?= number_format($loanCalculation['breakdown']['interest_per_week'], 2) ?></td>
+                            <td class="text-end">₱<?= number_format($interest_per_week, 2) ?></td>
                         </tr>
                         <tr>
                             <td>Insurance per week:</td>
-                            <td class="text-end">₱<?= number_format($loanCalculation['breakdown']['insurance_per_week'], 2) ?></td>
+                            <td class="text-end">₱<?= number_format($insurance_per_week, 2) ?></td>
                         </tr>
                         <tr>
                             <td class="fw-bold">Total Weekly Components:</td>
                             <td class="text-end fw-bold">₱<?= number_format(
-                                $loanCalculation['breakdown']['principal_per_week'] + 
-                                $loanCalculation['breakdown']['interest_per_week'] + 
-                                $loanCalculation['breakdown']['insurance_per_week'], 2
+                                $principal_per_week +
+                                $interest_per_week +
+                                $insurance_per_week, 2
                             ) ?></td>
                         </tr>
                     </table>
                      <p class="small text-muted mt-3">Note: The weekly amounts shown here are approximate. The final amount of the last payment will adjust for rounding.</p>
                 </div>
             </div>
-            
+
             <!-- Submit Button (appears after successful calculation) -->
              <div class="d-flex justify-content-end">
                 <form action="<?= APP_URL ?>/public/loans/add.php" method="post" id="submitLoanForm">
@@ -189,7 +201,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     </button>
                 </form>
             </div>
-            
+
         </div>
     </div>
     <?php endif; ?>

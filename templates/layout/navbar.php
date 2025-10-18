@@ -59,11 +59,11 @@ $navItems = [
     'cash-blotter' => [
         'icon' => 'book-open',
         'title' => 'Cash Blotter',
-        'url' => APP_URL . '/public/cash-blotter/index.php',
+        'url' => APP_URL . '/public/cash_blotter/index.php',
         'roles' => ['super-admin', 'admin', 'manager', 'cashier']
     ],
     'slr-documents' => [
-        'icon' => 'file-check',
+        'icon' => 'file',
         'title' => 'SLR Documents',
         'url' => APP_URL . '/public/slr-documents/index.php',
         'roles' => ['super-admin', 'admin', 'manager', 'account_officer']
@@ -72,6 +72,12 @@ $navItems = [
         'icon' => 'bar-chart-2',
         'title' => 'Reports',
         'url' => APP_URL . '/public/reports/index.php',
+        'roles' => ['super-admin', 'admin', 'manager']
+    ],
+    'transactions' => [
+        'icon' => 'activity',
+        'title' => 'Transactions',
+        'url' => APP_URL . '/public/transactions/index.php',
         'roles' => ['super-admin', 'admin', 'manager']
     ],
     'users' => [

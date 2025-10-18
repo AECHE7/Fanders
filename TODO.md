@@ -1,72 +1,51 @@
-# TODO: Convert public/loans/ folder to Microfinance Loan Management
+# Uniform Filtering Implementation Plan
 
 ## Overview
-Convert all PHP files in public/loans/ from library management system to Fanders Microfinance loan management system.
+Standardize filtering across all index pages (transactions, cash_blotter, payments, loans, clients) to use consistent parameter names, server-side filtering, and uniform form layouts.
 
 ## Tasks
 
-### 1. Update index.php
-- [x] Replace BookService with LoanService
-- [x] Update role checks to microfinance roles (super-admin, admin, manager, account_officer, cashier)
-- [x] Change URLs from /public/books/ to /public/loans/
-- [x] Update template includes to use loan templates
-- [x] Update search/filter functionality for loans
+### 1. Create FilterUtility Class
+- [x] Create `app/utilities/FilterUtility.php`
+- [x] Implement methods for:
+  - Sanitizing GET parameters
+  - Validating date ranges
+  - Building filter arrays
+  - Common validation logic
 
-### 2. Update add.php
-- [x] Replace BookService with LoanService
-- [x] Update role checks to microfinance roles
-- [x] Change URLs and redirects
-- [x] Update form processing for loan applications
-- [x] Update template includes
+### 2. Update Transactions Index
+- [x] Already has good server-side filtering
+- [x] Update to use FilterUtility for consistency
+- [x] Ensure parameter names match standard (date_from, date_to)
 
-### 3. Update view.php
-- [ ] Replace BookService/TransactionService with LoanService/PaymentService
-- [ ] Update role checks
-- [ ] Change book-related logic to loan-related logic
-- [ ] Update transaction history to payment history
-- [ ] Update template includes
-- [ ] Update action buttons and permissions
+### 3. Update Cash Blotter Index
+- [x] Change 'start_date'/'end_date' to 'date_from'/'date_to'
+- [x] Use FilterUtility for validation
+- [x] Ensure server-side filtering consistency
 
-### 4. Update edit.php
-- [ ] Replace BookService with LoanService
-- [ ] Update role checks
-- [ ] Change URLs and redirects
-- [ ] Update form processing for loan editing
-- [ ] Update template includes
+### 4. Update Payments Index
+- [ ] Move from client-side to server-side filtering
+- [ ] Add date filtering support
+- [ ] Update PaymentService to support server-side filters
+- [ ] Use FilterUtility
 
-### 5. Update borrow.php
-- [ ] Rename/restructure to loan approval/disbursement functionality
-- [ ] Replace TransactionService with PaymentService
-- [ ] Update role checks
-- [ ] Change borrowing logic to loan disbursement logic
-- [ ] Update template includes
+### 5. Update Loans Index
+- [ ] Change 'start_date'/'end_date' to 'date_from'/'date_to'
+- [ ] Use FilterUtility
+- [ ] Ensure LoanService supports date filtering
 
-### 6. Update archive.php, archived.php, restore.php, delete.php, bulk_delete.php, bulk_restore.php, delete_book.php
-- [ ] Replace BookService with LoanService
-- [ ] Update role checks
-- [ ] Change archive/restore/delete logic to loan status management
-- [ ] Update URLs and redirects
-- [ ] Update template includes
+### 6. Update Clients Index
+- [ ] Add date filtering (created_at, updated_at)
+- [ ] Update ClientService for date filters
+- [ ] Use FilterUtility
 
-### 7. Verify Services Exist
-- [x] Ensure LoanService exists and has required methods
-- [x] Ensure PaymentService exists for payment tracking
-- [x] Update any missing service methods
+### 7. Standardize Filter Form Layout
+- [ ] Create consistent HTML structure across all pages
+- [ ] Uniform button styling and layout
+- [ ] Consistent field ordering
 
-### 8. Update Templates
-- [x] Ensure templates/loans/ folder has all required templates
-- [x] Update template includes in PHP files
-- [x] Verify template functionality matches loan management
-
-### 9. Testing
-- [ ] Test loan application workflow
-- [ ] Test loan approval/disbursement
-- [ ] Test payment recording
-- [ ] Test role-based access controls
-- [ ] Test search and filtering
-
-## Dependencies
-- LoanService must be available
-- PaymentService must be available
-- templates/loans/ templates must exist
-- Database schema must support loan operations
+### 8. Testing
+- [ ] Test filtering on each page
+- [ ] Verify date validation
+- [ ] Check performance with large datasets
+- [ ] Ensure no regressions in existing functionality

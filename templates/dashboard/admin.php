@@ -259,8 +259,8 @@
                                 <?php foreach ($recentPayments as $payment): ?>
                                 <tr>
                                     <td class="ps-4"><?= htmlspecialchars($payment['client_name']) ?></td>
-                                    <td>₱<?= number_format($payment['payment_amount'], 2) ?></td>
-                                    <td>Week <?= $payment['week_number'] ?></td>
+                                    <td>₱<?= number_format($payment['amount'], 2) ?></td>
+                                    <td>Week <?= $payment['week_number'] ?>/17</td>
                                     <td><?= date('M d, Y', strtotime($payment['payment_date'])) ?></td>
                                 </tr>
                                 <?php endforeach; ?>
@@ -298,18 +298,31 @@
                                     <th class="ps-4">Client</th>
                                     <th>Loan Amount</th>
                                     <th>Status</th>
-                                    <th>Next Payment</th>
+                                    <th>Progress</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach (array_slice($activeLoans, 0, 5) as $loan): ?>
                                 <tr>
                                     <td class="ps-4"><?= htmlspecialchars($loan['client_name']) ?></td>
-                                    <td>₱<?= number_format($loan['loan_amount'], 2) ?></td>
+                                    <td>₱<?= number_format($loan['total_loan_amount'] ?? 0, 2) ?></td>
                                     <td>
                                         <span class="badge bg-success">Active</span>
                                     </td>
-                                    <td>Week <?= $loan['current_week'] ?? 1 ?></td>
+                                    <td>
+                                        <?php
+                                        $paymentSummary = $paymentService->getPaymentSummaryByLoan($loan['id']);
+                                        $paymentsMade = $paymentSummary['payment_count'] ?? 0;
+                                        $totalWeeks = 17; // Assuming 17 weeks term
+                                        $progress = min(100, round(($paymentsMade / $totalWeeks) * 100));
+                                        ?>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress me-2" style="width: 60px; height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: <?= $progress ?>%"></div>
+                                            </div>
+                                            <small class="text-muted"><?= $paymentsMade ?>/<?= $totalWeeks ?> weeks</small>
+                                        </div>
+                                    </td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -396,6 +409,41 @@
                             <div>
                                 <h6 class="mb-0">Record Payment</h6>
                                 <p class="card-text small mb-0 text-muted">Process payments</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <!-- Phase 2 Features -->
+        <div class="col-md-3">
+            <a href="<?= APP_URL ?>/public/transactions/index.php" class="text-decoration-none">
+                <div class="card border-0 h-100" style="background-color: #fef3c7;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background-color: #f59e0b;">
+                                <i data-feather="activity" style="width: 20px; height: 20px; color: white;"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Audit Log</h6>
+                                <p class="card-text small mb-0 text-muted">System activity</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="<?= APP_URL ?>/public/cash_blotter/index.php" class="text-decoration-none">
+                <div class="card border-0 h-100" style="background-color: #fee2e2;">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; background-color: #dc2626;">
+                                <i data-feather="dollar-sign" style="width: 20px; height: 20px; color: white;"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Cash Blotter</h6>
+                                <p class="card-text small mb-0 text-muted">Daily cash flow</p>
                             </div>
                         </div>
                     </div>

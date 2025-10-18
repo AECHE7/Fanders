@@ -40,7 +40,7 @@ $loanHistory = $loanService->getLoansByClient($clientId);
 // Determine if the client has any active loan (critical for management decisions)
 $hasActiveLoan = false;
 foreach ($loanHistory as $loan) {
-    if ($loan['status'] === LoanModel::$STATUS_ACTIVE) {
+    if ($loan['status'] === LoanModel::STATUS_ACTIVE) {
         $hasActiveLoan = true;
         break;
     }

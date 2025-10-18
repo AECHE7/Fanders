@@ -51,7 +51,7 @@
                                                title="View User">
                                                 <i data-feather="eye"></i>
                                             </a>
-                                            <?php if ($userRole === 'super-admin' || ($userRole === 'admin' && in_array($user['role'] ?? '', ['student', 'staff', 'other']))): ?>
+                                            <?php if ($userRole === 'super-admin' || ($userRole === 'admin' && in_array($user['role'] ?? '', ['manager', 'cashier', 'account-officer']))): ?>
                                                 <a href="<?= APP_URL ?>/public/users/edit.php?id=<?= htmlspecialchars($user['id'] ?? '') ?>" 
                                                    class="btn btn-sm btn-outline-secondary" 
                                                    title="Edit User">
@@ -86,12 +86,12 @@ function getRoleBadgeClass($role) {
             return 'danger';
         case 'admin':
             return 'warning';
-        case 'student':
-            return 'info';
-        case 'staff':
+        case 'manager':
             return 'primary';
-        case 'other':
-            return 'secondary';
+        case 'cashier':
+            return 'success';
+        case 'account-officer':
+            return 'info';
         default:
             return 'secondary';
     }

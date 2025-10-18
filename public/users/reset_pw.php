@@ -1,7 +1,7 @@
 Try AI directly in your favorite apps … Use Gemini to generate drafts and refine content, plus get Gemini Advanced with access to Google’s next-gen AI for ₱1,100.00 ₱550.00 for 2 months
 <?php
 /**
- * Users list page for the Library Management System
+ * Reset Staff User Password page for the Fanders Microfinance Loan Management System
  */
 
 // Include configuration

@@ -53,116 +53,38 @@
     </div>
 </div>
 
-   <!-- Currently Borrowed Books -->
-   <?php if (!empty($activeLoans)): ?>
+    <!-- Staff Activity Summary -->
+    <?php if (!empty($staffStats)): ?>
     <div class="card mt-4">
         <div class="card-header">
-            <h5 class="mb-0">Currently Borrowed Books</h5>
+            <h5 class="mb-0">Staff Activity Summary</h5>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped table-sm">
-                    <thead>
-                        <tr>
-                            <th>Book Title</th>
-                            <th>Author</th>
-                            <th>Borrowed On</th>
-                            <th>Due Date</th>
-                            <th>Status</th>
-                            <th>Days Left</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($activeLoans as $loan): ?>
-                            <?php 
-                                $dueDate = new DateTime($loan['due_date']);
-                                $today = new DateTime();
-                                $interval = $today->diff($dueDate);
-                                $daysLeft = $interval->format("%r%a");
-                                
-                                $statusClass = 'success';
-                                $statusText = 'On Time';
-                                
-                                if ($daysLeft < 0) {
-                                    $statusClass = 'danger';
-                                    $statusText = 'Overdue by ' . abs($daysLeft) . ' days';
-                                } elseif ($daysLeft <= 2) {
-                                    $statusClass = 'warning';
-                                    $statusText = 'Due Soon';
-                                }
-                            ?>
-                            <tr>
-                                <td><?= htmlspecialchars($loan['book_title']) ?></td>
-                                <td><?= htmlspecialchars($loan['book_author']) ?></td>
-                                <td><?= date('M d, Y', strtotime($loan['borrow_date'])) ?></td>
-                                <td><?= date('M d, Y', strtotime($loan['due_date'])) ?></td>
-                                <td><span class="badge bg-<?= $statusClass ?>"><?= $statusText ?></span></td>
-                                <td>
-                                    <?php if ($daysLeft < 0): ?>
-                                        <span class="text-danger">Overdue</span>
-                                    <?php else: ?>
-                                        <?= $daysLeft ?> days
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
-
-    <!-- Borrowing History -->
-    <?php if (!empty($loanHistory)): ?>
-    <div class="card mt-4">
-        <div class="card-header">
-            <h5 class="mb-0">Borrowing History</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped table-sm">
-                    <thead>
-                        <tr>
-                            <th>Book Title</th>
-                            <th>Borrowed On</th>
-                            <th>Due Date</th>
-                            <th>Returned On</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($loanHistory as $loan): ?>
-                            <?php 
-                                $statusClass = 'success';
-                                $statusText = 'Returned';
-                                
-                                if ($loan['status'] === 'borrowed') {
-                                    $dueDate = new DateTime($loan['due_date']);
-                                    $today = new DateTime();
-                                    
-                                    if ($today > $dueDate) {
-                                        $statusClass = 'danger';
-                                        $statusText = 'Overdue';
-                                    } else {
-                                        $statusClass = 'info';
-                                        $statusText = 'Borrowed';
-                                    }
-                                } elseif ($loan['status'] === 'overdue') {
-                                    $statusClass = 'warning';
-                                    $statusText = 'Returned Late';
-                                }
-                            ?>
-                            <tr>
-                                <td><?= htmlspecialchars($loan['book_title']) ?></td>
-                                <td><?= date('M d, Y', strtotime($loan['borrow_date'])) ?></td>
-                                <td><?= date('M d, Y', strtotime($loan['due_date'])) ?></td>
-                                <td><?= $loan['return_date'] ? date('M d, Y', strtotime($loan['return_date'])) : '-' ?></td>
-                                <td><span class="badge bg-<?= $statusClass ?>"><?= $statusText ?></span></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-primary"><?= $staffStats['loans_processed'] ?? 0 ?></h4>
+                        <small class="text-muted">Loans Processed</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-success"><?= $staffStats['payments_recorded'] ?? 0 ?></h4>
+                        <small class="text-muted">Payments Recorded</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-info"><?= $staffStats['clients_served'] ?? 0 ?></h4>
+                        <small class="text-muted">Clients Served</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center">
+                        <h4 class="text-warning"><?= $staffStats['active_loans'] ?? 0 ?></h4>
+                        <small class="text-muted">Active Loans</small>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -34,7 +34,7 @@ class AuthService extends BaseService {
         }
 
         $userId = $this->session->get('user_id');
-        $user = $this->userModel->findById($userId); 
+        $user = $this->userModel->findById($userId);
 
         if (!$user) {
             $this->logout();
@@ -45,12 +45,12 @@ class AuthService extends BaseService {
     }
 
     public function login($email, $password) {
-        
+
         // FIX: Use the model's method to retrieve user with password field
         $user = $this->userModel->getUserWithPassword($email);
 
         // --- Core Authentication Logic ---
-        
+
         // 1. Check for user existence
         if (!$user) {
             $this->setErrorMessage('Invalid email or password.');
@@ -81,10 +81,29 @@ class AuthService extends BaseService {
         // Update last login time
         $this->userModel->updateLastLogin($user['id']);
 
+        // Log successful login
+        $transactionService = new TransactionService();
+        $transactionService->logUserTransaction('login', $user['id'], $user['id'], [
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown'
+        ]);
+
         return true;
     }
 
     public function logout() {
+        // Get current user before destroying session
+        $currentUser = $this->getCurrentUser();
+
+        // Log logout if user was logged in
+        if ($currentUser) {
+            $transactionService = new TransactionService();
+            $transactionService->logUserTransaction('logout', $currentUser['id'], $currentUser['id'], [
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown'
+            ]);
+        }
+
         $this->session->destroy();
         return true;
     }

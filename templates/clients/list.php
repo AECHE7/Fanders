@@ -59,8 +59,21 @@ if (!function_exists('getClientStatusBadgeClass')) {
                                     </span>
                                 </td>
                                 <td>
-                                    <!-- Placeholder: Actual check done via LoanService in view.php -->
-                                    <span class="badge text-bg-secondary">Check Loan</span> 
+                                    <?php
+                                    // Check if client has active loans
+                                    $loanService = new LoanService();
+                                    $activeLoans = $loanService->getLoansByClient($client['id']);
+                                    $hasActiveLoan = false;
+                                    foreach ($activeLoans as $loan) {
+                                        if ($loan['status'] === 'Active') {
+                                            $hasActiveLoan = true;
+                                            break;
+                                        }
+                                    }
+                                    ?>
+                                    <span class="badge text-bg-<?= $hasActiveLoan ? 'success' : 'secondary' ?>">
+                                        <?= $hasActiveLoan ? 'Yes' : 'No' ?>
+                                    </span>
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">

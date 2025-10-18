@@ -6,8 +6,9 @@ $db = Database::getInstance();
 $pdo = $db->getConnection();
 
 try {
-    $result = $pdo->query('DESCRIBE users');
-    echo "Users table structure:\n";
+    $table = isset($argv[1]) ? $argv[1] : 'users';
+    echo "\n{$table} table structure:\n";
+    $result = $pdo->query("DESCRIBE {$table}");
     while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         echo $row['Field'] . ' - ' . $row['Type'] . ' - ' . ($row['Null'] == 'NO' ? 'NOT NULL' : 'NULL') . "\n";
     }

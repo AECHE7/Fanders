@@ -1,4 +1,4 @@
-zz<?php
+<?php
 /**
  * Dashboard page for the Library Management System
  * Notion-inspired design
@@ -63,6 +63,9 @@ $userRole = isset($user['role']) ? $user['role'] : null;
 $loanService = new LoanService();
 $clientService = new ClientService();
 $paymentService = new PaymentService();
+// $penaltyService = new PenaltyService();
+$userService = new UserService();
+// $reportService = new ReportService();
 
     // Get role-specific dashboard data
     if (in_array($userRole, [UserModel::$ROLE_CLIENT, UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER, UserModel::$ROLE_STUDENT, UserModel::$ROLE_STAFF, UserModel::$ROLE_OTHER])) {
@@ -86,17 +89,7 @@ $paymentService = new PaymentService();
             }
         }
 
-        // Get penalties (assuming penalty service exists for loans)
-        $penalties = $penaltyService->getUserPenalties($clientId) ?? [];
-        $totalPenaltiesDue = 0;
-        if (is_array($penalties)) {
-            foreach ($penalties as $penalty) {
-                if (isset($penalty['penalty_amount'])) {
-                    $totalPenaltiesDue += floatval($penalty['penalty_amount']);
-                }
-            }
-        }
-        $stats['total_penalties'] = $totalPenaltiesDue;
+
         $stats['active_loans'] = $activeLoans;
         $stats['loan_history'] = $loanHistory;
         $stats['overdue_count'] = count($overduePayments);
@@ -114,11 +107,12 @@ $paymentService = new PaymentService();
         $loanStats = $loanService->getLoanStats();
         $stats = array_merge($stats, $loanStats);
 
-        // Get active loans
+        // Get active loans count
         $activeLoans = $loanService->getAllActiveLoansWithClients();
+        $stats['active_loans'] = count($activeLoans);
 
         // Get overdue payments
-        $overduePayments = $paymentService->getOverduePayments();
+        $overduePayments = $paymentService->getOverduePayments() ?: [];
         $stats['overdue_returns'] = count($overduePayments);
 
         // Get recent payments
@@ -126,24 +120,27 @@ $paymentService = new PaymentService();
         $stats['recent_transactions'] = $recentPayments;
 
         // Get analytics
-        $analytics = $reportService->getMonthlyActivitySummary();
+        // $analytics = $reportService->getMonthlyActivitySummary();
 
         // Fetch total penalties amount from all penalty records
-        $totalPenaltiesDue = $penaltyService->getTotalPenalties();
-        $stats['total_penalties'] = $totalPenaltiesDue;
+        // $totalPenaltiesDue = $penaltyService->getTotalPenalties();
+        // $stats['total_penalties'] = $totalPenaltiesDue;
+
+        // Map total_principal_disbursed to total_disbursed for template compatibility
+        $stats['total_disbursed'] = $stats['total_principal_disbursed'] ?? 0;
 
         if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
             // Additional super admin data
             $users = $userService->getAllUsersWithRoleNames();
-            $clients = $clientService->getAllClients();
+            $clients = $clientService->getAllClients() ?: [];
             $stats['total_clients'] = count($clients);
         } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_MANAGER])) {
             // Additional admin/branch manager data
-            $clients = $clientService->getAllClients();
+            $clients = $clientService->getAllClients() ?: [];
             $stats['total_clients'] = count($clients);
         } else {
             // Account officer/cashier data
-            $clients = $clientService->getAllClients();
+            $clients = $clientService->getAllClients() ?: [];
             $stats['total_clients'] = count($clients);
         }
 

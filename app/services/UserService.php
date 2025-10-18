@@ -53,33 +53,74 @@ class UserService extends BaseService {
     /**
      * Adds a new operational user (Admin, Manager, Cashier, AO).
      * @param array $userData User data including raw password and role.
+     * @param int $createdBy User ID who created this user
      * @return int|false New user ID on success.
      */
-    public function addUser($userData) {
+    public function addUser($userData, $createdBy = null) {
         try {
-            // 1. Ensure role is valid for operational staff
-            if (!isset($userData['role']) || !in_array($userData['role'], $this->validOperationalRoles)) {
-                $this->setErrorMessage('Invalid or missing operational user role.');
+            // 1. Get creator's role to determine allowed roles
+            $creatorRole = null;
+            if ($createdBy) {
+                $creator = $this->userModel->findById($createdBy);
+                $creatorRole = $creator ? $creator['role'] : null;
+            }
+
+            // 2. Determine allowed roles based on creator's role
+            $allowedRoles = [];
+            if ($creatorRole === UserModel::$ROLE_SUPER_ADMIN) {
+                // Super Admin can create any operational role
+                $allowedRoles = [
+                    UserModel::$ROLE_SUPER_ADMIN,
+                    UserModel::$ROLE_ADMIN,
+                    UserModel::$ROLE_MANAGER,
+                    UserModel::$ROLE_CASHIER,
+                    UserModel::$ROLE_ACCOUNT_OFFICER
+                ];
+            } elseif ($creatorRole === UserModel::$ROLE_ADMIN) {
+                // Admin can create operational staff only
+                $allowedRoles = [
+                    UserModel::$ROLE_MANAGER,
+                    UserModel::$ROLE_CASHIER,
+                    UserModel::$ROLE_ACCOUNT_OFFICER
+                ];
+            } else {
+                // Fallback to original logic for backward compatibility
+                // Allow super-admin creation when no creator is specified (for initial setup)
+                $allowedRoles = array_merge($this->validOperationalRoles, [UserModel::$ROLE_SUPER_ADMIN]);
+            }
+
+            // 3. Ensure role is valid for the creator
+            if (!isset($userData['role']) || !in_array($userData['role'], $allowedRoles)) {
+                $this->setErrorMessage('Invalid or missing operational user role for your permission level.');
                 return false;
             }
 
-            // 2. Validate user data and check for unique email/phone
+            // 4. Validate user data and check for unique email/phone
             if (!$this->validateUserData($userData)) {
                 return false;
             }
 
-            // 3. Hash password (Security Feature)
+            // 5. Hash password (Security Feature)
             $userData['password'] = $this->passwordHash->hash($userData['password']);
-            
-            // 4. Set default status and cleanup confirmation field
+
+            // 6. Set default status and cleanup confirmation field
             $userData['status'] = UserModel::$STATUS_ACTIVE;
             unset($userData['password_confirmation']);
 
-            // 5. Create user
+            // 7. Create user
             $newId = $this->userModel->create($userData);
 
             if (!$newId) {
                  $this->setErrorMessage($this->userModel->getLastError() ?: 'Failed to create user due to unknown database error.');
+                 return false;
+            }
+
+            // 8. Log transaction for audit trail
+            if (class_exists('TransactionService')) {
+                $transactionService = new TransactionService();
+                $transactionService->logUserTransaction('created', $newId, $createdBy, [
+                    'user_data' => array_diff_key($userData, ['password' => '']) // Exclude password from logs
+                ]);
             }
 
             return $newId;
@@ -135,16 +176,16 @@ class UserService extends BaseService {
      * @return bool
      */
     public function deactivateUser($id) {
-        return $this->userModel->updateStatus($id, UserModel::STATUS_INACTIVE);
+        return $this->userModel->updateStatus($id, UserModel::$STATUS_INACTIVE);
     }
-    
+
     /**
      * Activates a user account.
      * @param int $id
      * @return bool
      */
     public function activateUser($id) {
-        return $this->userModel->updateStatus($id, UserModel::STATUS_ACTIVE);
+        return $this->userModel->updateStatus($id, UserModel::$STATUS_ACTIVE);
     }
 
     /**
@@ -319,5 +360,107 @@ class UserService extends BaseService {
         }
         
         return true;
+    }
+
+    /**
+     * Get all users with role names (for dashboard stats)
+     * @param array $roles Optional filter by specific roles.
+     * @return array
+     */
+    public function getAllUsersWithRoleNames($roles = []) {
+        return $this->userModel->getAllUsersWithRoleNames($roles);
+    }
+
+    /**
+     * Get staff statistics for the index page
+     * @return array
+     */
+    public function getStaffStats() {
+        $stats = [];
+
+        // Total staff (operational roles only)
+        $operationalRoles = [
+            UserModel::$ROLE_ADMIN,
+            UserModel::$ROLE_MANAGER,
+            UserModel::$ROLE_CASHIER,
+            UserModel::$ROLE_ACCOUNT_OFFICER
+        ];
+
+        $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "')";
+        $result = $this->userModel->query($sql, [], true);
+        $stats['total_staff'] = $result ? $result['count'] : 0;
+
+        // Active staff
+        $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND status = ?";
+        $result = $this->userModel->query($sql, [UserModel::$STATUS_ACTIVE], true);
+        $stats['active_staff'] = $result ? $result['count'] : 0;
+
+        // Inactive staff
+        $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND status = ?";
+        $result = $this->userModel->query($sql, [UserModel::$STATUS_INACTIVE], true);
+        $stats['inactive_staff'] = $result ? $result['count'] : 0;
+
+        // Staff added this month
+        $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())";
+        $result = $this->userModel->query($sql, [], true);
+        $stats['recent_staff'] = $result ? $result['count'] : 0;
+
+        // Staff by role
+        $stats['staff_by_role'] = [];
+        foreach ($operationalRoles as $role) {
+            $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role = ?";
+            $result = $this->userModel->query($sql, [$role], true);
+            $stats['staff_by_role'][$role] = $result ? $result['count'] : 0;
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Get recent staff users
+     * @param int $limit
+     * @return array
+     */
+    public function getRecentStaffUsers($limit = 5) {
+        $operationalRoles = [
+            UserModel::$ROLE_ADMIN,
+            UserModel::$ROLE_MANAGER,
+            UserModel::$ROLE_CASHIER,
+            UserModel::$ROLE_ACCOUNT_OFFICER
+        ];
+
+        $sql = "SELECT id, name, email, role, status, created_at FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') ORDER BY created_at DESC LIMIT ?";
+        return $this->userModel->query($sql, [$limit]);
+    }
+
+    /**
+     * Get staff activity statistics for a specific user
+     * @param int $userId
+     * @return array
+     */
+    public function getStaffActivityStats($userId) {
+        $stats = [];
+
+        // Loans processed (created/approved) - simplified for now
+        $sql = "SELECT COUNT(*) as count FROM loans WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $result = $this->userModel->query($sql, [], true);
+        $stats['loans_processed'] = $result ? $result['count'] : 0;
+
+        // Payments recorded
+        $sql = "SELECT COUNT(*) as count FROM payments WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $result = $this->userModel->query($sql, [$userId], true);
+        $stats['payments_recorded'] = $result ? $result['count'] : 0;
+
+        // Clients served (unique clients from loans/payments)
+        $sql = "SELECT COUNT(DISTINCT client_id) as count FROM loans WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $result = $this->userModel->query($sql, [], true);
+        $stats['clients_served'] = $result ? $result['count'] : 0;
+
+        // Active loans (simplified - loans that are active)
+        $sql = "SELECT COUNT(*) as count FROM loans WHERE status = 'Active'";
+        $result = $this->userModel->query($sql, [], true);
+        $stats['active_loans'] = $result ? $result['count'] : 0;
+
+        return $stats;
     }
 }

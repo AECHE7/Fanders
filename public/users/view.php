@@ -1,6 +1,6 @@
 <?php
 /**
- * View user details page for the Library Management System
+ * View Staff User details page for the Fanders Microfinance Loan Management System
  */
 
 // Include configuration
@@ -84,39 +84,23 @@ if (!$viewUser) {
     exit;
 }
 
-// Get borrowed books for the user
-$borrowedBooks = [];
-$activeLoans = [];
-$loanHistory = [];
-if (in_array($viewUser['role'], ['super-admin','student', 'staff', 'other', 'borrower'])) {
-    $bookService = new BookService();
-    $borrowedBooks = $bookService->getUserBorrowedBooks($userId);
-
-    if ($viewUser['role'] == 'borrower') {
-        $stats = $userService->getBorrowerStats($userId);
-        $activeLoans = $stats['active_loans'] ?? [];
-        $loanHistory = $stats['loan_history'] ?? [];
-    }
+// Get staff activity stats (loans processed, payments recorded, etc.)
+$staffStats = [];
+if (in_array($viewUser['role'], ['super-admin', 'admin', 'manager', 'cashier', 'account-officer'])) {
+    // Get staff performance metrics
+    $staffStats = $userService->getStaffActivityStats($userId);
 }
 
-// Check if user has permission to view this user
-// Super Admin can view any user, Admin can only view borrowers or themselves
-if ($userRole == 'admin' && !in_array($viewUser['role'], ['student', 'staff', 'other']) && $userId !== $user['id']) {
+// Check if user has permission to view this staff user
+// Super Admin can view any staff user, Admin can only view operational staff or themselves
+if ($userRole == 'admin' && !in_array($viewUser['role'], ['manager', 'cashier', 'account-officer']) && $userId !== $user['id']) {
     // Redirect to dashboard with error message
-    $session->setFlash('error', 'You do not have permission to view this user.');
+    $session->setFlash('error', 'You do not have permission to view this staff user.');
     header('Location: ' . APP_URL . '/public/dashboard.php');
     exit;
 }
 
-// Get transaction history for borrowers
-$transactions = [];
-if (in_array($viewUser['role'], ['super-admin', 'admin', 'staff', 'staff', 'others'])) {
-    $transactionService = new TransactionService();
-    $transactions = $transactionService->getUserTransactionHistory($userId);
-    
-    // Get borrower stats
-    $borrowerStats = $userService->getBorrowerStats($userId);
-}
+// No additional data needed for staff users
 
 // Handle activate/deactivate/delete actions
 if (isset($_POST['action']) && $csrf->validateRequest()) {
@@ -156,15 +140,15 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">User Details</h1>
+        <h1 class="h2">Staff User Details</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
                     <a href="<?= APP_URL ?>/public/users/edit.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="edit"></i> Edit User Profile
+                        <i data-feather="edit"></i> Edit Staff Profile
                     </a>
                     <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
                         <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-sm btn-outline-secondary">
-                            <i data-feather="arrow-left"></i> Back to Users
+                            <i data-feather="arrow-left"></i> Back to Staff
                         </a>
                     <?php endif; ?>
                     <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-sm btn-outline-secondary">
@@ -189,50 +173,40 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <!-- User Details -->
     <?php include_once BASE_PATH . '/templates/users/view.php'; ?>
     
-    <!-- Borrower Transactions -->
+    <!-- Staff Activity Summary -->
     <div class="card mt-4">
         <div class="card-header">
-            <h5 class="mb-0">Transaction History</h5>
+            <h5 class="mb-0">Staff Activity Summary</h5>
         </div>
         <div class="card-body">
-            <?php if (empty($transactions)): ?>
-                <p class="text-muted">No transaction history found.</p>
+            <?php if (empty($staffStats)): ?>
+                <p class="text-muted">No activity data available.</p>
             <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-striped table-sm">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Book Title</th>
-                                <th>Borrow Date</th>
-                                <th>Due Date</th>
-                                <th>Return Date</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($transactions as $transaction): ?>
-                                <tr>
-                                    <td><?= $transaction['id'] ?></td>
-                                    <td><?= htmlspecialchars($transaction['book_title']) ?></td>
-                                    <td><?= date('Y-m-d', strtotime($transaction['borrow_date'])) ?></td>
-                                    <td><?= date('Y-m-d', strtotime($transaction['due_date'])) ?></td>
-                                    <td>
-                                        <?= $transaction['return_date'] ? date('Y-m-d', strtotime($transaction['return_date'])) : 'Not returned' ?>
-                                    </td>
-                                    <td>
-                                        <?php if ($transaction['status_label'] == 'Overdue'): ?>
-                                            <span class="badge bg-danger">Overdue</span>
-                                        <?php elseif ($transaction['status_label'] == 'Borrowed'): ?>
-                                            <span class="badge bg-primary">Borrowed</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-success">Returned</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-primary"><?= $staffStats['loans_processed'] ?? 0 ?></h4>
+                            <small class="text-muted">Loans Processed</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-success"><?= $staffStats['payments_recorded'] ?? 0 ?></h4>
+                            <small class="text-muted">Payments Recorded</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-info"><?= $staffStats['clients_served'] ?? 0 ?></h4>
+                            <small class="text-muted">Clients Served</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            <h4 class="text-warning"><?= $staffStats['active_loans'] ?? 0 ?></h4>
+                            <small class="text-muted">Active Loans</small>
+                        </div>
+                    </div>
                 </div>
             <?php endif; ?>
         </div>
@@ -241,28 +215,28 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     
     <?php if (($userRole == 'super-admin') || 
              ($userRole == 'admin')): ?>
-        <!-- User Management Actions -->
+        <!-- Staff Management Actions -->
         <div class="card mt-4">
             <div class="card-header bg-<?= $viewUser['status'] ? 'warning' : 'success' ?> text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">User Status Management</h5>
+                <h5 class="mb-0">Staff Status Management</h5>
             </div>
             <div class="card-body">
             <?php if ($viewUser['status'] === UserModel::$STATUS_ACTIVE): ?>
-                <p class="card-text">This user is currently active. You can deactivate this account.</p>
-                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" onsubmit="return confirm('Are you sure you want to deactivate this user?');">
+                <p class="card-text">This staff member is currently active. You can deactivate this account.</p>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" onsubmit="return confirm('Are you sure you want to deactivate this staff account?');">
                     <?= $csrf->getTokenField() ?>
                     <input type="hidden" name="action" value="deactivate">
                     <button type="submit" class="btn btn-warning">
-                        <i data-feather="user-x"></i> Deactivate User
+                        <i data-feather="user-x"></i> Deactivate Staff
                     </button>
                 </form>
             <?php else: ?>
-                <p class="card-text">This user is currently inactive. You can activate this account.</p>
+                <p class="card-text">This staff member is currently inactive. You can activate this account.</p>
                 <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post">
                     <?= $csrf->getTokenField() ?>
                     <input type="hidden" name="action" value="activate">
                     <button type="submit" class="btn btn-success">
-                        <i data-feather="user-check"></i> Activate User
+                        <i data-feather="user-check"></i> Activate Staff
                     </button>
                 </form>
             <?php endif; ?>

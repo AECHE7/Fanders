@@ -55,7 +55,7 @@ $auth = new AuthService();
 
 // Initialize CSRF protection
 $csrf = new CSRF();
-$csrfToken = $csrf->generateToken(); // Generate or retrieve token for form use
+$csrfToken = $csrf->getToken(); // Get current token for form use
 
 // --- 3. Global Security Checks ---
 

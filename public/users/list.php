@@ -1,6 +1,6 @@
 <?php
 /**
- * Users list page for the Library Management System
+ * Staff Users list page for the Fanders Microfinance Loan Management System
  */
 
 // Include configuration
@@ -62,7 +62,7 @@ if ($auth->checkSessionTimeout()) {
 $user = $auth->getCurrentUser();
 $userRole = $user['role'];
 
-// Check if user has permission to view users list (Super Admin or Admin)
+// Check if user has permission to view staff users list (Super Admin or Admin)
 if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
@@ -77,13 +77,14 @@ $userService = new UserService();
 $roleFilter = isset($_GET['role']) ? $_GET['role'] : '';
 $statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
 
-// Get users based on filters
+// Get operational staff users based on filters
 $allowedRoles = [
-    UserModel::$ROLE_STUDENT,
-    UserModel::$ROLE_STAFF,
-    UserModel::$ROLE_OTHER
+    UserModel::$ROLE_ADMIN,
+    UserModel::$ROLE_MANAGER,
+    UserModel::$ROLE_CASHIER,
+    UserModel::$ROLE_ACCOUNT_OFFICER
 ];
-$users = $userService->getAllUsersWithRoleNames($allowedRoles);
+$users = $userService->getAllOperationalUsersWithRoleNames($allowedRoles);
 
 // Apply role filter if specified
 if (!empty($roleFilter) && $userRole == 'super-admin') {
@@ -138,15 +139,15 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Manage Users</h1>
+        <h1 class="h2">Manage Staff Users</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
                 <?php if ($userRole == 'super-admin' || $userRole == 'admin'): ?>
                     <a href="<?= APP_URL ?>/public/users/add.php" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="user-plus"></i> Add Borrower Account
+                        <i data-feather="user-plus"></i> Add Staff Account
                     </a>
                 <?php endif; ?>
-                
+
                 <a href="<?= APP_URL ?>/public/reports/users.php" class="btn btn-sm btn-outline-secondary">
                     <i data-feather="file-text"></i> Generate Report
                 </a>

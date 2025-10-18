@@ -56,7 +56,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                             <small class="text-muted d-block"><?= htmlspecialchars($loan['phone_number'] ?? '') ?></small>
                         </td>
                         <td>₱<?= number_format($loan['principal'], 2) ?></td>
-                        <td>₱<?= number_format($loan['weekly_payment'], 2) ?></td>
+                        <td>₱<?= number_format($loan['total_loan_amount'] / $loan['term_weeks'], 2) ?></td>
                         <td>
                             <span class="badge text-bg-<?= getLoanStatusBadgeClass($loan['status']) ?>">
                                 <?= htmlspecialchars(ucfirst($loan['status'])) ?>
@@ -99,7 +99,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 
                                 <?php if ($status === 'active'): ?>
                                     <!-- Record Payment Button (All staff action) -->
-                                    <a href="<?= APP_URL ?>/public/payments/record.php?loan_id=<?= $loan['id'] ?>" class="btn btn-success" title="Record Payment">
+                                    <a href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loan['id'] ?>" class="btn btn-success" title="Record Payment">
                                         <i data-feather="credit-card"></i> Pay
                                     </a>
                                 <?php endif; ?>

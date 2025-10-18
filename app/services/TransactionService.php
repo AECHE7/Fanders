@@ -1,334 +1,222 @@
 <?php
 /**
- * TransactionService - Handles book borrowing and return operations
+ * TransactionService - Handles audit logging for all financial and user operations.
+ * This service provides comprehensive transaction logging for compliance and audit trails.
  */
-class TransactionService extends BaseService {
-    private $transactionModel;
-    private $bookModel;
-    private $userModel;
-    private $penaltyModel;
+require_once __DIR__ . '/../core/BaseService.php';
+require_once __DIR__ . '/../models/TransactionLogModel.php';
 
-    private $penaltyService;
+class TransactionService extends BaseService {
+    private $transactionLogModel;
 
     public function __construct() {
         parent::__construct();
-        $this->bookModel = new BookModel();
-        $this->userModel = new UserModel();
-        $this->penaltyModel = new PenaltyModel();
-        $this->penaltyService = new PenaltyService();
-        $this->transactionModel = new TransactionModel();
-        $this->setModel($this->transactionModel);
+        $this->transactionLogModel = new TransactionLogModel();
+        $this->setModel($this->transactionLogModel);
     }
 
-    public function createTransactionRequest($data) {
-        return $this->transactionModel->create($data);
+    /**
+     * Logs a loan-related transaction.
+     * @param string $action Action performed (created, approved, disbursed, completed, etc.)
+     * @param int $loanId Loan ID
+     * @param int|null $userId User performing the action
+     * @param array $details Additional transaction details
+     * @return bool
+     */
+    public function logLoanTransaction($action, $loanId, $userId = null, $details = []) {
+        $logData = [
+            'entity_type' => 'loan',
+            'entity_id' => $loanId,
+            'action' => $action,
+            'user_id' => $userId,
+            'details' => json_encode($details),
+            'timestamp' => date('Y-m-d H:i:s'),
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ];
+
+        return $this->transactionLogModel->create($logData);
     }
 
-    public function getLastError() {
-        return $this->transactionModel->getLastError();
+    /**
+     * Logs a payment-related transaction.
+     * @param int $paymentId Payment ID
+     * @param int|null $userId User performing the action
+     * @param array $details Additional transaction details
+     * @return bool
+     */
+    public function logPaymentTransaction($paymentId, $userId = null, $details = []) {
+        $logData = [
+            'entity_type' => 'payment',
+            'entity_id' => $paymentId,
+            'action' => 'recorded',
+            'user_id' => $userId,
+            'details' => json_encode($details),
+            'timestamp' => date('Y-m-d H:i:s'),
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ];
+
+        return $this->transactionLogModel->create($logData);
     }
 
- 
-    public function borrowBook($userId, $bookId, $durationDays = 14) {
-        // Check if book exists and is available
-        $book = $this->bookModel->findById($bookId);
-        if (!$book) {
-            $this->setErrorMessage('Book not found.');
-            return false;
+    /**
+     * Logs a client-related transaction.
+     * @param string $action Action performed (created, updated, deactivated, etc.)
+     * @param int $clientId Client ID
+     * @param int|null $userId User performing the action
+     * @param array $details Additional transaction details
+     * @return bool
+     */
+    public function logClientTransaction($action, $clientId, $userId = null, $details = []) {
+        $logData = [
+            'entity_type' => 'client',
+            'entity_id' => $clientId,
+            'action' => $action,
+            'user_id' => $userId,
+            'details' => json_encode($details),
+            'timestamp' => date('Y-m-d H:i:s'),
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ];
+
+        return $this->transactionLogModel->create($logData);
+    }
+
+    /**
+     * Logs a user-related transaction.
+     * @param string $action Action performed (created, updated, deactivated, etc.)
+     * @param int $userId User ID
+     * @param int|null $performedBy User performing the action
+     * @param array $details Additional transaction details
+     * @return bool
+     */
+    public function logUserTransaction($action, $userId, $performedBy = null, $details = []) {
+        $logData = [
+            'entity_type' => 'user',
+            'entity_id' => $userId,
+            'action' => $action,
+            'user_id' => $performedBy,
+            'details' => json_encode($details),
+            'timestamp' => date('Y-m-d H:i:s'),
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ];
+
+        return $this->transactionLogModel->create($logData);
+    }
+
+    /**
+     * Retrieves transaction logs for a specific entity.
+     * @param string $entityType Entity type (loan, payment, client, user)
+     * @param int $entityId Entity ID
+     * @param int $limit Number of records to retrieve
+     * @return array
+     */
+    public function getEntityLogs($entityType, $entityId, $limit = 50) {
+        return $this->transactionLogModel->getLogsByEntity($entityType, $entityId, $limit);
+    }
+
+    /**
+     * Retrieves transaction logs for a specific user.
+     * @param int $userId User ID
+     * @param int $limit Number of records to retrieve
+     * @return array
+     */
+    public function getUserLogs($userId, $limit = 50) {
+        return $this->transactionLogModel->getLogsByUser($userId, $limit);
+    }
+
+    /**
+     * Retrieves transaction logs within a date range.
+     * @param string $startDate Start date (Y-m-d)
+     * @param string $endDate End date (Y-m-d)
+     * @param string|null $entityType Filter by entity type
+     * @return array
+     */
+    public function getLogsByDateRange($startDate, $endDate, $entityType = null) {
+        return $this->transactionLogModel->getLogsByDateRange($startDate, $endDate, $entityType);
+    }
+
+    /**
+     * Retrieves recent transaction logs.
+     * @param int $limit Number of records to retrieve
+     * @return array
+     */
+    public function getRecentLogs($limit = 100) {
+        return $this->transactionLogModel->getRecentLogs($limit);
+    }
+
+    /**
+     * Gets transaction statistics for reporting.
+     * @param string $startDate Start date (Y-m-d)
+     * @param string $endDate End date (Y-m-d)
+     * @return array
+     */
+    public function getTransactionStats($startDate = null, $endDate = null) {
+        if ($startDate === null) {
+            $startDate = date('Y-m-d', strtotime('-30 days'));
         }
-
-        if ($book['available_copies'] <= 0) {
-            $this->setErrorMessage('Book is not available for borrowing.');
-            return false;
+        if ($endDate === null) {
+            $endDate = date('Y-m-d');
         }
-
-        // Check if user exists and is active
-        $user = $this->userModel->findById($userId);
-        if (!$user) {
-            $this->setErrorMessage('User not found.');
-            return false;
-        }
-
-        if ($user['status'] !== 'active') {
-            $this->setErrorMessage('User account is not active.');
-            return false;
-        }
-
-        // Check if user has any overdue books
-        $overdueBooks = $this->transactionModel->getUserOverdueLoans($userId);
-        if ($overdueBooks && count($overdueBooks) > 0) {
-            $this->setErrorMessage('Cannot borrow books while having overdue items.');
-            return false;
-        }
-
-        // Start transaction
-        $this->db->beginTransaction();
-
-        try {
-            // Create loan record
-            $transactionId = $this->transactionModel->createLoan($userId, $bookId, $durationDays);
-            if (!$transactionId) {
-                throw new Exception('Failed to create loan record.');
-            }
-
-            // Update book available copies
-            if (!$this->bookModel->decrementAvailableCopies($bookId)) {
-                throw new Exception('Failed to update book availability.');
-            }
-
-            $this->db->commit();
-            return $transactionId;
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            $this->setErrorMessage($e->getMessage());
-            return false;
-        }
+        return $this->transactionLogModel->getTransactionStats($startDate, $endDate);
     }
 
-   
+    /**
+     * Gets transaction history with pagination.
+     * @param int $limit Number of records per page
+     * @param int $offset Offset for pagination
+     * @return array
+     */
+    public function getTransactionHistory($limit = 50, $offset = 0) {
+        $sql = "SELECT tl.*, u.name as user_name, u.role as user_role
+                FROM transaction_logs tl
+                LEFT JOIN users u ON tl.user_id = u.id
+                ORDER BY tl.timestamp DESC
+                LIMIT ? OFFSET ?";
 
-    private $penaltyRatePerDay = 50;
-
-    public function updateOverduePenalties() {
-        // Get all overdue loans without penalties
-        $overdueLoans = $this->transactionModel->getOverdueLoans();
-        if (!$overdueLoans) {
-            return;
-        }
-
-        foreach ($overdueLoans as $loan) {
-            $transactionId = $loan['id'];
-            $userId = $loan['user_id'];
-            $daysOverdue = $loan['days_overdue'];
-            if ($daysOverdue <= 0) {
-                continue;
-            }
-
-            $penaltyAmount = $daysOverdue * $this->penaltyRatePerDay;
-
-            // Insert penalty for overdue transaction
-            $this->penaltyService->createOrUpdatePenalty($userId, $transactionId, $penaltyAmount);
-
-            // Update transaction status to 'overdue'
-            $this->transactionModel->updateTransaction($transactionId, ['status' => 'overdue']);
-        }
+        return $this->db->resultSet($sql, [$limit, $offset]);
     }
 
-  
-    public function getActiveLoans() {
-        return $this->transactionModel->getActiveLoans();
+    /**
+     * Gets total transaction count.
+     * @return int
+     */
+    public function getTotalTransactionCount() {
+        $sql = "SELECT COUNT(*) as count FROM transaction_logs";
+        $result = $this->db->single($sql);
+        return $result['count'] ?? 0;
     }
 
-   
-    public function getOverdueLoans() {
-        return $this->transactionModel->getOverdueLoans();
+    /**
+     * Searches transactions by term.
+     * @param string $searchTerm Search term
+     * @param int $limit Number of records to return
+     * @return array
+     */
+    public function searchTransactions($searchTerm, $limit = 50) {
+        $sql = "SELECT tl.*, u.name as user_name, u.role as user_role
+                FROM transaction_logs tl
+                LEFT JOIN users u ON tl.user_id = u.id
+                WHERE tl.details LIKE ? OR tl.action LIKE ? OR tl.entity_type LIKE ?
+                ORDER BY tl.timestamp DESC
+                LIMIT ?";
+
+        $searchPattern = '%' . $searchTerm . '%';
+        return $this->db->resultSet($sql, [$searchPattern, $searchPattern, $searchPattern, $limit]);
     }
 
-    public function getUserCurrentBorrows($userId) {
-        return $this->transactionModel->getUserCurrentBorrows($userId);
+    /**
+     * Gets transactions by type.
+     * @param string $type Transaction type
+     * @param int $limit Number of records to return
+     * @return array
+     */
+    public function getTransactionsByType($type, $limit = 50) {
+        $sql = "SELECT tl.*, u.name as user_name, u.role as user_role
+                FROM transaction_logs tl
+                LEFT JOIN users u ON tl.user_id = u.id
+                WHERE tl.entity_type = ?
+                ORDER BY tl.timestamp DESC
+                LIMIT ?";
+
+        return $this->db->resultSet($sql, [$type, $limit]);
     }
-
-    public function getUserOverdueLoans($userId) {
-        return $this->transactionModel->getUserOverdueLoans($userId);
-    }
-
-    public function getUserTransactionHistory($userId) {
-        return $this->transactionModel->getUserTransactionHistory($userId);
-    }
-
- 
-    public function getBookTransactionHistory($bookId) {
-        return $this->transactionModel->getBookTransactionHistory($bookId);
-    }
-
-    public function getBookTransactionHistoryByUser($bookId, $userId) {
-        return $this->transactionModel->getBookTransactionHistoryByUser($bookId, $userId);
-    }
-
-
-    public function exportTransactionsToPDF($filters = []) {
-        // Get transactions based on filters
-        $transactions = $this->transactionModel->getFilteredTransactions($filters);
-        
-        if (!$transactions) {
-            $this->setErrorMessage('No transactions found to export.');
-            return false;
-        }
-
-        // Create PDF using TCPDF or similar library
-        require_once '/vendor/tecnickcom/fpdf/fpdf.php';
-
-        $pdf = new FPDF('P', 'mm', 'A4');
-
-        // Set document information
-        $pdf->SetCreator('LibraryVault System');
-        $pdf->SetAuthor('LibraryVault System');
-        $pdf->SetTitle('Transaction Report');
-
-        // Set margins
-        $pdf->SetMargins(15, 15, 15);
-        $pdf->SetAutoPageBreak(true, 10);
-
-        // Add a page
-        $pdf->AddPage();
-
-        // Create the table
-        $pdf->SetFont('Arial', 'B', 12);
-        $pdf->Cell(0, 10, 'Transaction Report', 0, 1, 'C');
-        $pdf->Ln(5);
-
-        // Table header
-        $pdf->SetFont('Arial', 'B', 10);
-        $headers = ['ID', 'Book Title', 'Borrower', 'Borrow Date', 'Due Date', 'Return Date', 'Status'];
-        $widths = [20, 50, 40, 30, 30, 30, 30];
-        
-        foreach ($headers as $i => $header) {
-            $pdf->Cell($widths[$i], 7, $header, 1, 0, 'C');
-        }
-        $pdf->Ln();
-
-        // Table data
-        $pdf->SetFont('Arial', '', 10);
-        foreach ($transactions as $transaction) {
-            $pdf->Cell($widths[0], 6, $transaction['id'], 1);
-            $pdf->Cell($widths[1], 6, $transaction['book_title'], 1);
-            $pdf->Cell($widths[2], 6, $transaction['name'], 1);
-            $pdf->Cell($widths[3], 6, date('Y-m-d', strtotime($transaction['borrow_date'])), 1);
-            $pdf->Cell($widths[4], 6, date('Y-m-d', strtotime($transaction['due_date'])), 1);
-            $pdf->Cell($widths[5], 6, $transaction['return_date'] ? date('Y-m-d', strtotime($transaction['return_date'])) : 'Not returned', 1);
-            $pdf->Cell($widths[6], 6, $transaction['status_label'], 1);
-            $pdf->Ln();
-        }
-
-        // Generate file path
-        $filePath = '/storage/reports/transactions_' . date('Y-m-d_His') . '.pdf';
-
-        // Save PDF
-        $pdf->Output($filePath, 'F');
-
-        return $filePath;
-    }
-
- 
-    public function getAllTransactionsWithDetails() {
-        return $this->transactionModel->getAllTransactionsWithDetails();
-    }
-
-    public function getTransactionById($transactionId) {
-        return $this->transactionModel->getTransactionDetails($transactionId);
-    }
-
-    public function updateTransaction($transactionId, $data) {
-        return $this->transactionModel->updateTransaction($transactionId, $data);
-    }
-
-    public function deleteTransaction($transactionId) {
-        return $this->transactionModel->delete($transactionId);
-    }
-
-    public function getTransactionsForReports($startDate = null, $endDate = null, $status = null) {
-        return $this->transactionModel->getTransactionsForReports($startDate, $endDate, $status);
-    }
-
-    public function approveBorrowRequest($transactionId) {
-        $transaction = $this->getTransactionById($transactionId);
-        if (!$transaction || $transaction['status'] !== 'borrowing') {
-            $this->setErrorMessage('Invalid borrow request.');
-            return false;
-        }
-
-        // Check book availability
-        $book = $this->bookModel->findById($transaction['book_id']);
-        if (!$book || $book['available_copies'] <= 0) {
-            $this->setErrorMessage('Book is not available for borrowing.');
-            return false;
-        }
-
-        // Start transaction
-        $this->db->beginTransaction();
-
-        try {
-            // Update transaction status to 'borrowed', set borrow_date to today and due_date (14 days after borrow_date)
-            $borrowDate = date('Y-m-d');
-            $dueDate = date('Y-m-d', strtotime($borrowDate . ' +14 days'));
-            $this->transactionModel->updateTransaction($transactionId, [
-                'status' => 'borrowed',
-                'borrow_date' => $borrowDate,
-                'due_date' => $dueDate,
-                'updated_at' => date('Y-m-d H:i:s')
-            ]);
-
-            // Decrement book available copies
-            if (!$this->bookModel->decrementAvailableCopies($transaction['book_id'])) {
-                throw new Exception('Failed to update book availability.');
-            }
-
-            $this->db->commit();
-            return true;
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            $this->setErrorMessage($e->getMessage());
-            return false;
-        }
-    }
-
-
-    public function approveReturnRequest($transactionId) {
-        $transaction = $this->getTransactionById($transactionId);
-        if (!$transaction || $transaction['status'] !== 'returning') {
-            $this->setErrorMessage('Invalid return request.');
-            return false;
-        }
-
-        // Start transaction
-        $this->db->beginTransaction();
-
-        try {
-            // Update transaction status to 'returned', set return_date and updated_at on approval
-            $this->transactionModel->updateTransaction($transactionId, [
-                'status' => 'returned',
-                'return_date' => date('Y-m-d'),
-                'updated_at' => date('Y-m-d H:i:s')
-            ]);
-
-            // Increment book available copies
-            if (!$this->bookModel->incrementAvailableCopies($transaction['book_id'])) {
-                throw new Exception('Failed to update book availability.');
-            }
-
-            // Check for overdue and calculate penalty
-            if (strtotime($transaction['due_date']) < time()) {
-                $daysOverdue = ceil((time() - strtotime($transaction['due_date'])) / (60 * 60 * 24));
-                $penaltyAmount = $daysOverdue * $this->penaltyRatePerDay;
-
-                if (!$this->penaltyService->createOrUpdatePenalty($transaction['user_id'], $transactionId, $penaltyAmount)) {
-                    throw new Exception('Failed to create or update penalty record.');
-                }
-            }
-
-            $this->db->commit();
-            return true;
-        } catch (Exception $e) {
-            $this->db->rollBack();
-            $this->setErrorMessage($e->getMessage());
-            return false;
-        }
-    }
-
-  
-    public function getTransactionsByStatuses(array $statuses) {
-        if (empty($statuses)) {
-            return [];
-        }
-
-        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
-        $sql = "SELECT t.*, b.title as book_title, u.name as borrower_name, u.email as borrower_email
-                FROM transaction t
-                JOIN books b ON t.book_id = b.id
-                JOIN users u ON t.user_id = u.id
-                WHERE t.status IN ($placeholders)
-                ORDER BY t.created_at DESC";
-
-        return $this->db->resultSet($sql, $statuses);
-    }
- }
+}

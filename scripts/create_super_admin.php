@@ -5,13 +5,13 @@
  */
 
 // Include configuration
-require_once '../app/config/config.php';
+require_once 'app/config/config.php';
 
 // Include database class
-require_once '../app/core/Database.php';
+require_once 'app/core/Database.php';
 
 // Include password hash class
-require_once '../app/core/PasswordHash.php';
+require_once 'app/core/PasswordHash.php';
 
 echo "Starting super-admin user creation...\n";
 
