@@ -1,4 +1,5 @@
 [phases.setup]
+nixpkgsArchive = "https://github.com/NixOS/nixpkgs/archive/refs/tags/24.05.tar.gz"
 nixPkgs = ["...", "php83", "php83Extensions.pdo_pgsql", "php83Extensions.mbstring", "php83Extensions.session"]
 
 [phases.install]
