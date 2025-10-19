@@ -75,6 +75,8 @@ $userService = new UserService();
 
         // Get client's loans with enhanced filtering
         $clientLoans = $loanService->getLoansByClient($clientId);
+        $clientLoans = is_array($clientLoans) ? $clientLoans : [];
+        
         $activeLoans = array_filter($clientLoans, function($loan) {
             return $loan['status'] === 'active';
         });
@@ -85,11 +87,13 @@ $userService = new UserService();
 
         $stats['active_loans'] = $activeLoans;
         $stats['loan_history'] = $loanHistory;
-        $stats['overdue_count'] = count($overduePayments);
+        $stats['overdue_count'] = is_array($overduePayments) ? count($overduePayments) : 0;
 
         // Get total borrowed (loan amounts)
-        $stats['total_borrowed'] = array_sum(array_column($clientLoans, 'loan_amount'));
-        $stats['current_borrowed'] = array_sum(array_column($activeLoans, 'loan_amount'));
+        $stats['total_borrowed'] = is_array($clientLoans) && !empty($clientLoans) ? 
+            array_sum(array_column($clientLoans, 'loan_amount')) : 0;
+        $stats['current_borrowed'] = is_array($activeLoans) && !empty($activeLoans) ? 
+            array_sum(array_column($activeLoans, 'loan_amount')) : 0;
 
         $dashboardTemplate = BASE_PATH . '/templates/dashboard/client.php';
         } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_SUPER_ADMIN, UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER])) {
@@ -98,7 +102,9 @@ $userService = new UserService();
 
         // Get loan statistics
         $loanStats = $loanService->getLoanStats();
-        $stats = array_merge($stats, $loanStats);
+        if (is_array($loanStats)) {
+            $stats = array_merge($stats, $loanStats);
+        }
 
         // Get active loans count using enhanced method
         $activeLoansFilter = ['status' => 'active', 'limit' => 1]; // Just get count efficiently
@@ -106,11 +112,11 @@ $userService = new UserService();
 
         // Get overdue payments using enhanced method
         $overduePayments = $paymentService->getOverduePayments();
-        $stats['overdue_returns'] = count($overduePayments);
+        $stats['overdue_returns'] = is_array($overduePayments) ? count($overduePayments) : 0;
 
         // Get recent payments using enhanced method
         $recentPayments = $paymentService->getRecentPayments(5);
-        $stats['recent_transactions'] = $recentPayments;
+        $stats['recent_transactions'] = is_array($recentPayments) ? $recentPayments : [];
 
         // Get analytics
         // $analytics = $reportService->getMonthlyActivitySummary();
@@ -125,6 +131,7 @@ $userService = new UserService();
         if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
             // Additional super admin data
             $users = $userService->getAllUsersWithRoleNames();
+            $users = is_array($users) ? $users : [];
             $clientsFilter = ['status' => 'active', 'limit' => 1]; // Just get count efficiently
             $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
         } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_MANAGER])) {
