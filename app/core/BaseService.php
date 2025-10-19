@@ -105,8 +105,21 @@ class BaseService {
         return $this->errorMessage;
     }
 
-    protected function setErrorMessage($message) {
+    /**
+     * Enhanced error message setting with logging
+     * @param string $message Error message
+     * @param array $context Additional context for logging
+     */
+    public function setErrorMessage($message, $context = []) {
         $this->errorMessage = $message;
+        
+        // Log the error for debugging
+        if (class_exists('ErrorHandler')) {
+            require_once __DIR__ . '/../utilities/ErrorHandler.php';
+            ErrorHandler::error($message, array_merge($context, [
+                'service_class' => get_class($this)
+            ]));
+        }
     }
 
     /**
@@ -182,23 +195,6 @@ class BaseService {
             
             $this->setErrorMessage($userMessage);
             return false;
-        }
-    }
-
-    /**
-     * Enhanced error message setting with logging
-     * @param string $message Error message
-     * @param array $context Additional context for logging
-     */
-    public function setErrorMessage($message, $context = []) {
-        $this->errorMessage = $message;
-        
-        // Log the error for debugging
-        if (class_exists('ErrorHandler')) {
-            require_once __DIR__ . '/../utilities/ErrorHandler.php';
-            ErrorHandler::error($message, array_merge($context, [
-                'service_class' => get_class($this)
-            ]));
         }
     }
 }
