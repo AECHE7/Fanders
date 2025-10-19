@@ -4,11 +4,11 @@
  * Notion-inspired design
  */
 
+// Start output buffering immediately to prevent headers sent issues
+ob_start();
+
 // Include configuration
 require_once '../app/config/config.php';
-
-// Start output buffering
-ob_start();
 
 // Include all required files
 function autoload($className) {

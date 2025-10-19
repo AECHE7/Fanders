@@ -9,7 +9,7 @@ class Session {
         // Increase time limit for session operations
         set_time_limit(300); // 5 minutes
 
-        // Only set session cookie parameters if session is not active
+        // Only set session cookie parameters and start session if session is not active
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
                 'lifetime' => 0, // Session cookie, expires when browser closes
@@ -19,11 +19,6 @@ class Session {
                 'httponly' => true,
                 'samesite' => 'Strict'
             ]);
-            session_start();
-        }
-
-        // Start the session if not already started
-        if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
@@ -57,9 +52,12 @@ class Session {
     
 
     public function destroy() {
-        $this->clear();
-        session_destroy();
-        
+        // Check if session is active before destroying
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $this->clear();
+            session_destroy();
+        }
+
         // Delete the session cookie
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();

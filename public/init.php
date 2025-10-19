@@ -14,13 +14,13 @@ if (!defined('BASE_PATH')) {
     define('BASE_PATH', dirname(__DIR__));
 }
 
-// Include configuration file
-require_once BASE_PATH . '/app/config/config.php';
-
-// Start output buffering (for eventual header redirection)
+// Start output buffering immediately to prevent headers sent issues
 if (ob_get_level() === 0) {
     ob_start();
 }
+
+// Include configuration file
+require_once BASE_PATH . '/app/config/config.php';
 
 // --- 1. Autoloader Setup ---
 function autoload($className) {

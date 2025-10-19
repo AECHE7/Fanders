@@ -3,6 +3,9 @@
  * Logout page for the Library Management System
  */
 
+// Start output buffering immediately to prevent headers sent issues
+ob_start();
+
 // Include configuration
 require_once '../app/config/config.php';
 
