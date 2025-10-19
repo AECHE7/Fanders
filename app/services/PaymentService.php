@@ -148,42 +148,13 @@ class PaymentService extends BaseService {
     }
 
     /**
-     * Enhanced method to get all payments with filtering support
-     * @param array $filters Filter parameters
-     * @return array
-     */
-    public function getAllPayments($filters = []) {
-        require_once __DIR__ . '/../utilities/FilterUtility.php';
-        
-        // Validate and sanitize filters
-        $filters = FilterUtility::sanitizeFilters($filters);
-        $filters = FilterUtility::validateDateRange($filters);
-        
-        return $this->paymentModel->getAllPayments($filters);
-    }
-
-    /**
-     * Enhanced search payments with filtering
+     * Enhanced method to search payments by term
      * @param string $term Search term
      * @param array $additionalFilters Additional filters
      * @return array
      */
     public function searchPayments($term, $additionalFilters = []) {
         return $this->paymentModel->searchPayments($term, $additionalFilters);
-    }
-
-    /**
-     * Get total count of payments for pagination
-     * @param array $filters Filter parameters
-     * @return int
-     */
-    public function getTotalPaymentsCount($filters = []) {
-        require_once __DIR__ . '/../utilities/FilterUtility.php';
-        
-        $filters = FilterUtility::sanitizeFilters($filters);
-        $filters = FilterUtility::validateDateRange($filters);
-        
-        return $this->paymentModel->getTotalPaymentsCount($filters);
     }
 
     /**
@@ -237,14 +208,6 @@ class PaymentService extends BaseService {
 
     public function getPaymentWithDetails($paymentId) {
         return $this->paymentModel->getPaymentWithDetails($paymentId);
-    }
-            return null;
-        }
-
-        $payments = $this->paymentModel->getPaymentsByLoan($loanId);
-        $nextWeek = count($payments) + 1;
-
-        return $nextWeek;
     }
 
     /**
