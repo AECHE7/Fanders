@@ -48,3 +48,5 @@
         </script>
     </body>
 </html>
+
+<?php include_once BASE_PATH . '/templates/layout/session_timeout_modal.php'; ?>

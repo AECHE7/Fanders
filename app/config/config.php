@@ -1,13 +1,13 @@
 <?php
 
 // Database Settings
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'fanders');
-define('DB_USER', 'root');
-define('DB_PASS', ''); // Change this!
-define('DB_TYPE', 'mysql');    // New: Database Type
-define('DB_PORT', '3307');     // New: Database Port
-define('DB_POOL_MODE', false); // New: Pool Mode (set to false for a single connection)
+define('DB_HOST', 'aws-1-ap-southeast-1.pooler.supabase.com');
+define('DB_NAME', 'postgres');
+define('DB_USER', 'postgres.smzpalngwpwylljdvppb');
+define('DB_PASS', '105489100018Gadiano');
+define('DB_TYPE', 'pgsql');    // Updated: Database Type to PostgreSQL
+define('DB_PORT', '6543');     // Updated: Database Port
+define('DB_POOL_MODE', 'transaction'); // Updated: Pool Mode for Supabase
 
 // Security Settings
 define('SESSION_NAME', 'lms_session');

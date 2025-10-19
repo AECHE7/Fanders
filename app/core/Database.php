@@ -16,8 +16,8 @@ class Database {
 
     private function __construct() {
         try {
-            // Build the PDO DSN (e.g., 'mysql:host=localhost;port=3306;dbname=fanders_lms')
-            $dsn = "{$this->dbType}:host={$this->host};port={$this->port};dbname={$this->dbName}";
+            // Build the PDO DSN (e.g., 'pgsql:host=localhost;port=5432;dbname=fanders;connect_timeout=30;sslmode=require')
+            $dsn = "{$this->dbType}:host={$this->host};port={$this->port};dbname={$this->dbName};connect_timeout=30;sslmode=require";
 
             // Set PDO options
             $options = [

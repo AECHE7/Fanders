@@ -24,8 +24,13 @@ class AuthService extends BaseService {
     }
 
     public function checkSessionTimeout() {
-        $this->session->get('user_id');
-        return !$this->isLoggedIn() && $this->session->has('last_activity');
+        // Check if user is logged in first
+        if (!$this->isLoggedIn()) {
+            return false;
+        }
+
+        // Check if session has expired based on last activity
+        return $this->session->isExpired();
     }
 
     public function getCurrentUser() {

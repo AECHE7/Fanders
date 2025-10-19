@@ -15,6 +15,7 @@ class BaseModel {
 
     public function __construct() {
         // Initializes the Database singleton instance
+        set_time_limit(300); // Increase time limit to 5 minutes for database operations
         $this->db = Database::getInstance();
     }
 

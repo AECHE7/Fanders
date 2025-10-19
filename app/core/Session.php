@@ -6,6 +6,9 @@
  */
 class Session {
     public function __construct() {
+        // Increase time limit for session operations
+        set_time_limit(300); // 5 minutes
+
         // Only set session cookie parameters if session is not active
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
@@ -23,6 +26,9 @@ class Session {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
+
+        // Update last activity timestamp
+        $this->updateLastActivity();
     }
 
     public function set($key, $value) {
@@ -119,5 +125,21 @@ class Session {
         // Regenerate token after successful validation
         $this->setCsrfToken();
         return true;
+    }
+
+    public function updateLastActivity() {
+        $this->set('last_activity', time());
+    }
+
+    public function getLastActivity() {
+        return $this->get('last_activity', 0);
+    }
+
+    public function isExpired($lifetime = null) {
+        if ($lifetime === null) {
+            $lifetime = defined('SESSION_LIFETIME') ? SESSION_LIFETIME : 1800;
+        }
+        $lastActivity = $this->getLastActivity();
+        return (time() - $lastActivity) > $lifetime;
     }
 }

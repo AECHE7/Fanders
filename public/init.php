@@ -68,12 +68,13 @@ if (!isset($skip_auth_check) || $skip_auth_check !== true) {
         exit;
     }
 
-    // Check for session timeout
-    if ($auth->checkSessionTimeout()) {
-        // Session has timed out, redirect to login page with message
-        $session->setFlash('error', 'Your session has expired due to inactivity. Please login again.');
-        header('Location: ' . APP_URL . '/public/login.php');
-        exit;
+    // Check for session timeout - will be handled by JavaScript modal
+    // Store timeout status for JavaScript to detect
+    $sessionTimeout = $auth->checkSessionTimeout();
+    if ($sessionTimeout) {
+        $session->set('session_timed_out', true);
+    } else {
+        $session->remove('session_timed_out');
     }
     
     // Get current user data after successful login/check
