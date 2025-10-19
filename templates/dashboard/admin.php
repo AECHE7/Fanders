@@ -260,7 +260,13 @@
                                 <tr>
                                     <td class="ps-4"><?= htmlspecialchars($payment['client_name']) ?></td>
                                     <td>₱<?= number_format($payment['amount'], 2) ?></td>
-                                    <td>Week <?= $payment['week_number'] ?>/17</td>
+                                    <td>
+                                        <?php if (isset($payment['week_number'])): ?>
+                                            Week <?= $payment['week_number'] ?>/17
+                                        <?php else: ?>
+                                            Payment #<?= $payment['id'] ?? 'N/A' ?>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?= date('M d, Y', strtotime($payment['payment_date'])) ?></td>
                                 </tr>
                                 <?php endforeach; ?>

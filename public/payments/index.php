@@ -14,6 +14,7 @@ $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier', 'account-o
 // Initialize services
 $paymentService = new PaymentService();
 $loanService = new LoanService();
+$clientService = new ClientService();
 
 // --- 1. Handle Filters and Search ---
 require_once '../../app/utilities/FilterUtility.php';

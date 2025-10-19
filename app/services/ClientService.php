@@ -47,7 +47,8 @@ class ClientService extends BaseService {
         
         $filters = FilterUtility::validateDateRange($filters);
         
-        return $this->clientModel->getAllClients($filters);
+        $result = $this->clientModel->getAllClients($filters);
+        return is_array($result) ? $result : [];
     }
 
     /**
@@ -73,6 +74,11 @@ class ClientService extends BaseService {
             $clients = CacheUtility::remember($cacheKey, function() use ($filters, $service) {
                 return $service->getAllClients($filters);
             }, 600); // Cache for 10 minutes
+        }
+        
+        // Ensure $clients is an array
+        if (!is_array($clients)) {
+            $clients = [];
         }
         
         $formatted = [];
@@ -138,7 +144,8 @@ class ClientService extends BaseService {
      * @return array
      */
     public function searchClients($term, $additionalFilters = []) {
-        return $this->clientModel->searchClients($term, $additionalFilters);
+        $result = $this->clientModel->searchClients($term, $additionalFilters);
+        return is_array($result) ? $result : [];
     }
 
     /**
@@ -148,7 +155,8 @@ class ClientService extends BaseService {
      * @return array
      */
     public function getClientsByStatus($status, $additionalFilters = []) {
-        return $this->clientModel->getClientsByStatus($status, $additionalFilters);
+        $result = $this->clientModel->getClientsByStatus($status, $additionalFilters);
+        return is_array($result) ? $result : [];
     }
 
     /**
@@ -157,7 +165,8 @@ class ClientService extends BaseService {
      * @return array
      */
     public function getActiveClients($filters = []) {
-        return $this->clientModel->getActiveClients($filters);
+        $result = $this->clientModel->getActiveClients($filters);
+        return is_array($result) ? $result : [];
     }
 
     /**
