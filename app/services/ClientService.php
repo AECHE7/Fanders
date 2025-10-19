@@ -199,14 +199,6 @@ class ClientService extends BaseService {
     }
 
     /**
-     * Retrieves general statistics about the client base (counts by status, recent clients).
-     * @return array
-     */
-    public function getClientStats() {
-        return $this->clientModel->getClientStats();
-    }
-
-    /**
      * Fetches all loan records for a given client.
      * NOTE: Outstanding balance calculation must be handled in the dedicated LoanService.
      * @param int $clientId
