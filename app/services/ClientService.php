@@ -68,9 +68,10 @@ class ClientService extends BaseService {
             require_once __DIR__ . '/../utilities/CacheUtility.php';
             
             $cacheKey = CacheUtility::generateKey('clients_dropdown', $filters);
+            $service = $this;
             
-            $clients = CacheUtility::remember($cacheKey, function() use ($filters) {
-                return $this->getAllClients($filters);
+            $clients = CacheUtility::remember($cacheKey, function() use ($filters, $service) {
+                return $service->getAllClients($filters);
             }, 600); // Cache for 10 minutes
         }
         
@@ -100,9 +101,10 @@ class ClientService extends BaseService {
         require_once __DIR__ . '/../utilities/CacheUtility.php';
         
         $cacheKey = CacheUtility::generateKey('client_stats');
+        $clientModel = $this->clientModel;
         
-        return CacheUtility::remember($cacheKey, function() {
-            return $this->clientModel->getClientStats();
+        return CacheUtility::remember($cacheKey, function() use ($clientModel) {
+            return $clientModel->getClientStats();
         }, 300); // Cache for 5 minutes
     }
 
