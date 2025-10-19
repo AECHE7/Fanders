@@ -47,6 +47,24 @@ if ($auth->checkSessionTimeout()) {
     exit;
 }
 
+// Get current user and role (safe defaulting)
+$currentUser = $auth->getCurrentUser();
+
+// Use 'role' string directly
+$userRole = isset($currentUser['role']) ? $currentUser['role'] : '';
+// For display, format role if needed
+$roleName = isset($currentUser['role_display']) ? $currentUser['role_display'] : ucfirst(str_replace('-', ' ', $userRole));
+
+// Parse first and last name from 'name'
+$fullName = isset($currentUser['name']) ? $currentUser['name'] : '';
+$nameParts = explode(' ', $fullName, 2);
+$firstName = $nameParts[0] ?? '';
+$lastName = $nameParts[1] ?? '';
+$initials = ($firstName ? substr($firstName, 0, 1) : '') . ($lastName ? substr($lastName, 0, 1) : '');
+
+// For username, prefer 'username', fallback to 'email'
+$usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
+
 // Main content
 ?>
 <!DOCTYPE html>
@@ -80,22 +98,31 @@ if ($auth->checkSessionTimeout()) {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <?php if ($auth->isLoggedIn()): ?>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="<?= APP_URL ?>/public/dashboard.php">Dashboard</a>
-                    </li>
+                    </li> -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <div class="d-inline-flex align-items-center">
+                        <a class="nav-link dropdown-toggle px-3 d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="d-flex align-items-center">
                                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                    <span class="fw-bold"><?= substr($session->get('user_first_name') ?? '', 0, 1) . substr($session->get('user_last_name') ?? '', 0, 1) ?></span>
+                                    <span class="fw-bold"><?= htmlspecialchars($initials) ?></span>
                                 </div>
-                                <span><?= htmlspecialchars($session->get('user_first_name') ?? '') ?></span>
+                                <span class="d-none d-md-inline"><?= htmlspecialchars($firstName) ?></span>
                             </div>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/public/dashboard.php">Dashboard</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown" style="z-index: 1050; position: absolute;">
+                            <li class="dropdown-header">
+                            <i data-feather="user" class="me-2" style="width: 16px; height: 16px;"></i>Signed in as<br/><strong><?= htmlspecialchars($usernameDisplay) ?></strong></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/public/logout.php">Sign out</a></li>
+                            <li><span class="dropdown-item-text"><span class="badge bg-secondary">
+                            <i data-feather="user-check" class="me-2" style="width: 16px; height: 16px;"></i><?= $roleName ?></span></span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="<?= APP_URL ?>/public/users/view.php?id=<?= $currentUser['id'] ?>">
+                                <i data-feather="settings" class="me-2" style="width: 16px; height: 16px;"></i> Settings
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="<?= APP_URL ?>/public/logout.php">
+                            <i data-feather="log-out" class="me-2" style="width: 16px; height: 16px;"></i>Sign out</a></li>
                         </ul>
                     </li>
                     <?php else: ?>
@@ -127,15 +154,14 @@ if ($auth->checkSessionTimeout()) {
                     
                     <?php if ($auth->isLoggedIn()): ?>
                     <!-- User is logged in, show welcome message -->
-                    <div class="notion-page-title"><h1>Welcome back, <?= htmlspecialchars($session->get('user_first_name') ?? '') ?>!</h1></div>
-                    <p class="lead mb-4">Continue managing your loans.</p>
+                    <div class="notion-page-title"><h1>Welcome back!</h1></div>
+                    <p class="lead mb-4">Continue managing loans.</p>
                     <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-primary btn-lg px-4 me-2">Go to Dashboard</a>
                     <?php else: ?>
                     <!-- User is not logged in, show hero content -->
                     <div class="notion-page-title"><h1>Loan Management System</h1></div>
                     <p class="lead mb-4">A comprehensive solution for managing loans, borrowers, and transactions with a clean, intuitive interface.</p>
                     <a href="<?= APP_URL ?>/public/login.php" class="btn btn-primary btn-lg px-4">Sign In</a>
-                    <p class="small text-muted mt-3">Default login: admin.1@fanders.com / admin123</p>
                     <?php endif; ?>
                 </div>
             </div>
