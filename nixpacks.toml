@@ -2,7 +2,7 @@
 nixPkgs = ["php83", "php83Extensions.pdo_pgsql", "php83Extensions.mbstring", "php83Extensions.session", "php83Packages.composer"]
 
 [phases.install]
-cmds = ["composer install --no-dev --optimize-autoloader"]
+cmds = ["composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction"]
 
 [phases.build]
 cmds = ["echo 'PHP app ready for deployment'"]
