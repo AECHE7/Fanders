@@ -101,12 +101,15 @@ class ClientService extends BaseService {
         
         $cacheKey = CacheUtility::generateKey('client_stats');
         
+        return CacheUtility::remember($cacheKey, function() {
+            return $this->clientModel->getClientStats();
+        }, 300); // Cache for 5 minutes
+    }
+
     /**
-     * Invalidate client-related cache entries
+     * Invalidate client-related caches
      */
-    protected function invalidateCache() {
-        require_once __DIR__ . '/../utilities/CacheUtility.php';
-        
+    public function invalidateCache() {
         // Invalidate client statistics cache
         CacheUtility::forget(CacheUtility::generateKey('client_stats'));
         
@@ -124,7 +127,9 @@ class ClientService extends BaseService {
         
         // Clean expired entries
         CacheUtility::cleanExpired();
-    }    /**
+    }
+
+    /**
      * Enhanced search clients with filtering
      * @param string $term Search term
      * @param array $additionalFilters Additional filters
