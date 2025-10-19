@@ -87,9 +87,9 @@ if ($auth->checkSessionTimeout()) {
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="d-inline-flex align-items-center">
                                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                                    <span class="fw-bold"><?= substr($session->get('user_first_name'), 0, 1) . substr($session->get('user_last_name'), 0, 1) ?></span>
+                                    <span class="fw-bold"><?= substr($session->get('user_first_name') ?? '', 0, 1) . substr($session->get('user_last_name') ?? '', 0, 1) ?></span>
                                 </div>
-                                <span><?= htmlspecialchars($session->get('user_first_name')) ?></span>
+                                <span><?= htmlspecialchars($session->get('user_first_name') ?? '') ?></span>
                             </div>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
@@ -127,7 +127,7 @@ if ($auth->checkSessionTimeout()) {
                     
                     <?php if ($auth->isLoggedIn()): ?>
                     <!-- User is logged in, show welcome message -->
-                    <div class="notion-page-title"><h1>Welcome back, <?= htmlspecialchars($session->get('user_first_name')) ?>!</h1></div>
+                    <div class="notion-page-title"><h1>Welcome back, <?= htmlspecialchars($session->get('user_first_name') ?? '') ?>!</h1></div>
                     <p class="lead mb-4">Continue managing your loans.</p>
                     <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-primary btn-lg px-4 me-2">Go to Dashboard</a>
                     <?php else: ?>
