@@ -22,36 +22,155 @@ class LoanService extends BaseService {
         $this->setModel($this->loanModel);
     }
 
+    /**
+     * Enhanced method to get loan with client information
+     * @param int $id Loan ID
+     * @return array|false
+     */
     public function getLoanWithClient($id) {
         return $this->loanModel->getLoanWithClient($id);
     }
 
-    public function getAllLoansWithClients() {
-        return $this->loanModel->getAllLoansWithClients();
+    /**
+     * Enhanced method to get all loans with clients and filtering support
+     * @param array $filters Filter parameters
+     * @return array
+     */
+    public function getAllLoansWithClients($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        // Validate and sanitize filters
+        $filters = FilterUtility::sanitizeFilters($filters, [
+            'allowed_statuses' => [
+                LoanModel::STATUS_APPLICATION,
+                LoanModel::STATUS_APPROVED,
+                LoanModel::STATUS_ACTIVE,
+                LoanModel::STATUS_COMPLETED,
+                LoanModel::STATUS_DEFAULTED
+            ]
+        ]);
+        
+        $filters = FilterUtility::validateDateRange($filters);
+        
+        return $this->loanModel->getAllLoansWithClients($filters);
     }
 
-    public function searchLoans($term) {
-        return $this->loanModel->searchLoans($term);
+    /**
+     * Enhanced search loans with filtering
+     * @param string $term Search term
+     * @param array $additionalFilters Additional filters
+     * @return array
+     */
+    public function searchLoans($term, $additionalFilters = []) {
+        return $this->loanModel->searchLoans($term, $additionalFilters);
     }
 
-    public function getLoansByClient($clientId) {
-        return $this->loanModel->getLoansByClient($clientId);
+    /**
+     * Enhanced method to get loans by client with filtering
+     * @param int $clientId Client ID
+     * @param array $filters Additional filters
+     * @return array
+     */
+    public function getLoansByClient($clientId, $filters = []) {
+        $filters['client_id'] = $clientId;
+        return $this->getAllLoansWithClients($filters);
     }
 
-    public function getActiveLoans() {
-        return $this->loanModel->getActiveLoans();
+    /**
+     * Enhanced method to get active loans with filtering
+     * @param array $filters Filter parameters
+     * @return array
+     */
+    public function getActiveLoans($filters = []) {
+        return $this->loanModel->getActiveLoans($filters);
     }
 
-    public function getAllActiveLoansWithClients() {
-        return $this->loanModel->getAllActiveLoansWithClients();
+    /**
+     * Enhanced method to get all active loans with clients and filtering
+     * @param array $filters Filter parameters
+     * @return array
+     */
+    public function getAllActiveLoansWithClients($filters = []) {
+        return $this->loanModel->getAllActiveLoansWithClients($filters);
     }
 
-    public function getLoansByStatus($status) {
-        return $this->loanModel->getLoansByStatus($status);
+    /**
+     * Enhanced method to get loans by status with filtering
+     * @param string $status Loan status
+     * @param array $filters Additional filters
+     * @return array
+     */
+    public function getLoansByStatus($status, $filters = []) {
+        return $this->loanModel->getLoansByStatus($status, $filters);
     }
     
-    public function getLoanStats() {
-        return $this->loanModel->getLoanStats();
+    /**
+     * Get total count of loans for pagination
+     * @param array $filters Filter parameters
+     * @return int
+     */
+    public function getTotalLoansCount($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        $filters = FilterUtility::sanitizeFilters($filters);
+        $filters = FilterUtility::validateDateRange($filters);
+        
+        return $this->loanModel->getTotalLoansCount($filters);
+    }
+
+    /**
+     * Get paginated loan data with metadata
+     * @param array $filters Filter parameters
+     * @return array
+     */
+    public function getPaginatedLoans($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        // Get total count first
+        $totalCount = $this->getTotalLoansCount($filters);
+        
+        // Get paginated data
+        $loans = $this->getAllLoansWithClients($filters);
+        
+        // Get pagination info
+        $paginationInfo = FilterUtility::getPaginationInfo($filters, $totalCount);
+        
+        return [
+            'data' => $loans,
+            'pagination' => $paginationInfo,
+            'filters' => $filters
+        ];
+    }
+    /**
+     * Get loan statistics with caching
+     * @param bool $useCache Whether to use cache
+     * @return array
+     */
+    public function getLoanStats($useCache = true) {
+        if (!$useCache) {
+            return $this->loanModel->getLoanStats();
+        }
+
+        require_once __DIR__ . '/../utilities/CacheUtility.php';
+        
+        $cacheKey = CacheUtility::generateKey('loan_stats');
+        
+        return CacheUtility::remember($cacheKey, function() {
+            return $this->loanModel->getLoanStats();
+        }, 300); // Cache for 5 minutes
+    }
+
+    /**
+     * Invalidate loan-related cache entries
+     */
+    protected function invalidateCache() {
+        require_once __DIR__ . '/../utilities/CacheUtility.php';
+        
+        // Invalidate loan statistics cache
+        CacheUtility::forget(CacheUtility::generateKey('loan_stats'));
+        
+        // Clean expired entries
+        CacheUtility::cleanExpired();
     }
 
     /**

@@ -17,30 +17,55 @@ $clientService = new ClientService();
 
 // --- 1. Prepare Filters from GET parameters ---
 require_once '../../app/utilities/FilterUtility.php';
-$filters = FilterUtility::sanitizeFilters($_GET);
+
+// Enhanced filter handling with validation
+$filterOptions = [
+    'allowed_statuses' => ['application', 'approved', 'active', 'completed', 'defaulted']
+];
+$filters = FilterUtility::sanitizeFilters($_GET, $filterOptions);
 
 // Rename start_date/end_date to date_from/date_to for consistency
-if (isset($filters['start_date'])) {
-    $filters['date_from'] = $filters['start_date'];
-    unset($filters['start_date']);
+if (isset($_GET['start_date'])) {
+    $filters['date_from'] = $_GET['start_date'];
 }
-if (isset($filters['end_date'])) {
-    $filters['date_to'] = $filters['end_date'];
-    unset($filters['end_date']);
+if (isset($_GET['end_date'])) {
+    $filters['date_to'] = $_GET['end_date'];
 }
 
 $filters = FilterUtility::validateDateRange($filters);
 
-// --- 2. Fetch Core Data ---
+// --- 2. Fetch Core Data with Enhanced Pagination ---
 
-// Get loans based on applied filters (assuming getAllLoansWithClients handles filters)
-$loans = $loanService->getAllLoansWithClients($filters);
+try {
+    // Get paginated loans with enhanced filtering
+    $paginatedLoans = $loanService->getPaginatedLoans($filters);
+    $loans = $paginatedLoans['data'];
+    $pagination = $paginatedLoans['pagination'];
 
-// Get all clients for the filter dropdown
-$clients = $clientService->getAllForSelect();
+    // Get all clients for the filter dropdown
+    $clients = $clientService->getAllForSelect();
 
-// Get loan statistics for the dashboard cards
-$loanStats = $loanService->getLoanStats();
+    // Get loan statistics for the dashboard cards
+    $loanStats = $loanService->getLoanStats();
+
+    // Prepare filter summary for display
+    $filterSummary = FilterUtility::getFilterSummary($filters);
+} catch (Exception $e) {
+    require_once '../../app/utilities/ErrorHandler.php';
+    $errorMessage = ErrorHandler::handleApplicationError('loading loan data', $e, [
+        'filters' => $filters,
+        'user_id' => $auth->getCurrentUser()['id'] ?? null
+    ]);
+    
+    $session->setFlash('error', $errorMessage);
+    
+    // Set default empty values
+    $loans = [];
+    $pagination = ['total_records' => 0, 'current_page' => 1, 'total_pages' => 1];
+    $clients = [];
+    $loanStats = [];
+    $filterSummary = [];
+}
 
 
 // --- 3. Handle POST Actions (e.g., Approve/Disburse) ---

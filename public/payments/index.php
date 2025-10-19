@@ -17,9 +17,11 @@ $loanService = new LoanService();
 
 // --- 1. Handle Filters and Search ---
 require_once '../../app/utilities/FilterUtility.php';
+
+// Enhanced filter handling
 $filters = FilterUtility::sanitizeFilters($_GET);
 
-// Set default date range for payments (last 30 days)
+// Set default date range for payments (last 30 days) if not specified
 if (empty($filters['date_from'])) {
     $filters['date_from'] = date('Y-m-d', strtotime('-30 days'));
 }
@@ -29,26 +31,30 @@ if (empty($filters['date_to'])) {
 
 $filters = FilterUtility::validateDateRange($filters);
 
-// --- 2. Fetch Payments Data ---
+// --- 2. Fetch Payments Data with Enhanced Pagination ---
 try {
-    $payments = $paymentService->getAllPayments($filters);
-    $totalPayments = $paymentService->getTotalPaymentsCount($filters);
+    // Get paginated payments with enhanced filtering
+    $paginatedPayments = $paymentService->getPaginatedPayments($filters);
+    $payments = $paginatedPayments['data'];
+    $pagination = $paginatedPayments['pagination'];
+    $totalPayments = $pagination['total_records'];
 } catch (Exception $e) {
     error_log("Payments fetch error: " . $e->getMessage());
     $payments = [];
+    $pagination = [];
     $totalPayments = 0;
 }
 
 // --- 3. Get Additional Data for Display ---
-$clients = []; // For filter dropdown
-$loans = []; // For filter dropdown
 
 // Get clients for filter dropdown (active clients only)
-$clientModel = new ClientModel();
-$clients = $clientModel->getActiveClients();
+$clients = $clientService->getAllForSelect(['status' => 'active']);
 
 // Get recent loans for filter dropdown
 $loans = $loanService->getAllActiveLoansWithClients();
+
+// Prepare filter summary for display
+$filterSummary = FilterUtility::getFilterSummary($filters);
 
 // --- 4. Prepare Data for Template ---
 $pageTitle = "Payment Records";

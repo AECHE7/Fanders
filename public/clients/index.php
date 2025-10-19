@@ -15,8 +15,15 @@ $clientService = new ClientService();
 
 // --- 1. Process Filters ---
 require_once '../../app/utilities/FilterUtility.php';
-$filters = FilterUtility::sanitizeFilters($_GET);
+
+// Enhanced filter handling with validation
+$filterOptions = [
+    'allowed_statuses' => ['active', 'inactive', 'blacklisted']
+];
+$filters = FilterUtility::sanitizeFilters($_GET, $filterOptions);
 $filters = FilterUtility::validateDateRange($filters);
+
+// --- 2. Handle POST Actions (Status Change, Delete) --- (keeping existing POST logic unchanged)
 
 // --- 2. Handle POST Actions (Status Change, Delete) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
@@ -73,35 +80,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     exit;
 }
 
-// --- 3. Fetch Data for View ---
+// --- 3. Fetch Data for View with Enhanced Filtering ---
 
-if (!empty($filters['search'])) {
-    // Use the search method if a term is provided
-    $clients = $clientService->searchClients($filters['search']);
-} elseif (!empty($filters['status']) && in_array($filters['status'], ['active', 'inactive', 'blacklisted'])) {
-    // Use the status filter method if a valid status is provided
-    $clients = $clientService->getClientsByStatus($filters['status']);
-} else {
-    // Default: Get all clients
-    $clients = $clientService->getAllClients();
+try {
+    // Get paginated clients with enhanced filtering
+    $paginatedClients = $clientService->getPaginatedClients($filters);
+    $clients = $paginatedClients['data'];
+    $pagination = $paginatedClients['pagination'];
+
+    // No need for client-side date filtering anymore as it's handled in the service
+
+    // Prepare client status display map for the view
+    $statusMap = [
+        'active' => ['class' => 'bg-success', 'text' => 'Active'],
+        'inactive' => ['class' => 'bg-warning', 'text' => 'Inactive'],
+        'blacklisted' => ['class' => 'bg-danger', 'text' => 'Blacklisted']
+    ];
+
+    // Prepare filter summary for display
+    $filterSummary = FilterUtility::getFilterSummary($filters);
+} catch (Exception $e) {
+    require_once '../../app/utilities/ErrorHandler.php';
+    $errorMessage = ErrorHandler::handleApplicationError('loading client data', $e, [
+        'filters' => $filters,
+        'user_id' => $auth->getCurrentUser()['id'] ?? null
+    ]);
+    
+    $session->setFlash('error', $errorMessage);
+    
+    // Set default empty values
+    $clients = [];
+    $pagination = ['total_records' => 0, 'current_page' => 1, 'total_pages' => 1];
+    $statusMap = [
+        'active' => ['class' => 'bg-success', 'text' => 'Active'],
+        'inactive' => ['class' => 'bg-warning', 'text' => 'Inactive'],
+        'blacklisted' => ['class' => 'bg-danger', 'text' => 'Blacklisted']
+    ];
+    $filterSummary = [];
 }
-
-// Apply date filtering if specified (client-side for now, can be moved to service later)
-if (!empty($filters['date_from']) || !empty($filters['date_to'])) {
-    $clients = array_filter($clients, function($client) use ($filters) {
-        $createdDate = strtotime($client['created_at']);
-        $fromCheck = empty($filters['date_from']) || $createdDate >= strtotime($filters['date_from']);
-        $toCheck = empty($filters['date_to']) || $createdDate <= strtotime($filters['date_to'] . ' 23:59:59');
-        return $fromCheck && $toCheck;
-    });
-}
-
-// Prepare client status display map for the view
-$statusMap = [
-    'active' => ['class' => 'bg-success', 'text' => 'Active'],
-    'inactive' => ['class' => 'bg-warning', 'text' => 'Inactive'],
-    'blacklisted' => ['class' => 'bg-danger', 'text' => 'Blacklisted']
-];
 
 $pageTitle = "Manage Clients";
 include_once BASE_PATH . '/templates/layout/header.php';

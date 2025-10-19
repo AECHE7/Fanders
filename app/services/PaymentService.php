@@ -147,6 +147,88 @@ class PaymentService extends BaseService {
         return $summary;
     }
 
+    /**
+     * Enhanced method to get all payments with filtering support
+     * @param array $filters Filter parameters
+     * @return array
+     */
+    public function getAllPayments($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        // Validate and sanitize filters
+        $filters = FilterUtility::sanitizeFilters($filters);
+        $filters = FilterUtility::validateDateRange($filters);
+        
+        return $this->paymentModel->getAllPayments($filters);
+    }
+
+    /**
+     * Enhanced search payments with filtering
+     * @param string $term Search term
+     * @param array $additionalFilters Additional filters
+     * @return array
+     */
+    public function searchPayments($term, $additionalFilters = []) {
+        return $this->paymentModel->searchPayments($term, $additionalFilters);
+    }
+
+    /**
+     * Get total count of payments for pagination
+     * @param array $filters Filter parameters
+     * @return int
+     */
+    public function getTotalPaymentsCount($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        $filters = FilterUtility::sanitizeFilters($filters);
+        $filters = FilterUtility::validateDateRange($filters);
+        
+        return $this->paymentModel->getTotalPaymentsCount($filters);
+    }
+
+    /**
+     * Get paginated payment data with metadata
+     * @param array $filters Filter parameters
+     * @return array
+     */
+    public function getPaginatedPayments($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        // Get total count first
+        $totalCount = $this->getTotalPaymentsCount($filters);
+        
+        // Get paginated data
+        $payments = $this->getAllPayments($filters);
+        
+        // Get pagination info
+        $paginationInfo = FilterUtility::getPaginationInfo($filters, $totalCount);
+        
+        return [
+            'data' => $payments,
+            'pagination' => $paginationInfo,
+            'filters' => $filters
+        ];
+    }
+
+    /**
+     * Enhanced method to get recent payments with filtering
+     * @param int $limit Number of recent payments
+     * @param array $additionalFilters Additional filters
+     * @return array
+     */
+    public function getRecentPayments($limit = 10, $additionalFilters = []) {
+        return $this->paymentModel->getRecentPayments($limit, $additionalFilters);
+    }
+
+    /**
+     * Enhanced method to get overdue payments
+     * @param array $filters Additional filters
+     * @return array
+     */
+    public function getOverduePayments($filters = []) {
+        return $this->paymentModel->getOverduePayments($filters);
+    }
+
     // --- Utility Methods ---
 
     public function getPaymentsByLoan($loanId) {
@@ -156,48 +238,6 @@ class PaymentService extends BaseService {
     public function getPaymentWithDetails($paymentId) {
         return $this->paymentModel->getPaymentWithDetails($paymentId);
     }
-
-    /**
-     * Get overdue payments (loans with missed payments)
-     * @return array
-     */
-    public function getOverduePayments() {
-        // Get active loans that are overdue
-        $sql = "SELECT l.*, c.name as client_name, c.phone_number
-                FROM loans l
-                JOIN clients c ON l.client_id = c.id
-                WHERE l.status = 'active'
-                AND l.due_date < CURDATE()
-                ORDER BY l.due_date ASC";
-
-        return $this->db->resultSet($sql);
-    }
-
-    /**
-     * Get recent payments
-     * @param int $limit
-     * @return array
-     */
-    public function getRecentPayments($limit = 10) {
-        $sql = "SELECT p.*, l.total_loan_amount, c.name as client_name,
-                (SELECT COUNT(*) FROM payments p2 WHERE p2.loan_id = p.loan_id AND p2.payment_date <= p.payment_date) as week_number
-                FROM payments p
-                JOIN loans l ON p.loan_id = l.id
-                JOIN clients c ON l.client_id = c.id
-                ORDER BY p.payment_date DESC
-                LIMIT ?";
-
-        return $this->db->resultSet($sql, [$limit]);
-    }
-
-    /**
-     * Get next payment week for a loan
-     * @param int $loanId
-     * @return int|null
-     */
-    public function getNextPaymentWeek($loanId) {
-        $loan = $this->loanModel->findById($loanId);
-        if (!$loan || $loan['status'] !== 'active') {
             return null;
         }
 

@@ -42,17 +42,51 @@ class BaseService {
     public function create($data) {
         if (!$this->model) { $this->setErrorMessage("Model not set."); return false; }
         // The specific service (e.g., LoanService) should perform validation BEFORE calling this.
-        return $this->model->create($data);
+        $result = $this->model->create($data);
+        
+        // Invalidate related cache after successful creation
+        if ($result) {
+            $this->invalidateCache();
+        }
+        
+        return $result;
     }
 
     public function update($id, $data) {
         if (!$this->model) { $this->setErrorMessage("Model not set."); return false; }
-        return $this->model->update($id, $data);
+        $result = $this->model->update($id, $data);
+        
+        // Invalidate related cache after successful update
+        if ($result) {
+            $this->invalidateCache();
+        }
+        
+        return $result;
     }
 
     public function delete($id) {
         if (!$this->model) { $this->setErrorMessage("Model not set."); return false; }
-        return $this->model->delete($id);
+        $result = $this->model->delete($id);
+        
+        // Invalidate related cache after successful deletion
+        if ($result) {
+            $this->invalidateCache();
+        }
+        
+        return $result;
+    }
+
+    /**
+     * Invalidate relevant cache entries when data changes
+     * Override in specific services to handle cache invalidation
+     */
+    protected function invalidateCache() {
+        // Base implementation - can be overridden in specific services
+        if (class_exists('CacheUtility')) {
+            require_once __DIR__ . '/../utilities/CacheUtility.php';
+            // Clean expired entries as a basic cleanup
+            CacheUtility::cleanExpired();
+        }
     }
 
     public function getByField($field, $value) {
@@ -125,24 +159,46 @@ class BaseService {
         return true;
     }
 
-    /**
-     * Executes a series of database operations within a single transaction.
-     * Crucial for ensuring data integrity (e.g., loan creation + transaction logging).
-     * @param callable $callback The function containing the database logic.
-     * @return mixed The result of the callback on success, or false on failure (sets error message).
+        /**
+     * Enhanced transaction wrapper with better error handling
+     * @param callable $callback The database operations to execute
+     * @return mixed Result of the transaction
+     * @throws Exception If transaction fails
      */
-    protected function transaction($callback) {
+    public function transaction($callback) {
         try {
             $this->db->beginTransaction();
             $result = $callback();
             $this->db->commit();
             return $result;
         } catch (Exception $e) {
-            $this->db->rollback();
-            // Log the detailed error, but return a generic message to the user
-            error_log("Transaction Error: " . $e->getMessage()); 
-            $this->setErrorMessage("A critical error occurred during the transaction. Please try again. [" . $e->getMessage() . "]");
+            $this->db->rollBack();
+            
+            // Use ErrorHandler for better logging
+            require_once __DIR__ . '/../utilities/ErrorHandler.php';
+            $userMessage = ErrorHandler::handleDatabaseError('transaction', $e, [
+                'service_class' => get_class($this)
+            ]);
+            
+            $this->setErrorMessage($userMessage);
             return false;
+        }
+    }
+
+    /**
+     * Enhanced error message setting with logging
+     * @param string $message Error message
+     * @param array $context Additional context for logging
+     */
+    public function setErrorMessage($message, $context = []) {
+        $this->errorMessage = $message;
+        
+        // Log the error for debugging
+        if (class_exists('ErrorHandler')) {
+            require_once __DIR__ . '/../utilities/ErrorHandler.php';
+            ErrorHandler::error($message, array_merge($context, [
+                'service_class' => get_class($this)
+            ]));
         }
     }
 }

@@ -29,53 +29,166 @@ class ClientService extends BaseService {
     }
 
     /**
-     * Retrieves all client records.
+     * Enhanced method to get all clients with filtering support
+     * @param array $filters Filter parameters
      * @return array
      */
-    public function getAllClients() {
-        return $this->clientModel->getAll('name', 'ASC');
+    public function getAllClients($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        // Validate and sanitize filters
+        $filters = FilterUtility::sanitizeFilters($filters, [
+            'allowed_statuses' => [
+                ClientModel::STATUS_ACTIVE,
+                ClientModel::STATUS_INACTIVE,
+                ClientModel::STATUS_BLACKLISTED
+            ]
+        ]);
+        
+        $filters = FilterUtility::validateDateRange($filters);
+        
+        return $this->clientModel->getAllClients($filters);
     }
 
     /**
-     * Retrieves all clients formatted for select dropdowns.
+     * Enhanced method to get all clients formatted for select dropdowns with caching
+     * @param array $filters Filter parameters (defaults to active clients only)
+     * @param bool $useCache Whether to use cache
      * @return array
      */
-    public function getAllForSelect() {
-        $clients = $this->clientModel->getAll('name', 'ASC');
+    public function getAllForSelect($filters = [], $useCache = true) {
+        // Default to active clients only for dropdowns
+        if (empty($filters['status'])) {
+            $filters['status'] = ClientModel::STATUS_ACTIVE;
+        }
+
+        if (!$useCache) {
+            $clients = $this->getAllClients($filters);
+        } else {
+            require_once __DIR__ . '/../utilities/CacheUtility.php';
+            
+            $cacheKey = CacheUtility::generateKey('clients_dropdown', $filters);
+            
+            $clients = CacheUtility::remember($cacheKey, function() use ($filters) {
+                return $this->getAllClients($filters);
+            }, 600); // Cache for 10 minutes
+        }
+        
         $formatted = [];
+        
         foreach ($clients as $client) {
             $formatted[] = [
                 'id' => $client['id'],
-                'name' => $client['name']
+                'name' => $client['name'],
+                'status' => $client['status']
             ];
         }
+        
         return $formatted;
     }
 
     /**
-     * Searches clients by name, email, or phone number.
-     * @param string $term
+     * Get client statistics with caching
+     * @param bool $useCache Whether to use cache
      * @return array
      */
-    public function searchClients($term) {
-        return $this->clientModel->searchClients($term);
+    public function getClientStats($useCache = true) {
+        if (!$useCache) {
+            return $this->clientModel->getClientStats();
+        }
+
+        require_once __DIR__ . '/../utilities/CacheUtility.php';
+        
+        $cacheKey = CacheUtility::generateKey('client_stats');
+        
+    /**
+     * Invalidate client-related cache entries
+     */
+    protected function invalidateCache() {
+        require_once __DIR__ . '/../utilities/CacheUtility.php';
+        
+        // Invalidate client statistics cache
+        CacheUtility::forget(CacheUtility::generateKey('client_stats'));
+        
+        // Invalidate dropdown cache (all variations)
+        $filters = [
+            ['status' => 'active'],
+            ['status' => 'inactive'],
+            ['status' => 'blacklisted'],
+            [] // Default filter
+        ];
+        
+        foreach ($filters as $filter) {
+            CacheUtility::forget(CacheUtility::generateKey('clients_dropdown', $filter));
+        }
+        
+        // Clean expired entries
+        CacheUtility::cleanExpired();
+    }    /**
+     * Enhanced search clients with filtering
+     * @param string $term Search term
+     * @param array $additionalFilters Additional filters
+     * @return array
+     */
+    public function searchClients($term, $additionalFilters = []) {
+        return $this->clientModel->searchClients($term, $additionalFilters);
     }
 
     /**
-     * Retrieves clients filtered by status.
-     * @param string $status
+     * Enhanced method to get clients by status with additional filtering
+     * @param string $status Client status
+     * @param array $additionalFilters Additional filters
      * @return array
      */
-    public function getClientsByStatus($status) {
-        return $this->clientModel->getClientsByStatus($status);
+    public function getClientsByStatus($status, $additionalFilters = []) {
+        return $this->clientModel->getClientsByStatus($status, $additionalFilters);
     }
 
     /**
-     * Retrieves only active clients.
+     * Enhanced method to get active clients with filtering
+     * @param array $filters Additional filters
      * @return array
      */
-    public function getActiveClients() {
-        return $this->clientModel->getActiveClients();
+    public function getActiveClients($filters = []) {
+        return $this->clientModel->getActiveClients($filters);
+    }
+
+    /**
+     * Get total count of clients for pagination
+     * @param array $filters Filter parameters
+     * @return int
+     */
+    public function getTotalClientsCount($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        $filters = FilterUtility::sanitizeFilters($filters);
+        $filters = FilterUtility::validateDateRange($filters);
+        
+        return $this->clientModel->getTotalClientsCount($filters);
+    }
+
+    /**
+     * Get paginated client data with metadata
+     * @param array $filters Filter parameters
+     * @return array
+     */
+    public function getPaginatedClients($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        // Get total count first
+        $totalCount = $this->getTotalClientsCount($filters);
+        
+        // Get paginated data
+        $clients = $this->getAllClients($filters);
+        
+        // Get pagination info
+        $paginationInfo = FilterUtility::getPaginationInfo($filters, $totalCount);
+        
+        return [
+            'data' => $clients,
+            'pagination' => $paginationInfo,
+            'filters' => $filters
+        ];
     }
 
     /**
