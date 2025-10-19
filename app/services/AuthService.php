@@ -82,6 +82,8 @@ class AuthService extends BaseService {
         // Authentication successful
         $this->session->set('user_id', $user['id']);
         $this->session->set('user_role', $user['role']);
+        $this->session->set('user_first_name', $user['first_name']);
+        $this->session->set('user_last_name', $user['last_name']);
 
         // Update last login time
         $this->userModel->updateLastLogin($user['id']);
