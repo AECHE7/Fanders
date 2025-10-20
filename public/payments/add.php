@@ -1,177 +1,177 @@
 <?php
 /**
- * Add transaction page for the Library Management System
+ * Loans Index Controller (index.php)
+ * Role: Displays a list of all loan applications, pending approvals, and active/completed loans.
+ * Integrates: LoanService, ClientService.
  */
 
-// Include configuration
-require_once '../../app/config/config.php';
+// Centralized initialization (handles sessions, auth, CSRF, and autoloader)
+require_once '../../public/init.php';
 
-// Start output buffering
-ob_start();
+// Enforce role-based access control (All staff roles can view loans)
+$auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account-officer', 'cashier']);
 
-// Include all required files
-function autoload($className) {
-    // Define the directories to look in
-    $directories = [
-        'app/core/',
-        'app/models/',
-        'app/services/',
-        'app/utilities/'
-    ];
-    
-    // Try to find the class file
-    foreach ($directories as $directory) {
-        $file = BASE_PATH . '/' . $directory . $className . '.php';
-        if (file_exists($file)) {
-            require_once $file;
-            return;
-        }
+// Initialize services
+$loanService = new LoanService();
+$clientService = new ClientService();
+
+// --- 1. Prepare Filters from GET parameters ---
+require_once '../../app/utilities/FilterUtility.php';
+$filters = FilterUtility::sanitizeFilters($_GET);
+
+// Rename start_date/end_date to date_from/date_to for consistency
+if (isset($filters['start_date'])) {
+    $filters['date_from'] = $filters['start_date'];
+    unset($filters['start_date']);
+}
+if (isset($filters['end_date'])) {
+    $filters['date_to'] = $filters['end_date'];
+    unset($filters['end_date']);
+}
+
+$filters = FilterUtility::validateDateRange($filters);
+
+// --- 2. Fetch Core Data ---
+
+// Get pagination parameters
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+
+// Get loans based on applied filters with pagination
+$loans = $loanService->getAllLoansWithClients($filters, $page, $limit);
+
+// Get total count for pagination
+$totalLoans = $loanService->getTotalLoansCount($filters);
+$totalPages = ceil($totalLoans / $limit);
+
+// Initialize pagination utility
+require_once '../../app/utilities/PaginationUtility.php';
+$pagination = new PaginationUtility($totalLoans, $page, $limit, 'page');
+
+// Get all clients for the filter dropdown
+$clients = $clientService->getAllForSelect();
+
+// Get loan statistics for the dashboard cards
+$loanStats = $loanService->getLoanStats();
+
+
+// --- 3. Handle PDF Export ---
+if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
+    try {
+        $reportService = new ReportService();
+        $exportData = $loanService->getAllLoansWithClients($filters, 1, 10000); // Get all data without pagination
+        $reportService->exportLoanReportPDF($exportData, $filters);
+    } catch (Exception $e) {
+        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/loans/index.php?' . http_build_query($filters));
+        exit;
     }
-}
-
-// Register autoloader
-spl_autoload_register('autoload');
-
-// Initialize session management
-$session = new Session();
-
-// Initialize authentication service
-$auth = new AuthService();
-
-// Initialize CSRF protection
-$csrf = new CSRF();
-
-// Check if user is logged in
-if (!$auth->isLoggedIn()) {
-    // Redirect to login page
-    $session->setFlash('error', 'Please login to access this page.');
-    header('Location: ' . APP_URL . '/public/login.php');
     exit;
 }
 
-// Check for session timeout
-if ($auth->checkSessionTimeout()) {
-    // Session has timed out, redirect to login page with message
-    $session->setFlash('error', 'Your session has expired. Please login again.');
-    header('Location: ' . APP_URL . '/public/login.php');
-    exit;
-}
-
-// Get current user data
-$user = $auth->getCurrentUser();
-$userRole = $user['role'];
-
-// Check if user has permission to add transactions (Super Admin or Admin)
-if (!$auth->hasRole(['super-admin', 'admin'])) {
-    // Redirect to dashboard with error message
-    $session->setFlash('error', 'You do not have permission to access this page.');
-    header('Location: ' . APP_URL . '/public/dashboard.php');
-    exit;
-}
-
-// Initialize transaction service
-$transactionService = new TransactionService();
-
-// Default structure for the form
-$newTransaction = [
-    'user_id' => '',
-    'book_id' => '',
-    'borrow_date' => '',
-    'due_date' => '',
-    'return_date' => null,
-    'status' => 'borrowed',
-];
-
-$error = '';
-$formSubmitted = false;
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $formSubmitted = true;
-    
-    // Validate CSRF token
+// --- 4. Handle POST Actions (e.g., Approve/Disburse) ---
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!$csrf->validateRequest()) {
-        $error = 'Invalid form submission. Please try again.';
-    } else {
-        // Gather form input
-        $newTransaction = [
-            'user_id' => isset($_POST['user_id']) ? (int)$_POST['user_id'] : '',
-            'book_id' => isset($_POST['book_id']) ? (int)$_POST['book_id'] : '',
-            'borrow_date' => isset($_POST['borrow_date']) ? trim($_POST['borrow_date']) : '',
-            'due_date' => isset($_POST['due_date']) ? trim($_POST['due_date']) : '',
-            'return_date' => null,
-            'status' => 'borrowed',
-        ];
-        
-        // Validate required fields
-        if (empty($newTransaction['user_id']) || empty($newTransaction['book_id']) || empty($newTransaction['borrow_date']) || empty($newTransaction['due_date'])) {
-            $error = 'Please fill in all required fields.';
+        $session->setFlash('error', 'Invalid security token. Please try again.');
+        header('Location: ' . APP_URL . '/public/loans/index.php');
+        exit;
+    }
+
+    // Only Managers/Admins can perform approval/disbursement
+    if (!$auth->hasRole(['super-admin', 'admin', 'manager'])) {
+        $session->setFlash('error', 'You do not have permission for this action.');
+        header('Location: ' . APP_URL . '/public/loans/index.php');
+        exit;
+    }
+
+    $loanId = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $success = false;
+    $message = 'Action failed.';
+    $userId = $auth->getCurrentUser()['id'];
+
+    if ($loanId > 0) {
+        try {
+            switch ($_POST['action']) {
+                case 'approve':
+                    $success = $loanService->approveLoan($loanId, $userId);
+                    $message = $success ? 'Loan successfully approved. Ready for disbursement.' : $loanService->getErrorMessage();
+                    break;
+                case 'disburse':
+                    $success = $loanService->disburseLoan($loanId, $userId);
+                    $message = $success ? 'Funds disbursed. Loan is now active.' : $loanService->getErrorMessage();
+                    break;
+                case 'cancel': // Example of a loan cancellation action
+                    $success = $loanService->cancelLoan($loanId, $userId);
+                    $message = $success ? 'Loan application cancelled.' : $loanService->getErrorMessage();
+                    break;
+            }
+        } catch (Exception $e) {
+            $message = "Database error during action: " . $e->getMessage();
         }
-        
-        if (empty($error)) {
-        // Add transaction using TransactionService borrowBook method
-        $transactionId = $transactionService->borrowBook($newTransaction['user_id'], $newTransaction['book_id'], (strtotime($newTransaction['due_date']) - strtotime($newTransaction['borrow_date'])) / (60 * 60 * 24));
-        
-        if ($transactionId) {
-            // Transaction added successfully
-            $session->setFlash('success', 'Transaction added successfully.');
-            header('Location: ' . APP_URL . '/public/transactions/index.php');
-            exit;
-        } else {
-            // Failed to add transaction
-            $error = $transactionService->getErrorMessage();
-        }
-        }
+    }
+
+    $session->setFlash($success ? 'success' : 'error', $message);
+    header('Location: ' . APP_URL . '/public/loans/index.php');
+    exit;
+}
+
+// --- 4. Display View ---
+$pageTitle = "Loans Management";
+
+// Helper function to get loan status badge class (used in the template)
+function getLoanStatusBadgeClass($status) {
+    switch($status) {
+        case 'active': return 'primary';
+        case 'application': return 'info';
+        case 'approved': return 'warning';
+        case 'completed': return 'success';
+        case 'defaulted': return 'danger';
+        default: return 'secondary';
     }
 }
 
-// Include header
 include_once BASE_PATH . '/templates/layout/header.php';
-
-// Include navbar
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Add Transaction</h1>
+        <h1 class="h2">Payments Recording</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="<?= APP_URL ?>/public/transactions/index.php" class="btn btn-sm btn-outline-secondary">
-                <i data-feather="arrow-left"></i> Back to Transactions
+            <a href="<?= APP_URL ?>/public/payments/index.php" class="btn btn-sm btn-outline-secondary">
+                <i data-feather="arrow-left"></i> Back to Payments List
             </a>
         </div>
     </div>
-    
-    <?php if ($error): ?>
-        <div class="alert alert-danger">
-            <?= $error ?>
-        </div>
-    <?php endif; ?>
-    
-    <?php if ($formSubmitted && !$error): ?>
+
+    <!-- Flash Messages -->
+    <?php if ($session->hasFlash('success')): ?>
         <div class="alert alert-success">
-            Transaction added successfully.
+            <?= $session->getFlash('success') ?>
         </div>
     <?php endif; ?>
-    
-    <!-- Transaction Form -->
-    <div class="card">
+    <?php if ($session->hasFlash('error')): ?>
+        <div class="alert alert-danger">
+            <?= $session->getFlash('error') ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- Loans List Table -->
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Loans List</h5>
+                <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
+                    <i data-feather="download"></i> Export PDF
+                </a>
+            </div>
+        </div>
         <div class="card-body">
-            <?php
-            $formPath = BASE_PATH . '/templates/transactions/form.php';
-            if (file_exists($formPath)) {
-                include_once $formPath;
-            } else {
-                echo '<div class="alert alert-danger">Transaction form template is missing: ' . htmlspecialchars($formPath) . '</div>';
-            }
-            ?>
+            <?php include_once BASE_PATH . '/templates/loans/listpay.php'; ?>
         </div>
     </div>
 </main>
 
 <?php
-// Include footer
 include_once BASE_PATH . '/templates/layout/footer.php';
-
-// End output buffering and flush output
-ob_end_flush();
 ?>

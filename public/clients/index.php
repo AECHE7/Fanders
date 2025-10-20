@@ -18,7 +18,21 @@ require_once '../../app/utilities/FilterUtility.php';
 $filters = FilterUtility::sanitizeFilters($_GET);
 $filters = FilterUtility::validateDateRange($filters);
 
-// --- 2. Handle POST Actions (Status Change, Delete) ---
+// --- 2. Handle PDF Export ---
+if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
+    try {
+        $reportService = new ReportService();
+        $exportData = $clientService->getAllClients(1, 10000, $filters); // Get all data without pagination
+        $reportService->exportClientReportPDF($exportData, $filters);
+    } catch (Exception $e) {
+        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/clients/index.php?' . http_build_query($filters));
+        exit;
+    }
+    exit;
+}
+
+// --- 3. Handle POST Actions (Status Change, Delete) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!$csrf->validateRequest()) {
         $session->setFlash('error', 'Invalid security token. Please try again.');
@@ -75,16 +89,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 // --- 3. Fetch Data for View ---
 
-if (!empty($filters['search'])) {
-    // Use the search method if a term is provided
-    $clients = $clientService->searchClients($filters['search']);
-} elseif (!empty($filters['status']) && in_array($filters['status'], ['active', 'inactive', 'blacklisted'])) {
-    // Use the status filter method if a valid status is provided
-    $clients = $clientService->getClientsByStatus($filters['status']);
-} else {
-    // Default: Get all clients
-    $clients = $clientService->getAllClients();
-}
+// Get pagination parameters
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+
+// Get clients based on applied filters with pagination
+$clients = $clientService->getAllClients($page, $limit, $filters);
+
+// Get total count for pagination
+$totalClients = $clientService->getTotalClientsCount($filters);
+$totalPages = ceil($totalClients / $limit);
+
+// Initialize pagination utility
+require_once '../../app/utilities/PaginationUtility.php';
+$pagination = new PaginationUtility($totalClients, $page, $limit, 'page');
 
 // Apply date filtering if specified (client-side for now, can be moved to service later)
 if (!empty($filters['date_from']) || !empty($filters['date_to'])) {
@@ -108,7 +126,8 @@ include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+<main class="main-content">
+    <div class="content-wrapper">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Client Management</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
@@ -171,7 +190,19 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div>
 
     <!-- Clients List Table -->
-    <?php include_once BASE_PATH . '/templates/clients/list.php'; ?>
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Clients List</h5>
+                <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
+                    <i data-feather="download"></i> Export PDF
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <?php include_once BASE_PATH . '/templates/clients/list.php'; ?>
+        </div>
+    </div>
 </main>
 
 <?php

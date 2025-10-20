@@ -64,9 +64,11 @@ class UserModel extends BaseModel {
     /**
      * Get all users with readable role names.
      * @param array $roles Optional filter by specific roles.
+     * @param int $limit Number of records to return
+     * @param int $offset Number of records to skip
      * @return array
      */
-    public function getAllUsersWithRoleNames($roles = []) {
+    public function getAllUsersWithRoleNames($roles = [], $limit = null, $offset = 0) {
         $sql = "SELECT u.*, CASE
             WHEN u.role = 'super-admin' THEN 'Super Admin'
             WHEN u.role = 'admin' THEN 'Admin'
@@ -89,7 +91,24 @@ class UserModel extends BaseModel {
 
         $sql .= " ORDER BY u.created_at DESC";
 
+        if ($limit !== null) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params[] = $limit;
+            $params[] = $offset;
+        }
+
         return $this->query($sql, $params);
+    }
+
+    /**
+     * Get all users with readable role names with pagination support.
+     * @param array $roles Optional filter by specific roles.
+     * @param int $limit Number of records per page
+     * @param int $offset Number of records to skip
+     * @return array
+     */
+    public function getAllUsersWithRoleNamesPaginated($roles = [], $limit = 20, $offset = 0) {
+        return $this->getAllUsersWithRoleNames($roles, $limit, $offset);
     }
 
     /**
@@ -129,9 +148,11 @@ class UserModel extends BaseModel {
     /**
      * Get all operational users with readable role names.
      * @param array $roles Optional filter by specific roles.
+     * @param int $limit Number of records per page
+     * @param int $offset Number of records to skip
      * @return array
      */
-    public function getAllOperationalUsersWithRoleNames($roles = []) {
+    public function getAllOperationalUsersWithRoleNames($roles = [], $limit = null, $offset = 0) {
         $operationalRoles = [
             self::$ROLE_SUPER_ADMIN,
             self::$ROLE_ADMIN,
@@ -146,7 +167,18 @@ class UserModel extends BaseModel {
             $roles = array_intersect($roles, $operationalRoles);
         }
 
-        return $this->getAllUsersWithRoleNames($roles);
+        return $this->getAllUsersWithRoleNames($roles, $limit, $offset);
+    }
+
+    /**
+     * Get all operational users with readable role names with pagination support.
+     * @param array $roles Optional filter by specific roles.
+     * @param int $limit Number of records per page
+     * @param int $offset Number of records to skip
+     * @return array
+     */
+    public function getAllOperationalUsersWithRoleNamesPaginated($roles = [], $limit = 20, $offset = 0) {
+        return $this->getAllOperationalUsersWithRoleNames($roles, $limit, $offset);
     }
 
     /**

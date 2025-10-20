@@ -73,18 +73,42 @@ $userService = new UserService();
 $roleFilter = isset($_GET['role']) ? $_GET['role'] : '';
 $statusFilter = isset($_GET['status']) ? $_GET['status'] : '';
 
-// Get staff users based on filters
+// Get pagination parameters
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+
+// --- 2. Handle PDF Export ---
+if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
+    try {
+        $reportService = new ReportService();
+        $exportData = $userService->getAllOperationalUsersWithRoleNames($roles, 1, 10000); // Get all data without pagination
+        $reportService->exportUserReportPDF($exportData, $filters);
+    } catch (Exception $e) {
+        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/admins/list.php?' . http_build_query($_GET));
+        exit;
+    }
+    exit;
+}
+
+// --- 3. Get staff users based on filters with pagination ---
 if ($userRole == 'super-admin') {
     // Super admin can see all staff users
-    $users = $userService->getAllUsersWithRoleNames();
-    // Filter to only staff roles
-    $users = array_filter($users, function($u) {
-        return in_array($u['role'], ['admin', 'super-admin', 'manager', 'account_officer', 'cashier']);
-    });
+    $roles = ['admin', 'super-admin', 'manager', 'account_officer', 'cashier'];
 } else {
     // Admin can only see limited staff roles
-    $users = $userService->getAllUsersWithRoleNames(['account_officer', 'cashier']);
+    $roles = ['account_officer', 'cashier'];
 }
+
+$users = $userService->getAllOperationalUsersWithRoleNames($roles, $page, $limit);
+
+// Get total count for pagination
+$totalUsers = $userService->getTotalUsersWithRoleNamesCount($roles);
+$totalPages = ceil($totalUsers / $limit);
+
+// Initialize pagination utility
+require_once '../../app/utilities/PaginationUtility.php';
+$pagination = new PaginationUtility($totalUsers, $page, $limit, 'page');
 
 // Apply role filter if specified
 if (!empty($roleFilter) && $userRole == 'super-admin') {
@@ -167,8 +191,20 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     </div>
     
-<!-- Users List -->
-<?php include_once BASE_PATH . '/templates/admins/list.php'; ?>
+    <!-- Users List -->
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Staff Users List</h5>
+                <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
+                    <i data-feather="download"></i> Export PDF
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            <?php include_once BASE_PATH . '/templates/admins/list.php'; ?>
+        </div>
+    </div>
 </main>
 
 <?php

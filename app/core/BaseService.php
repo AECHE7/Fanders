@@ -114,9 +114,16 @@ class BaseService {
                 // Min length validation
                 if (preg_match('/min:(\d+)/', $rule, $matches)) {
                     $min = $matches[1];
-                    if (strlen($value) < $min) {
-                        $this->setErrorMessage(ucfirst($field) . " must be at least {$min} characters.");
-                        return false;
+                    if (is_numeric($value)) {
+                        if ((float)$value < $min) {
+                            $this->setErrorMessage(ucfirst($field) . " must be at least {$min}.");
+                            return false;
+                        }
+                    } else {
+                        if (strlen($value) < $min) {
+                            $this->setErrorMessage(ucfirst($field) . " must be at least {$min} characters.");
+                            return false;
+                        }
                     }
                 }
             }

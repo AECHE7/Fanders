@@ -78,15 +78,15 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 
                                 <?php if ($canManage && $status === 'application'): ?>
                                     <!-- Approve Button (Manager/Admin action) -->
-                                    <button type="button" class="btn btn-outline-success btn-loan-action"
+                                    <!-- <button type="button" class="btn btn-outline-success btn-loan-action"
                                             data-action="approve" data-id="<?= $loan['id'] ?>" title="Approve Loan">
                                         <i data-feather="check"></i>
-                                    </button>
+                                    </button> -->
                                     <!-- Cancel Button -->
-                                    <button type="button" class="btn btn-outline-danger btn-loan-action"
+                                    <!-- <button type="button" class="btn btn-outline-danger btn-loan-action"
                                             data-action="cancel" data-id="<?= $loan['id'] ?>" title="Cancel Application">
                                         <i data-feather="x-circle"></i>
-                                    </button>
+                                    </button> -->
                                 <?php endif; ?>
 
                                 <?php if ($canManage && $status === 'approved'): ?>
@@ -109,6 +109,18 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                 <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+<?php endif; ?>
+
+<!-- Pagination -->
+<?php if ($totalPages > 1): ?>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+            <?= $pagination->getInfo() ?>
+        </div>
+        <nav aria-label="Loans pagination">
+            <?= $pagination->render() ?>
+        </nav>
     </div>
 <?php endif; ?>
 

@@ -8,20 +8,23 @@ require_once __DIR__ . '/../core/BaseService.php';
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../core/PasswordHash.php';
 require_once __DIR__ . '/../core/Session.php';
+require_once __DIR__ . '/../utilities/CacheUtility.php';
 
 class UserService extends BaseService {
     private $userModel;
     private $passwordHash;
     private $session;
     private $validOperationalRoles;
+    private $cache;
     
     public function __construct() {
         parent::__construct();
         $this->userModel = new UserModel();
         $this->passwordHash = new PasswordHash();
         $this->session = new Session();
+        $this->cache = new CacheUtility();
         $this->setModel($this->userModel);
-        
+
         // Define valid roles for operational staff (excluding 'Client')
         $this->validOperationalRoles = [
             UserModel::$ROLE_ADMIN,
@@ -34,10 +37,33 @@ class UserService extends BaseService {
     /**
      * Retrieves all operational users with readable role names.
      * @param array $roles Optional filter by specific roles.
+     * @param int $page Page number for pagination
+     * @param int $limit Number of records per page
      * @return array
      */
-    public function getAllOperationalUsersWithRoleNames($roles = []) {
-        return $this->userModel->getAllOperationalUsersWithRoleNames($roles);
+    public function getAllOperationalUsersWithRoleNames($roles = [], $page = 1, $limit = null) {
+        $cacheKey = 'operational_users_' . md5(serialize($roles) . "_page{$page}_limit{$limit}");
+
+        return $this->cache->remember($cacheKey, 1800, function() use ($roles, $page, $limit) { // Cache for 30 minutes
+            if ($limit) {
+                $offset = ($page - 1) * $limit;
+                return $this->userModel->getAllOperationalUsersWithRoleNamesPaginated($roles, $limit, $offset);
+            }
+            return $this->userModel->getAllOperationalUsersWithRoleNames($roles);
+        });
+    }
+
+    /**
+     * Get total count of users with role names and filters applied
+     * @param array $roles Optional filter by specific roles.
+     * @return int
+     */
+    public function getTotalUsersWithRoleNamesCount($roles = []) {
+        $cacheKey = 'total_users_' . md5(serialize($roles));
+
+        return $this->cache->remember($cacheKey, 1800, function() use ($roles) { // Cache for 30 minutes
+            return $this->userModel->getTotalUsersWithRoleNamesCount($roles);
+        });
     }
 
     /**
@@ -115,7 +141,11 @@ class UserService extends BaseService {
                  return false;
             }
 
-            // 8. Log transaction for audit trail
+            // 8. Clear relevant caches
+            $this->cache->delete('user_stats');
+            $this->cache->delete('staff_stats');
+
+            // 9. Log transaction for audit trail
             if (class_exists('TransactionService')) {
                 $transactionService = new TransactionService();
                 $transactionService->logUserTransaction('created', $newId, $createdBy, [
@@ -176,7 +206,12 @@ class UserService extends BaseService {
      * @return bool
      */
     public function deactivateUser($id) {
-        return $this->userModel->updateStatus($id, UserModel::$STATUS_INACTIVE);
+        $result = $this->userModel->updateStatus($id, UserModel::$STATUS_INACTIVE);
+        if ($result) {
+            $this->cache->delete('user_stats');
+            $this->cache->delete('staff_stats');
+        }
+        return $result;
     }
 
     /**
@@ -185,7 +220,12 @@ class UserService extends BaseService {
      * @return bool
      */
     public function activateUser($id) {
-        return $this->userModel->updateStatus($id, UserModel::$STATUS_ACTIVE);
+        $result = $this->userModel->updateStatus($id, UserModel::$STATUS_ACTIVE);
+        if ($result) {
+            $this->cache->delete('user_stats');
+            $this->cache->delete('staff_stats');
+        }
+        return $result;
     }
 
     /**
@@ -254,7 +294,11 @@ class UserService extends BaseService {
      * @return array
      */
     public function getUserStats() {
-        return $this->userModel->getUserStats();
+        $cacheKey = 'user_stats';
+
+        return $this->cache->remember($cacheKey, 900, function() { // Cache for 15 minutes
+            return $this->userModel->getUserStats();
+        });
     }
 
 
@@ -365,10 +409,20 @@ class UserService extends BaseService {
     /**
      * Get all users with role names (for dashboard stats)
      * @param array $roles Optional filter by specific roles.
+     * @param int $page Page number for pagination
+     * @param int $limit Number of records per page
      * @return array
      */
-    public function getAllUsersWithRoleNames($roles = []) {
-        return $this->userModel->getAllUsersWithRoleNames($roles);
+    public function getAllUsersWithRoleNames($roles = [], $page = 1, $limit = null) {
+        $cacheKey = 'all_users_' . md5(serialize($roles) . "_page{$page}_limit{$limit}");
+
+        return $this->cache->remember($cacheKey, 1800, function() use ($roles, $page, $limit) { // Cache for 30 minutes
+            if ($limit) {
+                $offset = ($page - 1) * $limit;
+                return $this->userModel->getAllUsersWithRoleNamesPaginated($roles, $limit, $offset);
+            }
+            return $this->userModel->getAllUsersWithRoleNames($roles);
+        });
     }
 
     /**
@@ -376,44 +430,48 @@ class UserService extends BaseService {
      * @return array
      */
     public function getStaffStats() {
-        $stats = [];
+        $cacheKey = 'staff_stats';
 
-        // Total staff (operational roles only)
-        $operationalRoles = [
-            UserModel::$ROLE_ADMIN,
-            UserModel::$ROLE_MANAGER,
-            UserModel::$ROLE_CASHIER,
-            UserModel::$ROLE_ACCOUNT_OFFICER
-        ];
+        return $this->cache->remember($cacheKey, 900, function() { // Cache for 15 minutes
+            $stats = [];
 
-        $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "')";
-        $result = $this->userModel->query($sql, [], true);
-        $stats['total_staff'] = $result ? $result['count'] : 0;
+            // Total staff (operational roles only)
+            $operationalRoles = [
+                UserModel::$ROLE_ADMIN,
+                UserModel::$ROLE_MANAGER,
+                UserModel::$ROLE_CASHIER,
+                UserModel::$ROLE_ACCOUNT_OFFICER
+            ];
 
-        // Active staff
-        $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND status = ?";
-        $result = $this->userModel->query($sql, [UserModel::$STATUS_ACTIVE], true);
-        $stats['active_staff'] = $result ? $result['count'] : 0;
+            $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "')";
+            $result = $this->userModel->query($sql, [], true);
+            $stats['total_staff'] = $result ? $result['count'] : 0;
 
-        // Inactive staff
-        $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND status = ?";
-        $result = $this->userModel->query($sql, [UserModel::$STATUS_INACTIVE], true);
-        $stats['inactive_staff'] = $result ? $result['count'] : 0;
+            // Active staff
+            $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND status = ?";
+            $result = $this->userModel->query($sql, [UserModel::$STATUS_ACTIVE], true);
+            $stats['active_staff'] = $result ? $result['count'] : 0;
 
-        // Staff added this month
-        $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())";
-        $result = $this->userModel->query($sql, [], true);
-        $stats['recent_staff'] = $result ? $result['count'] : 0;
+            // Inactive staff
+            $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND status = ?";
+            $result = $this->userModel->query($sql, [UserModel::$STATUS_INACTIVE], true);
+            $stats['inactive_staff'] = $result ? $result['count'] : 0;
 
-        // Staff by role
-        $stats['staff_by_role'] = [];
-        foreach ($operationalRoles as $role) {
-            $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role = ?";
-            $result = $this->userModel->query($sql, [$role], true);
-            $stats['staff_by_role'][$role] = $result ? $result['count'] : 0;
-        }
+            // Staff added this month
+            $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())";
+            $result = $this->userModel->query($sql, [], true);
+            $stats['recent_staff'] = $result ? $result['count'] : 0;
 
-        return $stats;
+            // Staff by role
+            $stats['staff_by_role'] = [];
+            foreach ($operationalRoles as $role) {
+                $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role = ?";
+                $result = $this->userModel->query($sql, [$role], true);
+                $stats['staff_by_role'][$role] = $result ? $result['count'] : 0;
+            }
+
+            return $stats;
+        });
     }
 
     /**
@@ -422,15 +480,19 @@ class UserService extends BaseService {
      * @return array
      */
     public function getRecentStaffUsers($limit = 5) {
-        $operationalRoles = [
-            UserModel::$ROLE_ADMIN,
-            UserModel::$ROLE_MANAGER,
-            UserModel::$ROLE_CASHIER,
-            UserModel::$ROLE_ACCOUNT_OFFICER
-        ];
+        $cacheKey = 'recent_staff_' . $limit;
 
-        $sql = "SELECT id, name, email, role, status, created_at FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') ORDER BY created_at DESC LIMIT ?";
-        return $this->userModel->query($sql, [$limit]);
+        return $this->cache->remember($cacheKey, 1800, function() use ($limit) { // Cache for 30 minutes
+            $operationalRoles = [
+                UserModel::$ROLE_ADMIN,
+                UserModel::$ROLE_MANAGER,
+                UserModel::$ROLE_CASHIER,
+                UserModel::$ROLE_ACCOUNT_OFFICER
+            ];
+
+            $sql = "SELECT id, name, email, role, status, created_at FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') ORDER BY created_at DESC LIMIT ?";
+            return $this->userModel->query($sql, [$limit]);
+        });
     }
 
     /**

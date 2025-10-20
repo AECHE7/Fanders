@@ -33,8 +33,20 @@ $filters = FilterUtility::validateDateRange($filters);
 
 // --- 2. Fetch Core Data ---
 
-// Get loans based on applied filters (assuming getAllLoansWithClients handles filters)
-$loans = $loanService->getAllLoansWithClients($filters);
+// Get pagination parameters
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+
+// Get loans based on applied filters with pagination
+$loans = $loanService->getAllLoansWithClients($filters, $page, $limit);
+
+// Get total count for pagination
+$totalLoans = $loanService->getTotalLoansCount($filters);
+$totalPages = ceil($totalLoans / $limit);
+
+// Initialize pagination utility
+require_once '../../app/utilities/PaginationUtility.php';
+$pagination = new PaginationUtility($totalLoans, $page, $limit, 'page');
 
 // Get all clients for the filter dropdown
 $clients = $clientService->getAllForSelect();
@@ -43,7 +55,21 @@ $clients = $clientService->getAllForSelect();
 $loanStats = $loanService->getLoanStats();
 
 
-// --- 3. Handle POST Actions (e.g., Approve/Disburse) ---
+// --- 3. Handle PDF Export ---
+if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
+    try {
+        $reportService = new ReportService();
+        $exportData = $loanService->getAllLoansWithClients($filters, 1, 10000); // Get all data without pagination
+        $reportService->exportLoanReportPDF($exportData, $filters);
+    } catch (Exception $e) {
+        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/loans/index.php?' . http_build_query($filters));
+        exit;
+    }
+    exit;
+}
+
+// --- 4. Handle POST Actions (e.g., Approve/Disburse) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!$csrf->validateRequest()) {
         $session->setFlash('error', 'Invalid security token. Please try again.');
@@ -108,7 +134,8 @@ include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+<main class="main-content">
+    <div class="content-wrapper">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Loans Management</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
@@ -239,9 +266,18 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
     <!-- Loans List Table -->
     <div class="card shadow-sm">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Loans List</h5>
+                <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
+                    <i data-feather="download"></i> Export PDF
+                </a>
+            </div>
+        </div>
         <div class="card-body">
             <?php include_once BASE_PATH . '/templates/loans/list.php'; ?>
         </div>
+    </div>
     </div>
 </main>
 

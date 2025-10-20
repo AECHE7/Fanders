@@ -19,7 +19,8 @@ $clientService = new ClientService();
 // --- 1. Initial Data Setup ---
 $loan = [
     'client_id' => isset($_GET['client_id']) ? (int)$_GET['client_id'] : '', // Pre-select if linked from client page
-    'loan_amount' => ''
+    'loan_amount' => '',
+    'loan_term' => 17 // Default to 17 weeks
 ];
 $loanCalculation = null;
 $error = $session->getFlash('error'); // Retrieve any previous error
@@ -43,12 +44,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Gather and sanitize input
         $loan = [
             'client_id' => isset($_POST['client_id']) ? (int)$_POST['client_id'] : '',
-            'loan_amount' => isset($_POST['loan_amount']) ? (float)$_POST['loan_amount'] : ''
+            'loan_amount' => isset($_POST['loan_amount']) ? (float)$_POST['loan_amount'] : '',
+            'loan_term' => isset($_POST['loan_term']) ? (int)$_POST['loan_term'] : 17
         ];
 
         // --- Calculate Preview (Run regardless of submission type) ---
         if ($loan['loan_amount'] > 0) {
-            $loanCalculation = $loanCalculationService->calculateLoan($loan['loan_amount']);
+            $loanCalculation = $loanCalculationService->calculateLoan($loan['loan_amount'], $loan['loan_term']);
+            if (!$loanCalculation) {
+                $error = $loanCalculationService->getErrorMessage() ?: "Failed to calculate loan details.";
+            }
         }
         
         // Check if the "Apply" button was pressed (not just the 'Calculate' preview)
@@ -57,7 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Map form data to service expected format
             $loanData = [
                 'client_id' => $loan['client_id'],
-                'principal' => $loan['loan_amount']
+                'principal' => $loan['loan_amount'],
+                'term_weeks' => $loan['loan_term']
             ];
 
             // Apply for the loan
@@ -87,9 +93,10 @@ include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+<main class="main-content">
+    <div class="content-wrapper">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">New Loan Application (17-Week Term)</h1>
+        <h1 class="h2">New Loan Application (4-52 Week Terms)</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-secondary">
                 <i data-feather="arrow-left"></i> Back to Loans List
@@ -120,12 +127,14 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div>
 
     <!-- Loan Calculation Preview (Displayed only if successful calculation exists) -->
-    <?php if ($loanCalculation && !isset($_POST['submit_loan']) && empty($error)): ?>
+    <?php if ($loanCalculation && empty($error)): ?>
         <?php
         // Calculate approximate weekly breakdown
         $principal_per_week = round($loanCalculation['principal'] / $loanCalculation['term_weeks'], 2);
         $interest_per_week = round($loanCalculation['total_interest'] / $loanCalculation['term_weeks'], 2);
         $insurance_per_week = round($loanCalculation['insurance_fee'] / $loanCalculation['term_weeks'], 2);
+        $term_weeks = $loanCalculation['term_weeks'];
+        $term_months = round($term_weeks / 4.333, 1); // Approximate months
         ?>
     <div class="card mt-4 shadow-sm border-primary">
         <div class="card-header bg-primary text-white">
@@ -153,12 +162,12 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                             <td class="text-end fw-bold">₱<?= number_format($loanCalculation['total_loan_amount'], 2) ?></td>
                         </tr>
                         <tr>
-                            <td class="fw-bold text-success">Mandatory Weekly Payment (17 weeks):</td>
+                            <td class="fw-bold text-success">Mandatory Weekly Payment (<?= $term_weeks ?> weeks):</td>
                             <td class="text-end fw-bold text-success">₱<?= number_format($loanCalculation['weekly_payment_base'], 2) ?></td>
                         </tr>
                         <tr>
                             <td class="text-muted">Term:</td>
-                            <td class="text-end text-muted">17 weeks (4 months)</td>
+                            <td class="text-end text-muted"><?= $term_weeks ?> weeks (<?= $term_months ?> months)</td>
                         </tr>
                     </table>
                 </div>
@@ -196,6 +205,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <?= $csrf->getTokenField() ?>
                     <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
                     <input type="hidden" name="loan_amount" value="<?= htmlspecialchars($loan['loan_amount']) ?>">
+                    <input type="hidden" name="loan_term" value="<?= htmlspecialchars($loan['loan_term']) ?>">
                     <button type="submit" name="submit_loan" class="btn btn-success btn-lg">
                         <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
                     </button>
@@ -205,7 +215,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     </div>
     <?php endif; ?>
-
+    </div>
 </main>
 
 <?php

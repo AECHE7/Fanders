@@ -159,32 +159,34 @@ include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-    <?php if ($session->hasFlash('success')): ?>
-        <div class="alert alert-success">
-            <?= $session->getFlash('success') ?>
-        </div>
-    <?php endif; ?>
-    
-    <?php if ($session->hasFlash('error')): ?>
-        <div class="alert alert-danger">
-            <?= $session->getFlash('error') ?>
-        </div>
-    <?php endif; ?>
-    
-    <?php
-// //Debug print for $stats to investigate missing borrowed books data
-// echo '<pre>Stats Debug: ';
-// print_r($stats);
-// echo '</pre>';// 
+<main class="main-content">
+    <div class="content-wrapper">
+        <?php if ($session->hasFlash('success')): ?>
+            <div class="alert alert-success">
+                <?= $session->getFlash('success') ?>
+            </div>
+        <?php endif; ?>
 
-// Include role-specific dashboard content
-if (file_exists($dashboardTemplate)) {
-    include $dashboardTemplate;
-} else {
-    echo '<div class="alert alert-danger">Dashboard template not found.</div>';
-}
-    ?>
+        <?php if ($session->hasFlash('error')): ?>
+            <div class="alert alert-danger">
+                <?= $session->getFlash('error') ?>
+            </div>
+        <?php endif; ?>
+
+        <?php
+    // //Debug print for $stats to investigate missing borrowed books data
+    // echo '<pre>Stats Debug: ';
+    // print_r($stats);
+    // echo '</pre>';//
+
+    // Include role-specific dashboard content
+    if (file_exists($dashboardTemplate)) {
+        include $dashboardTemplate;
+    } else {
+        echo '<div class="alert alert-danger">Dashboard template not found.</div>';
+    }
+        ?>
+    </div>
 </main>
 
 <?php

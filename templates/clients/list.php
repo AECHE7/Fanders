@@ -125,6 +125,18 @@ if (!function_exists('getClientStatusBadgeClass')) {
     </div>
 </div>
 
+<!-- Pagination -->
+<?php if ($totalPages > 1): ?>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+            <?= $pagination->getInfo() ?>
+        </div>
+        <nav aria-label="Clients pagination">
+            <?= $pagination->render() ?>
+        </nav>
+    </div>
+<?php endif; ?>
+
 <!-- Hidden Form for POST Actions (Status Change, Delete) -->
 <form id="actionForm" method="POST" action="<?= APP_URL ?>/public/clients/index.php" style="display:none;">
     <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">

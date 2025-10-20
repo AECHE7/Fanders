@@ -19,7 +19,7 @@
             <div class="rounded d-flex align-items-center justify-content-center me-3" style="width:38px;height:38px;background:#f7ecff;">
                 <i data-feather="dollar-sign" style="width:20px;height:20px;color:#9d71ea;" aria-hidden="true"></i>
             </div>
-            <h1 class="mb-0 h5">Loan Application Details (4 Months / 17 Weeks)</h1>
+            <h1 class="mb-0 h5">Loan Application Details</h1>
         </div>
     </div>
 
@@ -33,14 +33,13 @@
             <!-- Client Selection -->
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
-                    <label for="client_id" class="notion-form-label">Client <span class="text-danger">*</span></label>
                     <select
                         class="notion-form-select form-select custom-select-animated"
                         id="client_id"
                         name="client_id"
                         required
                         aria-required="true">
-                        <option value="">Select Client</option>
+                        <option value="">Select a client...</option>
                         <?php foreach ($clients as $client): ?>
                             <option value="<?= $client['id'] ?>" <?= (isset($loan['client_id']) && $loan['client_id'] == $client['id']) ? 'selected' : '' ?>>
                                 <?= htmlspecialchars($client['name']) ?> (ID: <?= $client['id'] ?>)
@@ -53,7 +52,6 @@
             <!-- Loan Amount -->
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
-                    <label for="loan_amount" class="notion-form-label">Principal Amount (₱) <span class="text-danger">*</span></label>
                     <input
                         type="number"
                         class="notion-form-control"
@@ -65,9 +63,30 @@
                         max="50000"
                         step="100"
                         aria-required="true"
-                        placeholder="Enter principal amount">
+                        placeholder="Principal Amount (₱)">
                     <small class="form-text text-muted">Minimum ₱1,000 - Maximum ₱50,000</small>
                     <div class="invalid-feedback">Please enter a valid loan amount between ₱1,000 and ₱50,000.</div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-3 stagger-fade-in">
+            <!-- Loan Term -->
+            <div class="col-md-6">
+                <div class="notion-form-group interactive-form-field">
+                    <input
+                        type="number"
+                        class="notion-form-control"
+                        id="loan_term"
+                        name="loan_term"
+                        value="<?= htmlspecialchars($loan['loan_term'] ?? 17) ?>"
+                        required
+                        min="4"
+                        max="52"
+                        step="1"
+                        aria-required="true"
+                        placeholder="Loan Term (Weeks)">
+                    <small class="form-text text-muted">Minimum 4 weeks - Maximum 52 weeks</small>
+                    <div class="invalid-feedback">Please enter a valid loan term between 4 and 52 weeks.</div>
                 </div>
             </div>
         </div>
@@ -95,7 +114,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('.notion-form');
     if(form) {
         form.addEventListener('submit', function(event) {
-            if(!form.checkValidity()) {
+            // Allow submission for calculate button even if form is invalid
+            const isCalculateButton = event.submitter && event.submitter.name === 'calculate';
+
+            if(!form.checkValidity() && !isCalculateButton) {
                 event.preventDefault();
                 event.stopPropagation();
                 // Find first invalid field and trigger shake/focus

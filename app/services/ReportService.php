@@ -410,7 +410,7 @@ class ReportService extends BaseService {
 
         // Define columns
         $columns = [
-            ['header' => 'Payment #', 'width' => 25],
+            ['header' => 'Payment Number', 'width' => 30],
             ['header' => 'Client', 'width' => 35],
             ['header' => 'Loan #', 'width' => 25],
             ['header' => 'Amount', 'width' => 25],
@@ -547,6 +547,129 @@ class ReportService extends BaseService {
         $pdf->addLine("Inactive Users: " . ($totalUsers - $activeUsers));
 
         return $pdf->output('D', 'user_report_' . date('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Generate transaction report with filtering options
+     */
+    public function generateTransactionReport($filters = []) {
+        $transactionService = new TransactionService();
+        $transactions = $transactionService->getTransactionHistory($filters, 1000); // Large limit for reports
+
+        // Transform transaction data to match report template expectations
+        $transformedData = [];
+        foreach ($transactions as $transaction) {
+            $details = json_decode($transaction['details'], true) ?: [];
+
+            // Determine entity type from transaction type
+            $entityType = $this->getEntityTypeFromTransactionType($transaction['transaction_type']);
+
+            // Get user information
+            $userInfo = $this->getUserInfo($transaction['user_id']);
+
+            $transformedData[] = [
+                'timestamp' => $transaction['created_at'],
+                'first_name' => $userInfo['first_name'] ?? null,
+                'last_name' => $userInfo['last_name'] ?? null,
+                'role' => $userInfo['role'] ?? null,
+                'action' => $details['action'] ?? $this->getActionFromTransactionType($transaction['transaction_type']),
+                'entity_type' => $entityType,
+                'entity_id' => $transaction['reference_id'],
+                'details' => $transaction['details'],
+                'transaction_type' => $transaction['transaction_type'],
+                'user_name' => $transaction['user_name'] ?? null,
+                'user_email' => $transaction['user_email'] ?? null,
+                'created_at' => $transaction['created_at']
+            ];
+        }
+
+        return $transformedData;
+    }
+
+    /**
+     * Get entity type from transaction type
+     */
+    private function getEntityTypeFromTransactionType($transactionType) {
+        $mapping = [
+            'user_created' => 'user',
+            'user_updated' => 'user',
+            'user_deleted' => 'user',
+            'user_viewed' => 'user',
+            'client_created' => 'client',
+            'client_updated' => 'client',
+            'client_deleted' => 'client',
+            'client_viewed' => 'client',
+            'loan_created' => 'loan',
+            'loan_updated' => 'loan',
+            'loan_approved' => 'loan',
+            'loan_disbursed' => 'loan',
+            'loan_completed' => 'loan',
+            'loan_cancelled' => 'loan',
+            'loan_deleted' => 'loan',
+            'loan_viewed' => 'loan',
+            'payment_created' => 'payment',
+            'payment_recorded' => 'payment',
+            'payment_approved' => 'payment',
+            'payment_cancelled' => 'payment',
+            'payment_overdue' => 'payment',
+            'payment_viewed' => 'payment',
+        ];
+
+        return $mapping[$transactionType] ?? 'system';
+    }
+
+    /**
+     * Get action from transaction type
+     */
+    private function getActionFromTransactionType($transactionType) {
+        $actions = [
+            'user_created' => 'created',
+            'user_updated' => 'updated',
+            'user_deleted' => 'deleted',
+            'user_viewed' => 'viewed',
+            'client_created' => 'created',
+            'client_updated' => 'updated',
+            'client_deleted' => 'deleted',
+            'client_viewed' => 'viewed',
+            'loan_created' => 'created',
+            'loan_updated' => 'updated',
+            'loan_approved' => 'approved',
+            'loan_disbursed' => 'disbursed',
+            'loan_completed' => 'completed',
+            'loan_cancelled' => 'cancelled',
+            'loan_deleted' => 'deleted',
+            'loan_viewed' => 'viewed',
+            'payment_created' => 'created',
+            'payment_recorded' => 'recorded',
+            'payment_approved' => 'approved',
+            'payment_cancelled' => 'cancelled',
+            'payment_overdue' => 'overdue',
+            'payment_viewed' => 'viewed',
+            'login' => 'login',
+            'logout' => 'logout',
+            'session_extended' => 'session_extended',
+        ];
+
+        return $actions[$transactionType] ?? $transactionType;
+    }
+
+    /**
+     * Get user information by ID
+     */
+    private function getUserInfo($userId) {
+        if (!$userId) return [];
+
+        $sql = "SELECT first_name, last_name, role FROM users WHERE id = ?";
+        $result = $this->db->single($sql, [$userId]);
+        return $result ?: [];
+    }
+
+    /**
+     * Export transaction report to PDF
+     */
+    public function exportTransactionReportPDF($data, $filters = []) {
+        $transactionService = new TransactionService();
+        return $transactionService->exportTransactionsPDF($data, $filters);
     }
 
     /**

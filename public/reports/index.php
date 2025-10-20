@@ -145,7 +145,8 @@ include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+<main class="main-content">
+    <div class="content-wrapper">
     <!-- Report Filters -->
     <div class="card mb-4">
         <div class="card-header">

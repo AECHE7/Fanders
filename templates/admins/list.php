@@ -73,6 +73,18 @@
     </div>
 </div>
 
+<!-- Pagination -->
+<?php if ($totalPages > 1): ?>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+            <?= $pagination->getInfo() ?>
+        </div>
+        <nav aria-label="Staff users pagination">
+            <?= $pagination->render() ?>
+        </nav>
+    </div>
+<?php endif; ?>
+
 <?php
 /**
  * Get badge class for role

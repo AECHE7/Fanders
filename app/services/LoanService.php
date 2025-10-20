@@ -26,8 +26,25 @@ class LoanService extends BaseService {
         return $this->loanModel->getLoanWithClient($id);
     }
 
-    public function getAllLoansWithClients() {
-        return $this->loanModel->getAllLoansWithClients();
+    /**
+     * Get all loans with clients and pagination support
+     * @param array $filters Array of filters
+     * @param int $page Page number for pagination
+     * @param int $limit Number of records per page
+     * @return array
+     */
+    public function getAllLoansWithClients($filters = [], $page = 1, $limit = null) {
+        $offset = ($page - 1) * $limit;
+        return $this->loanModel->getAllLoansWithClientsPaginated($limit, $offset, $filters);
+    }
+
+    /**
+     * Get total count of loans with filters applied
+     * @param array $filters Array of filters
+     * @return int
+     */
+    public function getTotalLoansCount($filters = []) {
+        return $this->loanModel->getTotalLoansCount($filters);
     }
 
     public function searchLoans($term) {
@@ -97,8 +114,11 @@ class LoanService extends BaseService {
             return false;
         }
 
+        // 2. Get term from loanData or use default
+        $termWeeks = $loanData['term_weeks'] ?? null;
+
         // 2. Calculate loan details using LoanCalculationService
-        $calculation = $this->loanCalculationService->calculateLoan($principal);
+        $calculation = $this->loanCalculationService->calculateLoan($principal, $termWeeks);
         if (!$calculation) {
             $this->setErrorMessage($this->loanCalculationService->getErrorMessage());
             return false;
@@ -145,10 +165,12 @@ class LoanService extends BaseService {
 
     /**
      * Moves a loan from 'Application' to 'Approved'.
+     * Generates PDF loan agreement upon approval.
      * @param int $id Loan ID.
+     * @param int $approvedBy User ID who approved the loan.
      * @return bool
      */
-    public function approveLoan($id) {
+    public function approveLoan($id, $approvedBy = null) {
         $loan = $this->loanModel->findById($id);
         if (!$loan) {
             $this->setErrorMessage('Loan not found.');
@@ -160,6 +182,52 @@ class LoanService extends BaseService {
             return false;
         }
 
+        // Get loan with client information
+        $loanWithClient = $this->loanModel->getLoanWithClient($id);
+        if (!$loanWithClient) {
+            $this->setErrorMessage('Failed to retrieve loan details.');
+            return false;
+        }
+
+        // Generate payment schedule for PDF
+        $calculation = $this->loanCalculationService->calculateLoan($loanWithClient['principal'], $loanWithClient['term_weeks']);
+        if (!$calculation) {
+            $this->setErrorMessage('Failed to calculate loan details for agreement.');
+            return false;
+        }
+
+        // Generate PDF agreement
+        require_once __DIR__ . '/../utilities/PDFGenerator.php';
+        $pdfGenerator = new PDFGenerator();
+        $approvedByName = 'Manager'; // Default, could be enhanced to get actual user name
+
+        if ($approvedBy) {
+            // Try to get user name if UserService exists
+            if (class_exists('UserService')) {
+                $userService = new UserService();
+                $user = $userService->getUserWithRoleName($approvedBy);
+                if ($user) {
+                    $approvedByName = $user['first_name'] . ' ' . $user['last_name'];
+                }
+            }
+        }
+
+        // Generate and save PDF to file (you might want to store the path in database)
+        $pdfDir = BASE_PATH . '/storage/agreements/';
+        if (!is_dir($pdfDir)) {
+            mkdir($pdfDir, 0755, true);
+        }
+
+        // Create descriptive filename: ClientName_LoanID_ApprovalDate.pdf
+        $clientName = preg_replace('/[^A-Za-z0-9\-_]/', '_', $loanWithClient['client_name']); // Sanitize for filename
+        $approvalDate = date('Y-m-d', strtotime($loanWithClient['approval_date'] ?? date('Y-m-d')));
+        $pdfPath = $pdfDir . $clientName . '_Loan' . $id . '_' . $approvalDate . '.pdf';
+
+        // Generate PDF and save to file directly
+        $pdfGenerator->generateLoanAgreementToFile($loanWithClient, $calculation['payment_schedule'], $approvedByName, $pdfPath);
+
+        // Update loan with PDF path (assuming you add agreement_pdf_path column to loans table)
+        // For now, we'll just approve the loan
         return $this->loanModel->approveLoan($id);
     }
 
@@ -181,29 +249,44 @@ class LoanService extends BaseService {
             return false;
         }
 
-        // This is a crucial financial transaction, so we use the transactional wrapper
-        return $this->transaction(function() use ($id, $disbursedBy) {
+        // Perform core loan operations within transaction (status update only)
+        $disbursementSuccess = $this->transaction(function() use ($id) {
             // 1. Update loan status
-            $success = $this->loanModel->disburseLoan($id);
+            return $this->loanModel->disburseLoan($id);
+        });
 
-            // 2. Add Transaction/Audit Log
-            if ($success && class_exists('TransactionService')) {
+        // 2. Add Transaction/Audit Log outside transaction to prevent rollback if logging fails
+        if ($disbursementSuccess && class_exists('TransactionService')) {
+            try {
                 $transactionService = new TransactionService();
-                $transactionService->logLoanTransaction('disbursed', $id, $disbursedBy, [
+                $transactionService->logLoanTransaction('disbursed', $disbursedBy, $id, [
                     'disbursement_date' => date('Y-m-d H:i:s'),
                     'disbursed_by' => $disbursedBy,
                     'loan_amount' => $loan['total_loan_amount']
                 ]);
+            } catch (Exception $e) {
+                // Log the error but don't fail the disbursement
+                error_log('Failed to log disbursement transaction for loan ID ' . $id . ': ' . $e->getMessage());
             }
+        }
 
-            // 3. Update cash blotter for disbursement (inflow)
-            if ($success && class_exists('CashBlotterService')) {
+        if (!$disbursementSuccess) {
+            return false;
+        }
+
+        // 3. Update cash blotter for disbursement (inflow) - outside transaction to prevent rollback
+        if (class_exists('CashBlotterService')) {
+            try {
                 $cashBlotterService = new CashBlotterService();
                 $cashBlotterService->updateBlotterForDate(date('Y-m-d'));
+            } catch (Exception $e) {
+                // Log the error but don't fail the disbursement
+                error_log('Failed to update cash blotter for loan disbursement (ID: ' . $id . '): ' . $e->getMessage());
+                // You might want to set a flash message to inform the user about blotter update failure
             }
+        }
 
-            return $success;
-        });
+        return true;
     }
 
     /**

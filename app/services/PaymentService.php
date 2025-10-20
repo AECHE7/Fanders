@@ -89,7 +89,7 @@ class PaymentService extends BaseService {
             // 3. Log transaction for audit trail
             if (class_exists('TransactionService')) {
                 $transactionService = new TransactionService();
-                $transactionService->logPaymentTransaction($newPaymentId, $recordedBy, [
+                $transactionService->logPaymentTransaction('recorded', $recordedBy, $newPaymentId, [
                     'loan_id' => $loanId,
                     'amount' => $amount,
                     'payment_date' => date('Y-m-d H:i:s'),
@@ -223,76 +223,15 @@ class PaymentService extends BaseService {
     }
 
     /**
-     * Get all payments with filtering support
-     * @param array $filters Array of filters (date_from, date_to, client_id, loan_id, recorded_by, search)
-     * @param int $limit Optional limit for pagination
-     * @param int $offset Optional offset for pagination
+     * Get all payments with pagination and filters
+     * @param array $filters Array of filters
+     * @param int $page Page number for pagination
+     * @param int $limit Number of records per page
      * @return array
      */
-    public function getAllPayments(array $filters = [], $limit = null, $offset = 0) {
-        $sql = "SELECT p.*,
-                l.principal, l.total_loan_amount, l.status as loan_status,
-                c.name AS client_name, c.phone_number,
-                u.name AS recorded_by_name
-                FROM {$this->paymentModel->getTable()} p
-                JOIN loans l ON p.loan_id = l.id
-                JOIN clients c ON l.client_id = c.id
-                JOIN users u ON p.user_id = u.id";
-
-        $conditions = [];
-        $params = [];
-
-        // Apply filters
-        if (!empty($filters['search'])) {
-            $conditions[] = "(c.name LIKE ? OR c.phone_number LIKE ? OR l.id = ?)";
-            $searchParam = '%' . $filters['search'] . '%';
-            $params[] = $searchParam;
-            $params[] = $searchParam;
-            $params[] = $filters['search'];
-        }
-
-        if (!empty($filters['date_from'])) {
-            $conditions[] = "p.payment_date >= ?";
-            $params[] = $filters['date_from'] . ' 00:00:00';
-        }
-
-        if (!empty($filters['date_to'])) {
-            $conditions[] = "p.payment_date <= ?";
-            $params[] = $filters['date_to'] . ' 23:59:59';
-        }
-
-        if (!empty($filters['client_id'])) {
-            $conditions[] = "l.client_id = ?";
-            $params[] = $filters['client_id'];
-        }
-
-        if (!empty($filters['loan_id'])) {
-            $conditions[] = "p.loan_id = ?";
-            $params[] = $filters['loan_id'];
-        }
-
-        if (!empty($filters['recorded_by'])) {
-            $conditions[] = "p.user_id = ?";
-            $params[] = $filters['recorded_by'];
-        }
-
-        if (!empty($conditions)) {
-            $sql .= " WHERE " . implode(' AND ', $conditions);
-        }
-
-        $sql .= " ORDER BY p.payment_date DESC, p.id DESC";
-
-        if ($limit !== null) {
-            $sql .= " LIMIT ?";
-            $params[] = $limit;
-
-            if ($offset > 0) {
-                $sql .= " OFFSET ?";
-                $params[] = $offset;
-            }
-        }
-
-        return $this->db->resultSet($sql, $params);
+    public function getAllPayments($filters = [], $page = 1, $limit = null) {
+        $offset = ($page - 1) * $limit;
+        return $this->paymentModel->getAllPaymentsPaginated($limit, $offset, $filters);
     }
 
     /**

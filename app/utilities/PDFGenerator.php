@@ -247,12 +247,12 @@ class PDFGenerator {
  
     public function generateTransactionReport($transactions, $title = 'Transaction Report') {
         $this->setTitle($title);
-        
+
         // Add header
         $this->addHeader($title);
         $this->addLine('Generated on: ' . date('Y-m-d H:i:s'));
         $this->addSpace();
-        
+
         // Define columns
         $columns = [
             ['header' => 'ID', 'width' => 20],
@@ -263,12 +263,12 @@ class PDFGenerator {
             ['header' => 'Return Date', 'width' => 25],
             ['header' => 'Status', 'width' => 20]
         ];
-        
+
         // Prepare data
         $data = [];
         foreach ($transactions as $transaction) {
             $returnDate = $transaction['return_date'] ? date('Y-m-d', strtotime($transaction['return_date'])) : 'Not Returned';
-            
+
             $data[] = [
                 $transaction['id'],
                 $transaction['book_title'],
@@ -279,10 +279,322 @@ class PDFGenerator {
                 $transaction['status_label']
             ];
         }
-        
+
         // Add table
         $this->addTable($columns, $data);
-        
+
         return $this->output();
+    }
+
+    /**
+     * Generate a loan agreement PDF with details, schedule, terms, and signatures
+     * @param array $loan Loan data with client information
+     * @param array $paymentSchedule Weekly payment schedule
+     * @param string $approvedBy Manager name who approved the loan
+     * @return string PDF output
+     */
+    public function generateLoanAgreement($loan, $paymentSchedule, $approvedBy = 'Manager') {
+        $this->setTitle('Loan Agreement - Loan #' . $loan['id']);
+        $this->setAuthor('Fanders Microfinance');
+
+        // Add header
+        $this->addHeader('LOAN AGREEMENT');
+        $this->addSubHeader('Fanders Microfinance');
+        $this->addLine('Loan ID: ' . $loan['id']);
+        $this->addLine('Date: ' . date('F d, Y'));
+        $this->addSpace();
+
+        // Borrower Information
+        $this->addSubHeader('BORROWER INFORMATION');
+        $this->addLine('Name: ' . htmlspecialchars($loan['client_name']));
+        $this->addLine('Phone: ' . htmlspecialchars($loan['phone_number'] ?? 'N/A'));
+        $this->addLine('Email: ' . htmlspecialchars($loan['email'] ?? 'N/A'));
+        $this->addSpace();
+
+        // Loan Details
+        $this->addSubHeader('LOAN DETAILS');
+        $this->addLine('Principal Amount: ₱' . number_format($loan['principal'], 2));
+        $this->addLine('Interest Rate: ' . ($loan['interest_rate'] * 100) . '% per month');
+        $this->addLine('Loan Term: ' . $loan['term_weeks'] . ' weeks');
+        $this->addLine('Total Interest: ₱' . number_format($loan['total_interest'], 2));
+        $this->addLine('Insurance Fee: ₱' . number_format($loan['insurance_fee'], 2));
+        $this->addLine('Total Loan Amount: ₱' . number_format($loan['total_loan_amount'], 2));
+        $this->addLine('Weekly Payment: ₱' . number_format($loan['total_loan_amount'] / $loan['term_weeks'], 2));
+        $this->addSpace();
+
+        // Payment Schedule
+        $this->addSubHeader('PAYMENT SCHEDULE');
+        $this->addLine('Payments are due every week starting from disbursement date.');
+        $this->addSpace();
+
+        // Define schedule columns
+        $scheduleColumns = [
+            ['header' => 'Week', 'width' => 20],
+            ['header' => 'Due Date', 'width' => 30],
+            ['header' => 'Payment Amount', 'width' => 35],
+            ['header' => 'Principal', 'width' => 30],
+            ['header' => 'Interest', 'width' => 25],
+            ['header' => 'Insurance', 'width' => 25]
+        ];
+
+        // Prepare schedule data
+        $scheduleData = [];
+        $disbursementDate = strtotime($loan['disbursement_date'] ?? $loan['approval_date'] ?? date('Y-m-d'));
+
+        foreach ($paymentSchedule as $payment) {
+            $dueDate = date('M d, Y', strtotime("+" . ($payment['week'] - 1) . " weeks", $disbursementDate));
+            $scheduleData[] = [
+                $payment['week'],
+                $dueDate,
+                '₱' . number_format($payment['expected_payment'], 2),
+                '₱' . number_format($payment['principal_payment'], 2),
+                '₱' . number_format($payment['interest_payment'], 2),
+                '₱' . number_format($payment['insurance_payment'], 2)
+            ];
+        }
+
+        $this->addTable($scheduleColumns, $scheduleData);
+        $this->addSpace();
+
+        // Terms and Conditions
+        $this->addSubHeader('TERMS AND CONDITIONS');
+        $this->addLine('1. The borrower agrees to repay the loan in ' . $loan['term_weeks'] . ' equal weekly installments.');
+        $this->addLine('2. Payments must be made on or before the due date each week.');
+        $this->addLine('3. Late payments will incur a penalty of 2% of the weekly payment amount per week late.');
+        $this->addLine('4. Failure to make payments may result in additional fees and collection actions.');
+        $this->addLine('5. The borrower agrees to provide accurate information and notify of any changes.');
+        $this->addLine('6. This agreement is governed by the laws of the Philippines.');
+        $this->addSpace();
+
+        // Signatures Section
+        $this->addSubHeader('SIGNATURES');
+        $this->addSpace(2);
+
+        // Manager signature
+        $this->pdf->SetFont('Arial', 'B', 12);
+        $this->pdf->Cell(80, 10, 'Approved By:', 0, 0);
+        $this->pdf->Cell(80, 10, 'Borrower Signature:', 0, 1);
+        $this->pdf->SetFont('Arial', '', 12);
+        $this->pdf->Cell(80, 15, $approvedBy, 'T', 0);
+        $this->pdf->Cell(80, 15, '', 'T', 1);
+        $this->pdf->Cell(80, 10, 'Manager - Fanders Microfinance', 0, 0);
+        $this->pdf->Cell(80, 10, htmlspecialchars($loan['client_name']), 0, 1);
+        $this->pdf->Cell(80, 10, 'Date: ____________________', 0, 0);
+        $this->pdf->Cell(80, 10, 'Date: ____________________', 0, 1);
+
+        return $this->output();
+    }
+
+    /**
+     * Generate a loan agreement PDF and save to file
+     * @param array $loan Loan data with client information
+     * @param array $paymentSchedule Weekly payment schedule
+     * @param string $approvedBy Manager name who approved the loan
+     * @param string $filePath Path to save the PDF file (optional)
+     * @return bool Success status
+     */
+    public function generateLoanAgreementToFile($loan, $paymentSchedule, $approvedBy = 'Manager', $filePath = null) {
+        $this->setTitle('Loan Agreement - Loan #' . $loan['id']);
+        $this->setAuthor('Fanders Microfinance');
+
+        // Set up professional styling
+        $this->pdf->SetFillColor(240, 248, 255); // Light blue background for headers
+        $this->pdf->SetDrawColor(0, 123, 255); // Blue border color
+        $this->pdf->SetTextColor(33, 37, 41); // Dark text
+
+        // Company Header with Logo Area
+        $this->pdf->SetFont('Arial', 'B', 20);
+        $this->pdf->SetFillColor(0, 123, 255);
+        $this->pdf->SetTextColor(255, 255, 255);
+        $this->pdf->Cell(0, 15, 'FANDERS MICROFINANCE', 0, 1, 'C', true);
+        $this->pdf->SetTextColor(33, 37, 41);
+
+        // Subtitle
+        $this->pdf->SetFont('Arial', 'I', 12);
+        $this->pdf->Cell(0, 8, 'Empowering Communities Through Financial Inclusion', 0, 1, 'C');
+        $this->pdf->Ln(5);
+
+        // Document Title
+        $this->pdf->SetFont('Arial', 'B', 18);
+        $this->pdf->SetFillColor(240, 248, 255);
+        $this->pdf->Cell(0, 12, 'LOAN AGREEMENT', 1, 1, 'C', true);
+        $this->pdf->Ln(3);
+
+        // Agreement Details Box
+        $this->pdf->SetFont('Arial', '', 10);
+        $this->pdf->SetFillColor(248, 249, 250);
+        $this->pdf->Cell(95, 8, 'Loan ID: ' . $loan['id'], 1, 0, 'L', true);
+        $this->pdf->Cell(95, 8, 'Date: ' . date('F d, Y'), 1, 1, 'L', true);
+        $this->pdf->Ln(2);
+
+        // Borrower Information Section
+        $this->pdf->SetFont('Arial', 'B', 14);
+        $this->pdf->SetFillColor(0, 123, 255);
+        $this->pdf->SetTextColor(255, 255, 255);
+        $this->pdf->Cell(0, 10, 'BORROWER INFORMATION', 1, 1, 'L', true);
+        $this->pdf->SetTextColor(33, 37, 41);
+        $this->pdf->SetFont('Arial', '', 11);
+
+        $this->pdf->Cell(40, 8, 'Full Name:', 1, 0, 'L');
+        $this->pdf->Cell(0, 8, htmlspecialchars($loan['client_name']), 1, 1, 'L');
+
+        $this->pdf->Cell(40, 8, 'Phone Number:', 1, 0, 'L');
+        $this->pdf->Cell(0, 8, htmlspecialchars($loan['phone_number'] ?? 'N/A'), 1, 1, 'L');
+
+        $this->pdf->Cell(40, 8, 'Email Address:', 1, 0, 'L');
+        $this->pdf->Cell(0, 8, htmlspecialchars($loan['email'] ?? 'N/A'), 1, 1, 'L');
+
+        $this->pdf->Cell(40, 8, 'Address:', 1, 0, 'L');
+        $this->pdf->Cell(0, 8, htmlspecialchars($loan['address'] ?? 'N/A'), 1, 1, 'L');
+        $this->pdf->Ln(3);
+
+        // Loan Details Section
+        $this->pdf->SetFont('Arial', 'B', 14);
+        $this->pdf->SetFillColor(0, 123, 255);
+        $this->pdf->SetTextColor(255, 255, 255);
+        $this->pdf->Cell(0, 10, 'LOAN DETAILS', 1, 1, 'L', true);
+        $this->pdf->SetTextColor(33, 37, 41);
+        $this->pdf->SetFont('Arial', '', 11);
+
+        // Create a table for loan details
+        $this->pdf->SetFillColor(248, 249, 250);
+        $this->pdf->Cell(70, 8, 'Principal Amount:', 1, 0, 'L', true);
+        $this->pdf->Cell(0, 8, '₱' . number_format($loan['principal'], 2), 1, 1, 'R');
+
+        $this->pdf->Cell(70, 8, 'Interest Rate:', 1, 0, 'L');
+        $this->pdf->Cell(0, 8, ($loan['interest_rate'] * 100) . '% per month', 1, 1, 'R');
+
+        $this->pdf->Cell(70, 8, 'Loan Term:', 1, 0, 'L', true);
+        $this->pdf->Cell(0, 8, $loan['term_weeks'] . ' weeks (' . round($loan['term_weeks']/4.33, 1) . ' months)', 1, 1, 'R');
+
+        $this->pdf->Cell(70, 8, 'Total Interest:', 1, 0, 'L');
+        $this->pdf->Cell(0, 8, '₱' . number_format($loan['total_interest'], 2), 1, 1, 'R');
+
+        $this->pdf->Cell(70, 8, 'Insurance Fee:', 1, 0, 'L', true);
+        $this->pdf->Cell(0, 8, '₱' . number_format($loan['insurance_fee'], 2), 1, 1, 'R');
+
+        $this->pdf->SetFont('Arial', 'B', 12);
+        $this->pdf->SetFillColor(255, 193, 7);
+        $this->pdf->SetTextColor(0, 0, 0);
+        $this->pdf->Cell(70, 10, 'TOTAL LOAN AMOUNT:', 1, 0, 'L', true);
+        $this->pdf->Cell(0, 10, '₱' . number_format($loan['total_loan_amount'], 2), 1, 1, 'R');
+
+        $this->pdf->SetFont('Arial', 'B', 12);
+        $this->pdf->SetFillColor(40, 167, 69);
+        $this->pdf->SetTextColor(255, 255, 255);
+        $this->pdf->Cell(70, 10, 'WEEKLY PAYMENT:', 1, 0, 'L', true);
+        $this->pdf->Cell(0, 10, '₱' . number_format($loan['total_loan_amount'] / $loan['term_weeks'], 2), 1, 1, 'R');
+        $this->pdf->SetTextColor(33, 37, 41);
+        $this->pdf->Ln(3);
+
+        // Payment Schedule Section
+        $this->pdf->SetFont('Arial', 'B', 14);
+        $this->pdf->SetFillColor(0, 123, 255);
+        $this->pdf->SetTextColor(255, 255, 255);
+        $this->pdf->Cell(0, 10, 'PAYMENT SCHEDULE', 1, 1, 'L', true);
+        $this->pdf->SetTextColor(33, 37, 41);
+        $this->pdf->SetFont('Arial', '', 9);
+
+        $this->pdf->SetFillColor(248, 249, 250);
+        $this->pdf->Cell(0, 6, 'Payments are due every week starting from disbursement date. All payments must be made on time.', 1, 1, 'L', true);
+        $this->pdf->Ln(1);
+
+        // Define schedule columns with better proportions
+        $scheduleColumns = [
+            ['header' => 'Week', 'width' => 15],
+            ['header' => 'Due Date', 'width' => 25],
+            ['header' => 'Payment Amount', 'width' => 35],
+            ['header' => 'Principal', 'width' => 30],
+            ['header' => 'Interest', 'width' => 25],
+            ['header' => 'Insurance', 'width' => 25],
+            ['header' => 'Balance', 'width' => 30]
+        ];
+
+        // Prepare schedule data with running balance
+        $scheduleData = [];
+        $runningBalance = $loan['total_loan_amount'];
+        $disbursementDate = strtotime($loan['disbursement_date'] ?? $loan['approval_date'] ?? date('Y-m-d'));
+
+        foreach ($paymentSchedule as $payment) {
+            $runningBalance -= $payment['expected_payment'];
+            $dueDate = date('M d, Y', strtotime("+" . ($payment['week'] - 1) . " weeks", $disbursementDate));
+            $scheduleData[] = [
+                $payment['week'],
+                $dueDate,
+                '₱' . number_format($payment['expected_payment'], 2),
+                '₱' . number_format($payment['principal_payment'], 2),
+                '₱' . number_format($payment['interest_payment'], 2),
+                '₱' . number_format($payment['insurance_payment'], 2),
+                '₱' . number_format(max(0, $runningBalance), 2)
+            ];
+        }
+
+        $this->addTable($scheduleColumns, $scheduleData);
+        $this->pdf->Ln(2);
+
+        // Terms and Conditions Section
+        $this->pdf->SetFont('Arial', 'B', 14);
+        $this->pdf->SetFillColor(220, 53, 69);
+        $this->pdf->SetTextColor(255, 255, 255);
+        $this->pdf->Cell(0, 10, 'TERMS AND CONDITIONS', 1, 1, 'L', true);
+        $this->pdf->SetTextColor(33, 37, 41);
+        $this->pdf->SetFont('Arial', '', 9);
+
+        $terms = [
+            '1. The borrower agrees to repay the loan in ' . $loan['term_weeks'] . ' equal weekly installments as specified in the payment schedule.',
+            '2. Payments must be made on or before the due date each week. Late payments will incur penalties.',
+            '3. Late payments will incur a penalty of 2% of the weekly payment amount per week late.',
+            '4. Failure to make payments may result in additional fees, collection actions, and reporting to credit bureaus.',
+            '5. The borrower agrees to provide accurate information and must notify Fanders Microfinance of any changes in contact information.',
+            '6. The borrower authorizes Fanders Microfinance to verify information provided and to contact references if necessary.',
+            '7. This agreement is governed by the laws of the Republic of the Philippines.',
+            '8. Any disputes arising from this agreement shall be resolved through the proper courts of the Philippines.',
+            '9. The borrower acknowledges receipt of a copy of this agreement and understands all terms and conditions.',
+            '10. This agreement constitutes the entire understanding between the parties and supersedes all prior agreements.'
+        ];
+
+        $this->pdf->SetFillColor(255, 255, 255);
+        foreach ($terms as $term) {
+            $this->pdf->MultiCell(0, 5, $term, 0, 'L');
+            $this->pdf->Ln(1);
+        }
+        $this->pdf->Ln(2);
+
+        // Signatures Section
+        $this->pdf->SetFont('Arial', 'B', 14);
+        $this->pdf->SetFillColor(0, 123, 255);
+        $this->pdf->SetTextColor(255, 255, 255);
+        $this->pdf->Cell(0, 10, 'SIGNATURES AND ACKNOWLEDGMENT', 1, 1, 'L', true);
+        $this->pdf->SetTextColor(33, 37, 41);
+        $this->pdf->Ln(5);
+
+        // Create signature boxes
+        $this->pdf->SetFont('Arial', 'B', 11);
+        $this->pdf->Cell(85, 8, 'APPROVED BY:', 1, 0, 'L');
+        $this->pdf->Cell(85, 8, 'BORROWER SIGNATURE:', 1, 1, 'L');
+
+        $this->pdf->SetFont('Arial', '', 10);
+        $this->pdf->Cell(85, 15, $approvedBy, 'LTR', 0, 'L');
+        $this->pdf->Cell(85, 15, '', 'LTR', 1, 'L');
+
+        $this->pdf->Cell(85, 8, 'Manager - Fanders Microfinance', 'LBR', 0, 'L');
+        $this->pdf->Cell(85, 8, htmlspecialchars($loan['client_name']), 'LBR', 1, 'L');
+
+        $this->pdf->Cell(85, 8, 'Date: ____________________', 'LR', 0, 'L');
+        $this->pdf->Cell(85, 8, 'Date: ____________________', 'LR', 1, 'L');
+
+        $this->pdf->Cell(85, 8, '', 'LBR', 0, 'L');
+        $this->pdf->Cell(85, 8, '', 'LBR', 1, 'L');
+        $this->pdf->Ln(5);
+
+        // Footer
+        $this->pdf->SetFont('Arial', 'I', 8);
+        $this->pdf->SetTextColor(128, 128, 128);
+        $this->pdf->Cell(0, 5, 'This document was generated electronically on ' . date('F d, Y H:i:s') . ' and is legally binding.', 0, 1, 'C');
+        $this->pdf->Cell(0, 5, 'Fanders Microfinance - Contact: (02) 123-4567 | Email: info@fandersmicrofinance.com', 0, 1, 'C');
+
+        // Save to file directly without sending to browser
+        $this->pdf->Output($filePath, 'F');
+        return true;
     }
 }

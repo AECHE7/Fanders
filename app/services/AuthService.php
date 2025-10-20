@@ -90,7 +90,7 @@ class AuthService extends BaseService {
 
         // Log successful login
         $transactionService = new TransactionService();
-        $transactionService->logUserTransaction('login', $user['id'], $user['id'], [
+        $transactionService->logUserLogin($user['id'], [
             'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown'
         ]);
@@ -105,7 +105,7 @@ class AuthService extends BaseService {
         // Log logout if user was logged in
         if ($currentUser) {
             $transactionService = new TransactionService();
-            $transactionService->logUserTransaction('logout', $currentUser['id'], $currentUser['id'], [
+            $transactionService->logUserLogout($currentUser['id'], [
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
                 'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown'
             ]);

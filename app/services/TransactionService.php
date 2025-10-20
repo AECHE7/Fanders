@@ -1,222 +1,366 @@
 <?php
 /**
- * TransactionService - Handles audit logging for all financial and user operations.
- * This service provides comprehensive transaction logging for compliance and audit trails.
+ * TransactionService - Handles transaction/event logging for the microfinance system
+ *
+ * This service provides methods to log all system events including:
+ * - User authentication events (login, logout, session extension)
+ * - CRUD operations for clients, loans, payments, and users
+ * - System events and configuration changes
  */
-require_once __DIR__ . '/../core/BaseService.php';
-require_once __DIR__ . '/../models/TransactionLogModel.php';
+
+require_once BASE_PATH . '/app/core/BaseService.php';
+require_once BASE_PATH . '/app/models/TransactionModel.php';
+require_once BASE_PATH . '/app/models/TransactionLogModel.php';
 
 class TransactionService extends BaseService {
+    private $transactionModel;
     private $transactionLogModel;
 
     public function __construct() {
         parent::__construct();
+        $this->transactionModel = new TransactionModel();
         $this->transactionLogModel = new TransactionLogModel();
-        $this->setModel($this->transactionLogModel);
     }
 
     /**
-     * Logs a loan-related transaction.
-     * @param string $action Action performed (created, approved, disbursed, completed, etc.)
-     * @param int $loanId Loan ID
-     * @param int|null $userId User performing the action
-     * @param array $details Additional transaction details
-     * @return bool
-     */
-    public function logLoanTransaction($action, $loanId, $userId = null, $details = []) {
-        $logData = [
-            'entity_type' => 'loan',
-            'entity_id' => $loanId,
-            'action' => $action,
-            'user_id' => $userId,
-            'details' => json_encode($details),
-            'timestamp' => date('Y-m-d H:i:s'),
-            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
-        ];
-
-        return $this->transactionLogModel->create($logData);
-    }
-
-    /**
-     * Logs a payment-related transaction.
-     * @param int $paymentId Payment ID
-     * @param int|null $userId User performing the action
-     * @param array $details Additional transaction details
-     * @return bool
-     */
-    public function logPaymentTransaction($paymentId, $userId = null, $details = []) {
-        $logData = [
-            'entity_type' => 'payment',
-            'entity_id' => $paymentId,
-            'action' => 'recorded',
-            'user_id' => $userId,
-            'details' => json_encode($details),
-            'timestamp' => date('Y-m-d H:i:s'),
-            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
-        ];
-
-        return $this->transactionLogModel->create($logData);
-    }
-
-    /**
-     * Logs a client-related transaction.
-     * @param string $action Action performed (created, updated, deactivated, etc.)
-     * @param int $clientId Client ID
-     * @param int|null $userId User performing the action
-     * @param array $details Additional transaction details
-     * @return bool
-     */
-    public function logClientTransaction($action, $clientId, $userId = null, $details = []) {
-        $logData = [
-            'entity_type' => 'client',
-            'entity_id' => $clientId,
-            'action' => $action,
-            'user_id' => $userId,
-            'details' => json_encode($details),
-            'timestamp' => date('Y-m-d H:i:s'),
-            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
-        ];
-
-        return $this->transactionLogModel->create($logData);
-    }
-
-    /**
-     * Logs a user-related transaction.
-     * @param string $action Action performed (created, updated, deactivated, etc.)
+     * Logs a user login event.
      * @param int $userId User ID
-     * @param int|null $performedBy User performing the action
-     * @param array $details Additional transaction details
-     * @return bool
+     * @param array $additionalData Additional login data (IP, user agent, etc.)
+     * @return bool Success status
      */
-    public function logUserTransaction($action, $userId, $performedBy = null, $details = []) {
-        $logData = [
-            'entity_type' => 'user',
-            'entity_id' => $userId,
-            'action' => $action,
-            'user_id' => $performedBy,
-            'details' => json_encode($details),
+    public function logUserLogin($userId, $additionalData = []) {
+        $details = array_merge([
+            'action' => 'login',
+            'timestamp' => date('Y-m-d H:i:s'),
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null
+        ], $additionalData);
+
+        return $this->transactionModel->create([
+            'user_id' => $userId,
+            'transaction_type' => TransactionModel::TYPE_LOGIN,
+            'details' => $details
+        ]);
+    }
+
+    /**
+     * Logs a user logout event.
+     * @param int $userId User ID
+     * @param array $additionalData Additional logout data
+     * @return bool Success status
+     */
+    public function logUserLogout($userId, $additionalData = []) {
+        $details = array_merge([
+            'action' => 'logout',
             'timestamp' => date('Y-m-d H:i:s'),
             'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ], $additionalData);
+
+        return $this->transactionModel->create([
+            'user_id' => $userId,
+            'transaction_type' => TransactionModel::TYPE_LOGOUT,
+            'details' => $details
+        ]);
+    }
+
+    /**
+     * Logs a session extension event.
+     * @param int $userId User ID
+     * @param array $additionalData Additional session data
+     * @return bool Success status
+     */
+    public function logSessionExtended($userId, $additionalData = []) {
+        $details = array_merge([
+            'action' => 'session_extended',
+            'timestamp' => date('Y-m-d H:i:s'),
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ], $additionalData);
+
+        return $this->transactionModel->create([
+            'user_id' => $userId,
+            'transaction_type' => TransactionModel::TYPE_SESSION_EXTENDED,
+            'details' => $details
+        ]);
+    }
+
+    /**
+     * Logs user CRUD operations.
+     * @param string $action Action type (created, updated, deleted, viewed)
+     * @param int $userId User performing the action
+     * @param int|null $targetUserId Target user ID (for updates/deletes)
+     * @param array $additionalData Additional data
+     * @return bool Success status
+     */
+    public function logUserTransaction($action, $userId, $targetUserId = null, $additionalData = []) {
+        $transactionTypes = [
+            'created' => TransactionModel::TYPE_USER_CREATED,
+            'updated' => TransactionModel::TYPE_USER_UPDATED,
+            'deleted' => TransactionModel::TYPE_USER_DELETED,
+            'viewed' => TransactionModel::TYPE_USER_VIEWED
         ];
 
-        return $this->transactionLogModel->create($logData);
+        $transactionType = $transactionTypes[$action] ?? TransactionModel::TYPE_USER_VIEWED;
+
+        $details = array_merge([
+            'action' => $action,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'target_user_id' => $targetUserId,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ], $additionalData);
+
+        return $this->transactionModel->create([
+            'user_id' => $userId,
+            'transaction_type' => $transactionType,
+            'reference_id' => $targetUserId,
+            'details' => $details
+        ]);
     }
 
     /**
-     * Retrieves transaction logs for a specific entity.
-     * @param string $entityType Entity type (loan, payment, client, user)
-     * @param int $entityId Entity ID
-     * @param int $limit Number of records to retrieve
-     * @return array
+     * Logs client CRUD operations.
+     * @param string $action Action type (created, updated, deleted, viewed)
+     * @param int $userId User performing the action
+     * @param int|null $clientId Client ID
+     * @param array $additionalData Additional data
+     * @return bool Success status
      */
-    public function getEntityLogs($entityType, $entityId, $limit = 50) {
-        return $this->transactionLogModel->getLogsByEntity($entityType, $entityId, $limit);
+    public function logClientTransaction($action, $userId, $clientId = null, $additionalData = []) {
+        $transactionTypes = [
+            'created' => TransactionModel::TYPE_CLIENT_CREATED,
+            'updated' => TransactionModel::TYPE_CLIENT_UPDATED,
+            'deleted' => TransactionModel::TYPE_CLIENT_DELETED,
+            'viewed' => TransactionModel::TYPE_CLIENT_VIEWED
+        ];
+
+        $transactionType = $transactionTypes[$action] ?? TransactionModel::TYPE_CLIENT_VIEWED;
+
+        $details = array_merge([
+            'action' => $action,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'client_id' => $clientId,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ], $additionalData);
+
+        return $this->transactionModel->create([
+            'user_id' => $userId,
+            'transaction_type' => $transactionType,
+            'reference_id' => $clientId,
+            'details' => $details
+        ]);
     }
 
     /**
-     * Retrieves transaction logs for a specific user.
-     * @param int $userId User ID
-     * @param int $limit Number of records to retrieve
-     * @return array
+     * Logs loan CRUD operations.
+     * @param string $action Action type (created, updated, approved, disbursed, completed, cancelled, deleted, viewed)
+     * @param int $userId User performing the action
+     * @param int|null $loanId Loan ID
+     * @param array $additionalData Additional data
+     * @return bool Success status
      */
-    public function getUserLogs($userId, $limit = 50) {
-        return $this->transactionLogModel->getLogsByUser($userId, $limit);
+    public function logLoanTransaction($action, $userId, $loanId = null, $additionalData = []) {
+        $transactionTypes = [
+            'created' => TransactionModel::TYPE_LOAN_CREATED,
+            'updated' => TransactionModel::TYPE_LOAN_UPDATED,
+            'approved' => TransactionModel::TYPE_LOAN_APPROVED,
+            'disbursed' => TransactionModel::TYPE_LOAN_DISBURSED,
+            'completed' => TransactionModel::TYPE_LOAN_COMPLETED,
+            'cancelled' => TransactionModel::TYPE_LOAN_CANCELLED,
+            'deleted' => TransactionModel::TYPE_LOAN_DELETED,
+            'viewed' => TransactionModel::TYPE_LOAN_VIEWED
+        ];
+
+        $transactionType = $transactionTypes[$action] ?? TransactionModel::TYPE_LOAN_VIEWED;
+
+        $details = array_merge([
+            'action' => $action,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'loan_id' => $loanId,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ], $additionalData);
+
+        return $this->transactionModel->create([
+            'user_id' => $userId,
+            'transaction_type' => $transactionType,
+            'reference_id' => $loanId,
+            'details' => $details
+        ]);
     }
 
     /**
-     * Retrieves transaction logs within a date range.
-     * @param string $startDate Start date (Y-m-d)
-     * @param string $endDate End date (Y-m-d)
-     * @param string|null $entityType Filter by entity type
-     * @return array
+     * Logs payment CRUD operations.
+     * @param string $action Action type (created, recorded, approved, cancelled, overdue, viewed)
+     * @param int $userId User performing the action
+     * @param int|null $paymentId Payment ID
+     * @param array $additionalData Additional data
+     * @return bool Success status
      */
-    public function getLogsByDateRange($startDate, $endDate, $entityType = null) {
-        return $this->transactionLogModel->getLogsByDateRange($startDate, $endDate, $entityType);
+    public function logPaymentTransaction($action, $userId, $paymentId = null, $additionalData = []) {
+        $transactionTypes = [
+            'created' => TransactionModel::TYPE_PAYMENT_CREATED,
+            'recorded' => TransactionModel::TYPE_PAYMENT_RECORDED,
+            'approved' => TransactionModel::TYPE_PAYMENT_APPROVED,
+            'cancelled' => TransactionModel::TYPE_PAYMENT_CANCELLED,
+            'overdue' => TransactionModel::TYPE_PAYMENT_OVERDUE,
+            'viewed' => TransactionModel::TYPE_PAYMENT_VIEWED
+        ];
+
+        $transactionType = $transactionTypes[$action] ?? TransactionModel::TYPE_PAYMENT_VIEWED;
+
+        $details = array_merge([
+            'action' => $action,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'payment_id' => $paymentId,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ], $additionalData);
+
+        return $this->transactionModel->create([
+            'user_id' => $userId,
+            'transaction_type' => $transactionType,
+            'reference_id' => $paymentId,
+            'details' => $details
+        ]);
     }
 
     /**
-     * Retrieves recent transaction logs.
-     * @param int $limit Number of records to retrieve
-     * @return array
+     * Logs system events.
+     * @param string $action Action type (backup, config_changed, maintenance)
+     * @param int $userId User performing the action
+     * @param array $additionalData Additional data
+     * @return bool Success status
      */
-    public function getRecentLogs($limit = 100) {
-        return $this->transactionLogModel->getRecentLogs($limit);
+    public function logSystemTransaction($action, $userId, $additionalData = []) {
+        $transactionTypes = [
+            'backup' => TransactionModel::TYPE_SYSTEM_BACKUP,
+            'config_changed' => TransactionModel::TYPE_SYSTEM_CONFIG_CHANGED,
+            'maintenance' => TransactionModel::TYPE_DATABASE_MAINTENANCE
+        ];
+
+        $transactionType = $transactionTypes[$action] ?? TransactionModel::TYPE_SYSTEM_CONFIG_CHANGED;
+
+        $details = array_merge([
+            'action' => $action,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ], $additionalData);
+
+        return $this->transactionModel->create([
+            'user_id' => $userId,
+            'transaction_type' => $transactionType,
+            'details' => $details
+        ]);
     }
 
     /**
-     * Gets transaction statistics for reporting.
-     * @param string $startDate Start date (Y-m-d)
-     * @param string $endDate End date (Y-m-d)
-     * @return array
-     */
-    public function getTransactionStats($startDate = null, $endDate = null) {
-        if ($startDate === null) {
-            $startDate = date('Y-m-d', strtotime('-30 days'));
-        }
-        if ($endDate === null) {
-            $endDate = date('Y-m-d');
-        }
-        return $this->transactionLogModel->getTransactionStats($startDate, $endDate);
-    }
-
-    /**
-     * Gets transaction history with pagination.
-     * @param int $limit Number of records per page
+     * Gets transaction history with filtering.
+     * @param array $filters Filter options
+     * @param int $limit Number of records
      * @param int $offset Offset for pagination
      * @return array
      */
-    public function getTransactionHistory($limit = 50, $offset = 0) {
-        $sql = "SELECT tl.*, u.name as user_name, u.role as user_role
-                FROM transaction_logs tl
-                LEFT JOIN users u ON tl.user_id = u.id
-                ORDER BY tl.timestamp DESC
-                LIMIT ? OFFSET ?";
-
-        return $this->db->resultSet($sql, [$limit, $offset]);
+    public function getTransactionHistory($filters = [], $limit = 50, $offset = 0) {
+        return $this->transactionModel->getFilteredTransactions($filters, $limit, $offset);
     }
 
     /**
-     * Gets total transaction count.
+     * Gets transaction statistics.
+     * @param string $startDate Start date (Y-m-d)
+     * @param string $endDate End date (Y-m-d)
+     * @return array
+     */
+    public function getTransactionStats($startDate, $endDate) {
+        return $this->transactionModel->getTransactionStats($startDate, $endDate);
+    }
+
+    /**
+     * Gets the count of filtered transactions for pagination.
+     * @param array $filters Filter options
      * @return int
      */
-    public function getTotalTransactionCount() {
-        $sql = "SELECT COUNT(*) as count FROM transaction_logs";
-        $result = $this->db->single($sql);
-        return $result['count'] ?? 0;
+    public function getTransactionCount($filters = []) {
+        return $this->transactionModel->getFilteredCount($filters);
     }
 
     /**
-     * Searches transactions by term.
-     * @param string $searchTerm Search term
-     * @param int $limit Number of records to return
+     * Gets all available transaction types.
      * @return array
      */
-    public function searchTransactions($searchTerm, $limit = 50) {
-        $sql = "SELECT tl.*, u.name as user_name, u.role as user_role
-                FROM transaction_logs tl
-                LEFT JOIN users u ON tl.user_id = u.id
-                WHERE tl.details LIKE ? OR tl.action LIKE ? OR tl.entity_type LIKE ?
-                ORDER BY tl.timestamp DESC
-                LIMIT ?";
-
-        $searchPattern = '%' . $searchTerm . '%';
-        return $this->db->resultSet($sql, [$searchPattern, $searchPattern, $searchPattern, $limit]);
+    public function getTransactionTypes() {
+        return TransactionModel::getTransactionTypes();
     }
 
     /**
-     * Gets transactions by type.
-     * @param string $type Transaction type
-     * @param int $limit Number of records to return
-     * @return array
+     * Exports transactions to PDF.
+     * @param array $transactions Transaction data
+     * @param array $filters Applied filters
+     * @return string PDF output
      */
-    public function getTransactionsByType($type, $limit = 50) {
-        $sql = "SELECT tl.*, u.name as user_name, u.role as user_role
-                FROM transaction_logs tl
-                LEFT JOIN users u ON tl.user_id = u.id
-                WHERE tl.entity_type = ?
-                ORDER BY tl.timestamp DESC
-                LIMIT ?";
+    public function exportTransactionsPDF($transactions, $filters = []) {
+        require_once BASE_PATH . '/app/utilities/PDFGenerator.php';
+        $pdf = new PDFGenerator();
+        $pdf->setTitle('Transaction History Report');
 
-        return $this->db->resultSet($sql, [$type, $limit]);
+        $title = 'Transaction History Report';
+        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+            $title .= ' (' . $filters['date_from'] . ' to ' . $filters['date_to'] . ')';
+        }
+
+        $pdf->addHeader($title);
+        $pdf->addLine('Generated on: ' . date('Y-m-d H:i:s'));
+        $pdf->addSpace();
+
+        // Define columns
+        $columns = [
+            ['header' => 'Date & Time', 'width' => 30],
+            ['header' => 'User', 'width' => 35],
+            ['header' => 'Action', 'width' => 40],
+            ['header' => 'Type', 'width' => 25],
+            ['header' => 'Reference ID', 'width' => 25],
+            ['header' => 'Details', 'width' => 45]
+        ];
+
+        // Prepare data
+        $tableData = [];
+        $transactionTypes = $this->getTransactionTypes();
+
+        foreach ($transactions as $transaction) {
+            $details = json_decode($transaction['details'], true);
+            $detailText = '';
+
+            if ($details) {
+                if (isset($details['amount'])) {
+                    $detailText = '₱' . number_format($details['amount'], 2);
+                } elseif (isset($details['principal'])) {
+                    $detailText = '₱' . number_format($details['principal'], 2);
+                } elseif (isset($details['message'])) {
+                    $detailText = substr($details['message'], 0, 30);
+                } elseif (isset($details['ip_address'])) {
+                    $detailText = 'IP: ' . $details['ip_address'];
+                }
+            }
+
+            $tableData[] = [
+                date('M j, Y H:i', strtotime($transaction['created_at'])),
+                $transaction['user_name'] ?? 'Unknown',
+                $transactionTypes[$transaction['transaction_type']] ?? ucfirst(str_replace('_', ' ', $transaction['transaction_type'])),
+                ucfirst($transaction['transaction_type']),
+                $transaction['reference_id'] ?? '-',
+                $detailText ?: '-'
+            ];
+        }
+
+        $pdf->addTable($columns, $tableData);
+
+        // Add summary
+        $pdf->addSpace();
+        $pdf->addSubHeader('Summary');
+        $totalTransactions = count($transactions);
+        $pdf->addLine("Total Transactions: $totalTransactions");
+
+        if (!empty($filters['transaction_type'])) {
+            $typeName = $transactionTypes[$filters['transaction_type']] ?? ucfirst(str_replace('_', ' ', $filters['transaction_type']));
+            $pdf->addLine("Filtered by Type: $typeName");
+        }
+
+        return $pdf->output('D', 'transaction_history_' . date('Y-m-d') . '.pdf');
     }
 }

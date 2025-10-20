@@ -6,15 +6,20 @@
  */
 require_once __DIR__ . '/../core/BaseService.php';
 require_once __DIR__ . '/../models/ClientModel.php';
-// Note: LoanModel/PaymentModel are not directly included here; they should be 
+require_once __DIR__ . '/../utilities/CacheUtility.php';
+require_once __DIR__ . '/../utilities/PaginationUtility.php';
+// Note: LoanModel/PaymentModel are not directly included here; they should be
 // included in LoanService or a dedicated Reporting Service for separation of concerns.
 
 class ClientService extends BaseService {
     private $clientModel;
+    private $cache;
+    private $pagination;
 
     public function __construct() {
         parent::__construct();
         $this->clientModel = new ClientModel();
+        $this->cache = new CacheUtility();
         $this->setModel($this->clientModel);
     }
 
@@ -29,11 +34,35 @@ class ClientService extends BaseService {
     }
 
     /**
-     * Retrieves all client records.
+     * Retrieves all client records with pagination and filters.
+     * @param int $page Page number for pagination
+     * @param int $limit Number of records per page
+     * @param array $filters Additional filters (search, status, date_from, date_to)
      * @return array
      */
-    public function getAllClients() {
-        return $this->clientModel->getAll('name', 'ASC');
+    public function getAllClients($page = 1, $limit = null, $filters = []) {
+        $cacheKey = 'all_clients_' . md5(serialize($filters) . "_page{$page}_limit{$limit}");
+
+        return $this->cache->remember($cacheKey, 1800, function() use ($page, $limit, $filters) { // Cache for 30 minutes
+            if ($limit) {
+                $offset = ($page - 1) * $limit;
+                return $this->clientModel->getAllClientsPaginated($limit, $offset, $filters);
+            }
+            return $this->clientModel->getAll('name', 'ASC');
+        });
+    }
+
+    /**
+     * Get total count of clients with filters applied
+     * @param array $filters Additional filters
+     * @return int
+     */
+    public function getTotalClientsCount($filters = []) {
+        $cacheKey = 'total_clients_' . md5(serialize($filters));
+
+        return $this->cache->remember($cacheKey, 1800, function() use ($filters) { // Cache for 30 minutes
+            return $this->clientModel->getTotalClientsCount($filters);
+        });
     }
 
     /**
@@ -83,7 +112,11 @@ class ClientService extends BaseService {
      * @return array
      */
     public function getClientStats() {
-        return $this->clientModel->getClientStats();
+        $cacheKey = 'client_stats';
+
+        return $this->cache->remember($cacheKey, 900, function() { // Cache for 15 minutes
+            return $this->clientModel->getClientStats();
+        });
     }
 
     /**
@@ -128,7 +161,10 @@ class ClientService extends BaseService {
              return false;
         }
 
-        // 4. Log transaction for audit trail
+        // 4. Clear relevant caches
+        $this->cache->delete('client_stats');
+
+        // 5. Log transaction for audit trail
         if (class_exists('TransactionService')) {
             $transactionService = new TransactionService();
             $transactionService->logClientTransaction('created', $newId, $createdBy, [

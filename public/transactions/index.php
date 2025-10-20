@@ -25,24 +25,26 @@ $offset = ($filters['page'] - 1) * $filters['limit'];
 
 // --- 2. Fetch Transaction Data ---
 try {
-    if (!empty($filters['search'])) {
-        $transactions = $transactionService->searchTransactions($filters['search'], $filters['limit']);
-        $totalTransactions = count($transactions);
-    } elseif (!empty($filters['type'])) {
-        $transactions = $transactionService->getTransactionsByType($filters['type'], $filters['limit']);
-        $totalTransactions = count($transactions);
-    } else {
-        $transactions = $transactionService->getTransactionHistory($filters['limit'], $offset);
-        $totalTransactions = $transactionService->getTotalTransactionCount();
-    }
-
-    $stats = $transactionService->getTransactionStats();
+    // Get filtered transactions
+    $transactions = $transactionService->getTransactionHistory($filters, $filters['limit'], $offset);
+    $totalTransactions = $transactionService->getTransactionCount($filters);
     $totalPages = ceil($totalTransactions / $filters['limit']);
+
+    // Get transaction statistics
+    $stats = $transactionService->getTransactionStats(date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
+
+    // Format stats for display
+    $stats = [
+        'total_transactions' => $stats['total'] ?? 0,
+        'recent_transactions' => $stats['daily'][count($stats['daily']) - 1]['count'] ?? 0,
+        'transactions_by_type' => $stats['by_type'] ?? [],
+        'total_amount' => 0 // This would need to be calculated from actual financial transactions
+    ];
 
 } catch (Exception $e) {
     error_log("Transaction log error: " . $e->getMessage());
     $transactions = [];
-    $stats = ['total_transactions' => 0, 'recent_transactions' => 0, 'transactions_by_type' => []];
+    $stats = ['total_transactions' => 0, 'recent_transactions' => 0, 'transactions_by_type' => [], 'total_amount' => 0];
     $totalPages = 1;
 }
 
@@ -53,7 +55,8 @@ include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+<main class="main-content">
+    <div class="content-wrapper">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Transaction Audit Log</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
@@ -124,8 +127,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h6 class="card-title text-uppercase small">Payment Records</h6>
-                            <h3 class="mb-0"><?= $stats['transactions_by_type']['PAYMENT_RECORDED'] ?? 0 ?></h3>
+                            <h6 class="card-title text-uppercase small">Total Amount</h6>
+                            <h3 class="mb-0">₱<?= number_format($stats['total_amount'] ?? 0, 2) ?></h3>
                         </div>
                         <i data-feather="dollar-sign" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                     </div>
@@ -145,15 +148,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         placeholder="Search transactions...">
                 </div>
                 <div class="col-md-2">
-                    <label for="type" class="form-label">Type</label>
-                    <select class="form-select" id="type" name="type">
+                    <label for="transaction_type" class="form-label">Type</label>
+                    <select class="form-select" id="transaction_type" name="transaction_type">
                         <option value="">All Types</option>
-                        <option value="LOAN_CREATED" <?= $filters['type'] === 'LOAN_CREATED' ? 'selected' : '' ?>>Loan Created</option>
-                        <option value="LOAN_APPROVED" <?= $filters['type'] === 'LOAN_APPROVED' ? 'selected' : '' ?>>Loan Approved</option>
-                        <option value="LOAN_DISBURSED" <?= $filters['type'] === 'LOAN_DISBURSED' ? 'selected' : '' ?>>Loan Disbursed</option>
-                        <option value="PAYMENT_RECORDED" <?= $filters['type'] === 'PAYMENT_RECORDED' ? 'selected' : '' ?>>Payment Recorded</option>
-                        <option value="CLIENT_CREATED" <?= $filters['type'] === 'CLIENT_CREATED' ? 'selected' : '' ?>>Client Created</option>
-                        <option value="USER_CREATED" <?= $filters['type'] === 'USER_CREATED' ? 'selected' : '' ?>>User Created</option>
+                        <?php
+                        $transactionTypes = TransactionModel::getTransactionTypes();
+                        foreach ($transactionTypes as $key => $label) {
+                            $selected = ($filters['transaction_type'] === $key) ? 'selected' : '';
+                            echo "<option value=\"$key\" $selected>$label</option>";
+                        }
+                        ?>
                     </select>
                 </div>
                 <div class="col-md-2">

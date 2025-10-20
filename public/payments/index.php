@@ -29,15 +29,39 @@ if (empty($filters['date_to'])) {
 
 $filters = FilterUtility::validateDateRange($filters);
 
-// --- 2. Fetch Payments Data ---
+// Get pagination parameters
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+
+// --- 2. Handle PDF Export ---
+if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
+    try {
+        $reportService = new ReportService();
+        $exportData = $paymentService->getAllPayments($filters, 1, 10000); // Get all data without pagination
+        $reportService->exportPaymentReportPDF($exportData, $filters);
+    } catch (Exception $e) {
+        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/payments/index.php?' . http_build_query($filters));
+        exit;
+    }
+    exit;
+}
+
+// --- 3. Fetch Payments Data ---
 try {
-    $payments = $paymentService->getAllPayments($filters);
+    $payments = $paymentService->getAllPayments($filters, $page, $limit);
     $totalPayments = $paymentService->getTotalPaymentsCount($filters);
 } catch (Exception $e) {
     error_log("Payments fetch error: " . $e->getMessage());
     $payments = [];
     $totalPayments = 0;
 }
+
+$totalPages = ceil($totalPayments / $limit);
+
+// Initialize pagination utility
+require_once '../../app/utilities/PaginationUtility.php';
+$pagination = new PaginationUtility($totalPayments, $page, $limit, 'page');
 
 // --- 3. Get Additional Data for Display ---
 $clients = []; // For filter dropdown
@@ -59,13 +83,14 @@ include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+<main class="main-content">
+    <div class="content-wrapper">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">Payment Records</h1>
         <div class="btn-toolbar mb-2 mb-md-0">
-            <!-- <a href="<?= APP_URL ?>/public/payments/approvals.php" class="btn btn-sm btn-success me-2">
+            <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-sm btn-success me-2">
                 <i data-feather="plus"></i> Record Payment
-            </a> -->
+            </a>
             <?php if ($userRole == 'super-admin' || $userRole == 'admin' || $userRole == 'manager'): ?>
                 <a href="<?= APP_URL ?>/public/payments/export.php" class="btn btn-sm btn-outline-secondary me-2">
                     <i data-feather="download"></i> Export
@@ -134,59 +159,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     </div>
 
-    <!-- Filters Section -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h6 class="mb-0">Filters</h6>
-        </div>
-        <div class="card-body">
-            <form method="GET" action="<?= APP_URL ?>/public/payments/index.php" class="row g-3">
-                <div class="col-md-3">
-                    <label for="date_from" class="form-label">From Date</label>
-                    <input type="date" class="form-control" id="date_from" name="date_from"
-                           value="<?= htmlspecialchars($filters['date_from']) ?>">
-                </div>
-                <div class="col-md-3">
-                    <label for="date_to" class="form-label">To Date</label>
-                    <input type="date" class="form-control" id="date_to" name="date_to"
-                           value="<?= htmlspecialchars($filters['date_to']) ?>">
-                </div>
-                <div class="col-md-3">
-                    <label for="client_id" class="form-label">Client</label>
-                    <select class="form-select" id="client_id" name="client_id">
-                        <option value="">All Clients</option>
-                        <?php foreach ($clients as $client): ?>
-                            <option value="<?= $client['id'] ?>" <?= $filters['client_id'] == $client['id'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($client['name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label for="loan_id" class="form-label">Loan</label>
-                    <select class="form-select" id="loan_id" name="loan_id">
-                        <option value="">All Loans</option>
-                        <?php foreach ($loans as $loan): ?>
-                            <option value="<?= $loan['id'] ?>" <?= $filters['loan_id'] == $loan['id'] ? 'selected' : '' ?>>
-                                #<?= $loan['id'] ?> - <?= htmlspecialchars($loan['client_name']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i data-feather="search"></i> Apply Filters
-                    </button>
-                    <a href="<?= APP_URL ?>/public/payments/index.php" class="btn btn-outline-secondary">
-                        <i data-feather="x"></i> Clear Filters
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- Payments List -->
     <div class="card shadow-sm">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Payments List</h5>
+                <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
+                    <i data-feather="download"></i> Export PDF
+                </a>
+            </div>
+        </div>
         <div class="card-body">
             <?php if (empty($payments)): ?>
                 <div class="text-center py-5">
@@ -227,6 +209,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                     <td>
                                         <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $payment['loan_id'] ?>" class="btn btn-sm btn-outline-primary">
                                             <i data-feather="eye"></i> View Loan
+                                        </a>
+                                        <a href="<?= APP_URL ?>/public/payments/view.php?id=<?= $payment['id'] ?>" class="btn btn-sm btn-outline-secondary">
+                                            <i data-feather="file-text"></i> View Payment
                                         </a>
                                     </td>
                                 </tr>

@@ -231,4 +231,71 @@ class ClientModel extends BaseModel {
         $sql = "SELECT id, name FROM {$this->table} WHERE status = ? ORDER BY name ASC";
         return $this->db->resultSet($sql, [self::STATUS_ACTIVE]);
     }
+
+    /**
+     * Get all clients with pagination support.
+     * @param int $limit Number of records per page
+     * @param int $offset Number of records to skip
+     * @param array $filters Additional filters
+     * @return array
+     */
+    public function getAllClientsPaginated($limit = 20, $offset = 0, $filters = []) {
+        $sql = "SELECT * FROM {$this->table}";
+        $params = [];
+
+        // Add filters
+        $whereConditions = [];
+        if (!empty($filters['status'])) {
+            $whereConditions[] = "status = ?";
+            $params[] = $filters['status'];
+        }
+        if (!empty($filters['search'])) {
+            $whereConditions[] = "(name LIKE ? OR email LIKE ? OR phone_number LIKE ?)";
+            $searchTerm = "%{$filters['search']}%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(" AND ", $whereConditions);
+        }
+
+        $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+
+        return $this->db->resultSet($sql, $params);
+    }
+
+    /**
+     * Get total count of clients with filters applied
+     * @param array $filters Additional filters
+     * @return int
+     */
+    public function getTotalClientsCount($filters = []) {
+        $sql = "SELECT COUNT(*) as total FROM {$this->table}";
+        $params = [];
+
+        // Apply same filters as getAllClientsPaginated
+        $whereConditions = [];
+        if (!empty($filters['status'])) {
+            $whereConditions[] = "status = ?";
+            $params[] = $filters['status'];
+        }
+        if (!empty($filters['search'])) {
+            $whereConditions[] = "(name LIKE ? OR email LIKE ? OR phone_number LIKE ?)";
+            $searchTerm = "%{$filters['search']}%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+
+        if (!empty($whereConditions)) {
+            $sql .= " WHERE " . implode(" AND ", $whereConditions);
+        }
+
+        $result = $this->db->single($sql, $params);
+        return (int)($result ? $result['total'] : 0);
+    }
 }
