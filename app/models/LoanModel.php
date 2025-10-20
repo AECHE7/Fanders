@@ -41,16 +41,77 @@ class LoanModel extends BaseModel {
     }
 
     /**
-     * Retrieves all loan records joined with basic client information.
+     * Enhanced method to retrieve all loan records with client information and filtering
+     * @param array $filters Filter parameters from FilterUtility
      * @return array
      */
-    public function getAllLoansWithClients() {
-        $sql = "SELECT l.*, c.name as client_name, c.phone_number, c.email
-                FROM {$this->table} l
-                JOIN clients c ON l.client_id = c.id
-                ORDER BY l.created_at DESC";
+    public function getAllLoansWithClients($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
 
-        return $this->db->resultSet($sql);
+        // Base query with proper joins
+        $baseSql = "SELECT l.*, 
+                          c.name as client_name, 
+                          c.phone_number, 
+                          c.email,
+                          c.status as client_status,
+                          COUNT(p.id) as payment_count,
+                          COALESCE(SUM(p.amount), 0) as total_paid,
+                          (l.total_loan_amount - COALESCE(SUM(p.amount), 0)) as outstanding_balance
+                    FROM {$this->table} l
+                    JOIN clients c ON l.client_id = c.id
+                    LEFT JOIN payments p ON l.id = p.loan_id";
+
+        // Build WHERE clause using FilterUtility
+        list($whereClause, $params) = FilterUtility::buildWhereClause($filters, 'loans');
+
+        // Add GROUP BY to handle payment aggregations
+        $groupClause = "GROUP BY l.id, c.id";
+
+        // Build ORDER BY clause
+        $allowedSortFields = ['l.created_at', 'l.principal', 'l.status', 'c.name', 'l.application_date'];
+        $orderClause = FilterUtility::buildOrderClause($filters, $allowedSortFields, 'l.created_at');
+
+        // Build complete query
+        $sql = "$baseSql $whereClause $groupClause $orderClause";
+
+        // Add pagination if requested
+        if (!empty($filters['limit'])) {
+            $limitClause = FilterUtility::buildLimitClause($filters);
+            $sql .= " $limitClause";
+        }
+
+        return $this->db->resultSet($sql, $params);
+    }
+
+    /**
+     * Get total count of loans matching filters (for pagination)
+     * @param array $filters Filter parameters
+     * @return int
+     */
+    public function getTotalLoansCount($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+
+        $baseSql = "SELECT COUNT(DISTINCT l.id) as count
+                    FROM {$this->table} l
+                    JOIN clients c ON l.client_id = c.id
+                    LEFT JOIN payments p ON l.id = p.loan_id";
+
+        list($whereClause, $params) = FilterUtility::buildWhereClause($filters, 'loans');
+        $sql = "$baseSql $whereClause";
+
+        $result = $this->db->single($sql, $params);
+        return $result ? (int)$result['count'] : 0;
+    }
+
+    /**
+     * Enhanced search loans method with better performance
+     * @param string $searchTerm Search term
+     * @param array $additionalFilters Additional filters to apply
+     * @return array
+     */
+    public function searchLoans($searchTerm, $additionalFilters = []) {
+        $filters = array_merge($additionalFilters, ['search' => $searchTerm]);
+        return $this->getAllLoansWithClients($filters);
     }
 
     /**
@@ -167,32 +228,33 @@ class LoanModel extends BaseModel {
     }
 
     /**
-     * Retrieves loans filtered by status, joined with client information.
-     * @param string $status
+     * Enhanced method to retrieve loans filtered by status, with additional filtering support
+     * @param string $status Loan status
+     * @param array $additionalFilters Additional filters to apply
      * @return array
      */
-    public function getLoansByStatus($status) {
-        $sql = "SELECT l.*, c.name as client_name, c.phone_number, c.email
-                FROM {$this->table} l
-                JOIN clients c ON l.client_id = c.id
-                WHERE l.status = ?
-                ORDER BY l.created_at DESC";
-
-        return $this->db->resultSet($sql, [$status]);
+    public function getLoansByStatus($status, $additionalFilters = []) {
+        $filters = array_merge($additionalFilters, ['status' => $status]);
+        return $this->getAllLoansWithClients($filters);
     }
 
-    public function getActiveLoans() {
-        return $this->getLoansByStatus(self::STATUS_ACTIVE);
+    /**
+     * Get enhanced active loans with client information and filtering
+     * @param array $filters Additional filters to apply
+     * @return array
+     */
+    public function getActiveLoans($filters = []) {
+        $filters['status'] = self::STATUS_ACTIVE;
+        return $this->getAllLoansWithClients($filters);
     }
 
-    public function getAllActiveLoansWithClients() {
-        $sql = "SELECT l.*, c.name as client_name, c.phone_number, c.email
-                FROM {$this->table} l
-                JOIN clients c ON l.client_id = c.id
-                WHERE l.status = ?
-                ORDER BY l.created_at DESC";
-
-        return $this->db->resultSet($sql, [self::STATUS_ACTIVE]);
+    /**
+     * Enhanced method to get all active loans with clients and optional filtering
+     * @param array $filters Additional filters to apply
+     * @return array
+     */
+    public function getAllActiveLoansWithClients($filters = []) {
+        return $this->getActiveLoans($filters);
     }
 
     public function getPendingApplications() {

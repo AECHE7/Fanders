@@ -15,9 +15,15 @@ $clientService = new ClientService();
 
 // --- 1. Process Filters ---
 require_once '../../app/utilities/FilterUtility.php';
-$filters = FilterUtility::sanitizeFilters($_GET);
+
+// Enhanced filter handling with validation
+$filterOptions = [
+    'allowed_statuses' => ['active', 'inactive', 'blacklisted']
+];
+$filters = FilterUtility::sanitizeFilters($_GET, $filterOptions);
 $filters = FilterUtility::validateDateRange($filters);
 
+<<<<<<< HEAD
 // --- 2. Handle PDF Export ---
 if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
     try {
@@ -33,6 +39,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 }
 
 // --- 3. Handle POST Actions (Status Change, Delete) ---
+=======
+// --- 2. Handle POST Actions (Status Change, Delete) --- (keeping existing POST logic unchanged)
+
+// --- 2. Handle POST Actions (Status Change, Delete) ---
+>>>>>>> 2c93d6eb91f552109666ea08f8ddacaef28c00ae
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!$csrf->validateRequest()) {
         $session->setFlash('error', 'Invalid security token. Please try again.');
@@ -87,8 +98,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     exit;
 }
 
-// --- 3. Fetch Data for View ---
+// --- 3. Fetch Data for View with Enhanced Filtering ---
 
+<<<<<<< HEAD
 // Get pagination parameters
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
@@ -103,23 +115,44 @@ $totalPages = ceil($totalClients / $limit);
 // Initialize pagination utility
 require_once '../../app/utilities/PaginationUtility.php';
 $pagination = new PaginationUtility($totalClients, $page, $limit, 'page');
+=======
+try {
+    // Get paginated clients with enhanced filtering
+    $paginatedClients = $clientService->getPaginatedClients($filters);
+    $clients = $paginatedClients['data'];
+    $pagination = $paginatedClients['pagination'];
 
-// Apply date filtering if specified (client-side for now, can be moved to service later)
-if (!empty($filters['date_from']) || !empty($filters['date_to'])) {
-    $clients = array_filter($clients, function($client) use ($filters) {
-        $createdDate = strtotime($client['created_at']);
-        $fromCheck = empty($filters['date_from']) || $createdDate >= strtotime($filters['date_from']);
-        $toCheck = empty($filters['date_to']) || $createdDate <= strtotime($filters['date_to'] . ' 23:59:59');
-        return $fromCheck && $toCheck;
-    });
+    // No need for client-side date filtering anymore as it's handled in the service
+
+    // Prepare client status display map for the view
+    $statusMap = [
+        'active' => ['class' => 'bg-success', 'text' => 'Active'],
+        'inactive' => ['class' => 'bg-warning', 'text' => 'Inactive'],
+        'blacklisted' => ['class' => 'bg-danger', 'text' => 'Blacklisted']
+    ];
+
+    // Prepare filter summary for display
+    $filterSummary = FilterUtility::getFilterSummary($filters);
+} catch (Exception $e) {
+    require_once '../../app/utilities/ErrorHandler.php';
+    $errorMessage = ErrorHandler::handleApplicationError('loading client data', $e, [
+        'filters' => $filters,
+        'user_id' => $auth->getCurrentUser()['id'] ?? null
+    ]);
+    
+    $session->setFlash('error', $errorMessage);
+    
+    // Set default empty values
+    $clients = [];
+    $pagination = ['total_records' => 0, 'current_page' => 1, 'total_pages' => 1];
+    $statusMap = [
+        'active' => ['class' => 'bg-success', 'text' => 'Active'],
+        'inactive' => ['class' => 'bg-warning', 'text' => 'Inactive'],
+        'blacklisted' => ['class' => 'bg-danger', 'text' => 'Blacklisted']
+    ];
+    $filterSummary = [];
 }
-
-// Prepare client status display map for the view
-$statusMap = [
-    'active' => ['class' => 'bg-success', 'text' => 'Active'],
-    'inactive' => ['class' => 'bg-warning', 'text' => 'Inactive'],
-    'blacklisted' => ['class' => 'bg-danger', 'text' => 'Blacklisted']
-];
+>>>>>>> 2c93d6eb91f552109666ea08f8ddacaef28c00ae
 
 $pageTitle = "Manage Clients";
 include_once BASE_PATH . '/templates/layout/header.php';

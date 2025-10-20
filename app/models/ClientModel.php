@@ -98,36 +98,93 @@ class ClientModel extends BaseModel {
     }
 
     /**
-     * Retrieves clients based on their status.
-     * @param string $status
+     * Enhanced method to get all clients with filtering support
+     * @param array $filters Filter parameters from FilterUtility
      * @return array
      */
-    public function getClientsByStatus($status) {
-        return $this->findByField('status', $status);
-    }
+    public function getAllClients($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
 
-    /**
-     * Retrieves all active clients.
-     * @return array
-     */
-    public function getActiveClients() {
-        return $this->findByField('status', self::STATUS_ACTIVE);
-    }
+        // Base query with loan summary data
+        $baseSql = "SELECT c.*,
+                          COUNT(l.id) as total_loans,
+                          COUNT(CASE WHEN l.status = 'Active' THEN 1 END) as active_loans_count,
+                          SUM(CASE WHEN l.status = 'Active' THEN l.total_loan_amount ELSE 0 END) as total_active_loan_amount,
+                          MAX(l.created_at) as last_loan_date
+                    FROM {$this->table} c
+                    LEFT JOIN loans l ON c.id = l.client_id";
 
-    /**
-     * Searches clients by name, email, or phone number.
-     * @param string $term
-     * @return array
-     */
-    public function searchClients($term) {
-        $sql = "SELECT * FROM {$this->table}
-                WHERE name LIKE ? OR email LIKE ? OR phone_number LIKE ?
-                ORDER BY name ASC";
+        // Build WHERE clause using FilterUtility
+        list($whereClause, $params) = FilterUtility::buildWhereClause($filters, 'clients');
 
-        $searchTerm = "%{$term}%";
-        $params = [$searchTerm, $searchTerm, $searchTerm];
+        // Add GROUP BY to handle loan aggregations
+        $groupClause = "GROUP BY c.id";
+
+        // Build ORDER BY clause
+        $allowedSortFields = ['c.name', 'c.created_at', 'c.status', 'total_loans', 'last_loan_date'];
+        $orderClause = FilterUtility::buildOrderClause($filters, $allowedSortFields, 'c.name');
+
+        // Build complete query
+        $sql = "$baseSql $whereClause $groupClause $orderClause";
+
+        // Add pagination if requested
+        if (!empty($filters['limit'])) {
+            $limitClause = FilterUtility::buildLimitClause($filters);
+            $sql .= " $limitClause";
+        }
 
         return $this->db->resultSet($sql, $params);
+    }
+
+    /**
+     * Get total count of clients matching filters (for pagination)
+     * @param array $filters Filter parameters
+     * @return int
+     */
+    public function getTotalClientsCount($filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+
+        $baseSql = "SELECT COUNT(DISTINCT c.id) as count
+                    FROM {$this->table} c
+                    LEFT JOIN loans l ON c.id = l.client_id";
+
+        list($whereClause, $params) = FilterUtility::buildWhereClause($filters, 'clients');
+        $sql = "$baseSql $whereClause";
+
+        $result = $this->db->single($sql, $params);
+        return $result ? (int)$result['count'] : 0;
+    }
+
+    /**
+     * Enhanced method to get clients by status with additional filtering
+     * @param string $status Client status
+     * @param array $additionalFilters Additional filters to apply
+     * @return array
+     */
+    public function getClientsByStatus($status, $additionalFilters = []) {
+        $filters = array_merge($additionalFilters, ['status' => $status]);
+        return $this->getAllClients($filters);
+    }
+
+    /**
+     * Enhanced method to get active clients with filtering
+     * @param array $filters Additional filters to apply
+     * @return array
+     */
+    public function getActiveClients($filters = []) {
+        $filters['status'] = self::STATUS_ACTIVE;
+        return $this->getAllClients($filters);
+    }
+
+    /**
+     * Enhanced search clients method with better performance
+     * @param string $searchTerm Search term
+     * @param array $additionalFilters Additional filters to apply
+     * @return array
+     */
+    public function searchClients($searchTerm, $additionalFilters = []) {
+        $filters = array_merge($additionalFilters, ['search' => $searchTerm]);
+        return $this->getAllClients($filters);
     }
 
     /**

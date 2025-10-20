@@ -67,57 +67,56 @@ $paymentService = new PaymentService();
 $userService = new UserService();
 // $reportService = new ReportService();
 
-    // Get role-specific dashboard data
+    // Get role-specific dashboard data with enhanced filtering
     if (in_array($userRole, [UserModel::$ROLE_CLIENT, UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER, UserModel::$ROLE_STUDENT, UserModel::$ROLE_STAFF, UserModel::$ROLE_OTHER])) {
         // Client/Borrower Dashboard
         $clientId = $user['id']; // Assuming user ID maps to client ID, or need to get client by user ID
         $stats = [];
 
-        // Get client's loans
+        // Get client's loans with enhanced filtering
         $clientLoans = $loanService->getLoansByClient($clientId);
+        $clientLoans = is_array($clientLoans) ? $clientLoans : [];
+        
         $activeLoans = array_filter($clientLoans, function($loan) {
             return $loan['status'] === 'active';
         });
         $loanHistory = $clientLoans;
 
-        // Get overdue payments (simplified - loans with missed payments)
-        $overduePayments = [];
-        foreach ($activeLoans as $loan) {
-            $nextWeek = $paymentService->getNextPaymentWeek($loan['id']);
-            if ($nextWeek && $nextWeek < date('W')) {
-                $overduePayments[] = $loan;
-            }
-        }
-
+        // Get overdue payments using enhanced method
+        $overduePayments = $paymentService->getOverduePayments(['client_id' => $clientId]);
 
         $stats['active_loans'] = $activeLoans;
         $stats['loan_history'] = $loanHistory;
-        $stats['overdue_count'] = count($overduePayments);
+        $stats['overdue_count'] = is_array($overduePayments) ? count($overduePayments) : 0;
 
         // Get total borrowed (loan amounts)
-        $stats['total_borrowed'] = array_sum(array_column($clientLoans, 'loan_amount'));
-        $stats['current_borrowed'] = array_sum(array_column($activeLoans, 'loan_amount'));
+        $stats['total_borrowed'] = is_array($clientLoans) && !empty($clientLoans) ? 
+            array_sum(array_column($clientLoans, 'loan_amount')) : 0;
+        $stats['current_borrowed'] = is_array($activeLoans) && !empty($activeLoans) ? 
+            array_sum(array_column($activeLoans, 'loan_amount')) : 0;
 
         $dashboardTemplate = BASE_PATH . '/templates/dashboard/client.php';
         } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_SUPER_ADMIN, UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER])) {
-        // Admin/Staff Dashboard
+        // Admin/Staff Dashboard with enhanced data fetching
         $stats = [];
 
         // Get loan statistics
         $loanStats = $loanService->getLoanStats();
-        $stats = array_merge($stats, $loanStats);
+        if (is_array($loanStats)) {
+            $stats = array_merge($stats, $loanStats);
+        }
 
-        // Get active loans count
-        $activeLoans = $loanService->getAllActiveLoansWithClients();
-        $stats['active_loans'] = count($activeLoans);
+        // Get active loans count using enhanced method
+        $activeLoansFilter = ['status' => 'active', 'limit' => 1]; // Just get count efficiently
+        $stats['active_loans'] = $loanService->getTotalLoansCount($activeLoansFilter);
 
-        // Get overdue payments
-        $overduePayments = $paymentService->getOverduePayments() ?: [];
-        $stats['overdue_returns'] = count($overduePayments);
+        // Get overdue payments using enhanced method
+        $overduePayments = $paymentService->getOverduePayments();
+        $stats['overdue_returns'] = is_array($overduePayments) ? count($overduePayments) : 0;
 
-        // Get recent payments
+        // Get recent payments using enhanced method
         $recentPayments = $paymentService->getRecentPayments(5);
-        $stats['recent_transactions'] = $recentPayments;
+        $stats['recent_transactions'] = is_array($recentPayments) ? $recentPayments : [];
 
         // Get analytics
         // $analytics = $reportService->getMonthlyActivitySummary();
@@ -132,16 +131,17 @@ $userService = new UserService();
         if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
             // Additional super admin data
             $users = $userService->getAllUsersWithRoleNames();
-            $clients = $clientService->getAllClients() ?: [];
-            $stats['total_clients'] = count($clients);
+            $users = is_array($users) ? $users : [];
+            $clientsFilter = ['status' => 'active', 'limit' => 1]; // Just get count efficiently
+            $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
         } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_MANAGER])) {
             // Additional admin/branch manager data
-            $clients = $clientService->getAllClients() ?: [];
-            $stats['total_clients'] = count($clients);
+            $clientsFilter = ['status' => 'active', 'limit' => 1];
+            $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
         } else {
             // Account officer/cashier data
-            $clients = $clientService->getAllClients() ?: [];
-            $stats['total_clients'] = count($clients);
+            $clientsFilter = ['status' => 'active', 'limit' => 1];
+            $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
         }
 
         $dashboardTemplate = BASE_PATH . '/templates/dashboard/admin.php';

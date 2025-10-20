@@ -1,5 +1,4 @@
 
-
 <?php
 /**
  * Session - Manages user sessions
