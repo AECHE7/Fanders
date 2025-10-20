@@ -31,61 +31,17 @@ class LoanService extends BaseService {
         return $this->loanModel->getLoanWithClient($id);
     }
 
-     * Enhanced method to get all loans with clients and filtering support
-     * @param array $filters Filter parameters
-     * @return array
-     */
-    public function getAllLoansWithClients($filters = []) {
-        require_once __DIR__ . '/../utilities/FilterUtility.php';
-        
-        // Validate and sanitize filters
-        $filters = FilterUtility::sanitizeFilters($filters, [
-            'allowed_statuses' => [
-                LoanModel::STATUS_APPLICATION,
-                LoanModel::STATUS_APPROVED,
-                LoanModel::STATUS_ACTIVE,
-                LoanModel::STATUS_COMPLETED,
-                LoanModel::STATUS_DEFAULTED
-            ]
-        ]);
-        
-        $filters = FilterUtility::validateDateRange($filters);
-        
-        return $this->loanModel->getAllLoansWithClients($filters);
->>>>>>> 2c93d6eb91f552109666ea08f8ddacaef28c00ae
-    }
-=======
     /**
-     * Enhanced method to get all loans with clients and filtering support
-     * @param array $filters Filter parameters
+<<<<<<< HEAD
+     * Get all loans with clients and pagination support
+     * @param array $filters Array of filters
+     * @param int $page Page number for pagination
+     * @param int $limit Number of records per page
      * @return array
      */
-    public function getAllLoansWithClients($filters = []) {
-        require_once __DIR__ . '/../utilities/FilterUtility.php';
-
-        // Validate and sanitize filters
-        $filters = FilterUtility::sanitizeFilters($filters, [
-            'allowed_statuses' => [
-                LoanModel::STATUS_APPLICATION,
-                LoanModel::STATUS_APPROVED,
-                LoanModel::STATUS_ACTIVE,
-                LoanModel::STATUS_COMPLETED,
-                LoanModel::STATUS_DEFAULTED
-            ]
-        ]);
-
-        $filters = FilterUtility::validateDateRange($filters);
-
-        // Handle pagination if specified
-        if (isset($filters['page']) && isset($filters['limit'])) {
-            $page = (int)$filters['page'];
-            $limit = (int)$filters['limit'];
-            $offset = ($page - 1) * $limit;
-            $filters['offset'] = $offset;
-            $filters['limit'] = $limit;
-        }
-
-        return $this->loanModel->getAllLoansWithClients($filters);
+    public function getAllLoansWithClients($filters = [], $page = 1, $limit = null) {
+        $offset = ($page - 1) * $limit;
+        return $this->loanModel->getAllLoansWithClientsPaginated($limit, $offset, $filters);
     }
 
     /**
@@ -94,13 +50,7 @@ class LoanService extends BaseService {
      * @return int
      */
     public function getTotalLoansCount($filters = []) {
-        require_once __DIR__ . '/../utilities/FilterUtility.php';
-
-        $filters = FilterUtility::sanitizeFilters($filters);
-        $filters = FilterUtility::validateDateRange($filters);
-
         return $this->loanModel->getTotalLoansCount($filters);
-    }
 =======
      * Enhanced method to get all loans with clients and filtering support
      * @param array $filters Filter parameters
