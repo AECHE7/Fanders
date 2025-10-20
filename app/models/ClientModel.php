@@ -325,34 +325,5 @@ class ClientModel extends BaseModel {
         return $this->db->resultSet($sql, $params);
     }
 
-    /**
-     * Get total count of clients with filters applied
-     * @param array $filters Additional filters
-     * @return int
-     */
-    public function getTotalClientsCount($filters = []) {
-        $sql = "SELECT COUNT(*) as total FROM {$this->table}";
-        $params = [];
 
-        // Apply same filters as getAllClientsPaginated
-        $whereConditions = [];
-        if (!empty($filters['status'])) {
-            $whereConditions[] = "status = ?";
-            $params[] = $filters['status'];
-        }
-        if (!empty($filters['search'])) {
-            $whereConditions[] = "(name LIKE ? OR email LIKE ? OR phone_number LIKE ?)";
-            $searchTerm = "%{$filters['search']}%";
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-        }
-
-        if (!empty($whereConditions)) {
-            $sql .= " WHERE " . implode(" AND ", $whereConditions);
-        }
-
-        $result = $this->db->single($sql, $params);
-        return (int)($result ? $result['total'] : 0);
-    }
 }

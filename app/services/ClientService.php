@@ -57,22 +57,21 @@ class ClientService extends BaseService {
             $clients = $this->getAllClients($filters);
         } else {
             require_once __DIR__ . '/../utilities/CacheUtility.php';
-            
+
             $cacheKey = CacheUtility::generateKey('clients_dropdown', $filters);
-            $service = $this;
-            
-            $clients = CacheUtility::remember($cacheKey, function() use ($filters, $service) {
-                return $service->getAllClients($filters);
-            }, 600); // Cache for 10 minutes
+
+            $clients = $this->cache->remember($cacheKey, 600, function() use ($filters) {
+                return $this->getAllClients($filters);
+            });
         }
-        
+
         // Ensure $clients is an array
         if (!is_array($clients)) {
             $clients = [];
         }
-        
+
         $formatted = [];
-        
+
         foreach ($clients as $client) {
             $formatted[] = [
                 'id' => $client['id'],
@@ -80,7 +79,7 @@ class ClientService extends BaseService {
                 'status' => $client['status']
             ];
         }
-        
+
         return $formatted;
     }
 
@@ -95,13 +94,12 @@ class ClientService extends BaseService {
         }
 
         require_once __DIR__ . '/../utilities/CacheUtility.php';
-        
+
         $cacheKey = CacheUtility::generateKey('client_stats');
-        $clientModel = $this->clientModel;
-        
-        return CacheUtility::remember($cacheKey, function() use ($clientModel) {
-            return $clientModel->getClientStats();
-        }, 300); // Cache for 5 minutes
+
+        return $this->cache->remember($cacheKey, 300, function() {
+            return $this->clientModel->getClientStats();
+        });
     }
 
     /**
@@ -173,14 +171,7 @@ class ClientService extends BaseService {
         return $this->clientModel->getTotalClientsCount($filters);
     }
 
-    /**
-     * Get paginated client data with metadata
-     * @param array $filters Filter parameters
-     * @return array
-     */
-    public function getClientStats() {
-        return $this->clientModel->getClientStats();
-    }
+
 
     /**
      * Fetches all loan records for a given client.

@@ -166,51 +166,7 @@ class LoanModel extends BaseModel {
         return $this->db->resultSet($sql, $params);
     }
 
-    /**
-     * Get total count of loans with filters applied
-     * @param array $filters Additional filters
-     * @return int
-     */
-    public function getTotalLoansCount($filters = []) {
-        $sql = "SELECT COUNT(*) as total FROM {$this->table} l
-                JOIN clients c ON l.client_id = c.id";
 
-        $conditions = [];
-        $params = [];
-
-        // Apply same filters as getAllLoansWithClientsPaginated
-        if (!empty($filters['status'])) {
-            $conditions[] = "l.status = ?";
-            $params[] = $filters['status'];
-        }
-        if (!empty($filters['search'])) {
-            $conditions[] = "(c.name LIKE ? OR c.phone_number LIKE ? OR c.email LIKE ? OR l.id = ?)";
-            $searchTerm = "%{$filters['search']}%";
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $filters['search'];
-        }
-        if (!empty($filters['client_id'])) {
-            $conditions[] = "l.client_id = ?";
-            $params[] = $filters['client_id'];
-        }
-        if (!empty($filters['date_from'])) {
-            $conditions[] = "l.created_at >= ?";
-            $params[] = $filters['date_from'] . ' 00:00:00';
-        }
-        if (!empty($filters['date_to'])) {
-            $conditions[] = "l.created_at <= ?";
-            $params[] = $filters['date_to'] . ' 23:59:59';
-        }
-
-        if (!empty($conditions)) {
-            $sql .= " WHERE " . implode(" AND ", $conditions);
-        }
-
-        $result = $this->db->single($sql, $params);
-        return (int)($result ? $result['total'] : 0);
-    }
 
     /**
      * Retrieves all loans associated with a specific client.

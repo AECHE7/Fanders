@@ -32,7 +32,6 @@ if (empty($filters['date_to'])) {
 
 $filters = FilterUtility::validateDateRange($filters);
 
-<<<<<<< HEAD
 // Get pagination parameters
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
@@ -55,15 +54,6 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 try {
     $payments = $paymentService->getAllPayments($filters, $page, $limit);
     $totalPayments = $paymentService->getTotalPaymentsCount($filters);
-=======
-// --- 2. Fetch Payments Data with Enhanced Pagination ---
-try {
-    // Get paginated payments with enhanced filtering
-    $paginatedPayments = $paymentService->getPaginatedPayments($filters);
-    $payments = $paginatedPayments['data'];
-    $pagination = $paginatedPayments['pagination'];
-    $totalPayments = $pagination['total_records'];
->>>>>>> 2c93d6eb91f552109666ea08f8ddacaef28c00ae
 } catch (Exception $e) {
     error_log("Payments fetch error: " . $e->getMessage());
     $payments = [];

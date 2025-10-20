@@ -36,28 +36,21 @@ $filters = FilterUtility::validateDateRange($filters);
 
 // --- 2. Fetch Core Data with Enhanced Pagination ---
 
-<<<<<<< HEAD
-// Get pagination parameters
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
-
-// Get loans based on applied filters with pagination
-$loans = $loanService->getAllLoansWithClients($filters, $page, $limit);
-
-// Get total count for pagination
-$totalLoans = $loanService->getTotalLoansCount($filters);
-$totalPages = ceil($totalLoans / $limit);
-
-// Initialize pagination utility
-require_once '../../app/utilities/PaginationUtility.php';
-$pagination = new PaginationUtility($totalLoans, $page, $limit, 'page');
-=======
 try {
-    // Get paginated loans with enhanced filtering
-    $paginatedLoans = $loanService->getPaginatedLoans($filters);
-    $loans = $paginatedLoans['data'];
-    $pagination = $paginatedLoans['pagination'];
->>>>>>> 2c93d6eb91f552109666ea08f8ddacaef28c00ae
+    // Get pagination parameters
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
+
+    // Get loans based on applied filters with pagination
+    $loans = $loanService->getAllLoansWithClients($filters, $page, $limit);
+
+    // Get total count for pagination
+    $totalLoans = $loanService->getTotalLoansCount($filters);
+    $totalPages = ceil($totalLoans / $limit);
+
+    // Initialize pagination utility
+    require_once '../../app/utilities/PaginationUtility.php';
+    $pagination = new PaginationUtility($totalLoans, $page, $limit, 'page');
 
     // Get all clients for the filter dropdown
     $clients = $clientService->getAllForSelect();

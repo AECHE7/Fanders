@@ -32,33 +32,13 @@ class LoanService extends BaseService {
     }
 
     /**
-<<<<<<< HEAD
-     * Get all loans with clients and pagination support
-     * @param array $filters Array of filters
-     * @param int $page Page number for pagination
-     * @param int $limit Number of records per page
-     * @return array
-     */
-    public function getAllLoansWithClients($filters = [], $page = 1, $limit = null) {
-        $offset = ($page - 1) * $limit;
-        return $this->loanModel->getAllLoansWithClientsPaginated($limit, $offset, $filters);
-    }
-
-    /**
-     * Get total count of loans with filters applied
-     * @param array $filters Array of filters
-     * @return int
-     */
-    public function getTotalLoansCount($filters = []) {
-        return $this->loanModel->getTotalLoansCount($filters);
-=======
      * Enhanced method to get all loans with clients and filtering support
      * @param array $filters Filter parameters
      * @return array
      */
     public function getAllLoansWithClients($filters = []) {
         require_once __DIR__ . '/../utilities/FilterUtility.php';
-        
+
         // Validate and sanitize filters
         $filters = FilterUtility::sanitizeFilters($filters, [
             'allowed_statuses' => [
@@ -69,11 +49,10 @@ class LoanService extends BaseService {
                 LoanModel::STATUS_DEFAULTED
             ]
         ]);
-        
+
         $filters = FilterUtility::validateDateRange($filters);
-        
+
         return $this->loanModel->getAllLoansWithClients($filters);
->>>>>>> 2c93d6eb91f552109666ea08f8ddacaef28c00ae
     }
 
     /**
@@ -124,7 +103,7 @@ class LoanService extends BaseService {
     public function getLoansByStatus($status, $filters = []) {
         return $this->loanModel->getLoansByStatus($status, $filters);
     }
-    
+
     /**
      * Get total count of loans for pagination
      * @param array $filters Filter parameters
@@ -132,10 +111,10 @@ class LoanService extends BaseService {
      */
     public function getTotalLoansCount($filters = []) {
         require_once __DIR__ . '/../utilities/FilterUtility.php';
-        
+
         $filters = FilterUtility::sanitizeFilters($filters);
         $filters = FilterUtility::validateDateRange($filters);
-        
+
         return $this->loanModel->getTotalLoansCount($filters);
     }
 
@@ -146,22 +125,23 @@ class LoanService extends BaseService {
      */
     public function getPaginatedLoans($filters = []) {
         require_once __DIR__ . '/../utilities/FilterUtility.php';
-        
+
         // Get total count first
         $totalCount = $this->getTotalLoansCount($filters);
-        
+
         // Get paginated data
         $loans = $this->getAllLoansWithClients($filters);
-        
+
         // Get pagination info
         $paginationInfo = FilterUtility::getPaginationInfo($filters, $totalCount);
-        
+
         return [
             'data' => $loans,
             'pagination' => $paginationInfo,
             'filters' => $filters
         ];
     }
+
     /**
      * Get loan statistics with caching
      * @param bool $useCache Whether to use cache
@@ -173,12 +153,13 @@ class LoanService extends BaseService {
         }
 
         require_once __DIR__ . '/../utilities/CacheUtility.php';
-        
+
         $cacheKey = CacheUtility::generateKey('loan_stats');
-        
-        return CacheUtility::remember($cacheKey, function() {
+
+        $cache = new CacheUtility();
+        return $cache->remember($cacheKey, 300, function() {
             return $this->loanModel->getLoanStats();
-        }, 300); // Cache for 5 minutes
+        });
     }
 
     /**
@@ -186,10 +167,10 @@ class LoanService extends BaseService {
      */
     protected function invalidateCache() {
         require_once __DIR__ . '/../utilities/CacheUtility.php';
-        
+
         // Invalidate loan statistics cache
         CacheUtility::forget(CacheUtility::generateKey('loan_stats'));
-        
+
         // Clean expired entries
         CacheUtility::cleanExpired();
     }
