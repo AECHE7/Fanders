@@ -89,6 +89,30 @@
                 const mainContent = document.querySelector('.main-content');
                 const layout = document.querySelector('.layout');
 
+                // Function to collapse sidebar
+                function collapseSidebar() {
+                    if (sidebar && !sidebar.classList.contains('sidebar-collapsed')) {
+                        sidebar.classList.add('sidebar-collapsed');
+                        sidebar.classList.remove('sidebar-expanded');
+                        if (layout) layout.classList.add('sidebar-hidden');
+                        localStorage.setItem('sidebarCollapsed', 'true');
+
+                        // Update toggle button icon
+                        const toggleIcon = sidebarToggle ? sidebarToggle.querySelector('i') : null;
+                        if (toggleIcon) {
+                            toggleIcon.setAttribute('data-feather', 'menu');
+                            if (typeof feather !== 'undefined') {
+                                feather.replace();
+                            }
+                        }
+
+                        // Force layout recalculation for responsive content
+                        setTimeout(() => {
+                            window.dispatchEvent(new Event('resize'));
+                        }, 350);
+                    }
+                }
+
                 if (sidebarToggle && sidebar) {
                     // Load sidebar state from localStorage
                     const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
@@ -112,26 +136,22 @@
                             if (layout) layout.classList.remove('sidebar-hidden');
                             localStorage.setItem('sidebarCollapsed', 'false');
                         } else {
-                            sidebar.classList.add('sidebar-collapsed');
-                            sidebar.classList.remove('sidebar-expanded');
-                            if (layout) layout.classList.add('sidebar-hidden');
-                            localStorage.setItem('sidebarCollapsed', 'true');
+                            collapseSidebar();
                         }
-
-                        // Update toggle button icon
-                        const toggleIcon = sidebarToggle.querySelector('i');
-                        if (toggleIcon) {
-                            toggleIcon.setAttribute('data-feather', isCollapsed ? 'sidebar' : 'x');
-                            if (typeof feather !== 'undefined') {
-                                feather.replace();
-                            }
-                        }
-
-                        // Force layout recalculation for responsive content
-                        setTimeout(() => {
-                            window.dispatchEvent(new Event('resize'));
-                        }, 350);
                     });
+
+                    // Collapse sidebar when clicking on main content (desktop only)
+                    if (mainContent) {
+                        mainContent.addEventListener('click', function(e) {
+                            // Only collapse on desktop (not mobile)
+                            if (window.innerWidth >= 768) {
+                                // Check if the click is not on the sidebar itself or its children
+                                if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+                                    collapseSidebar();
+                                }
+                            }
+                        });
+                    }
 
                     // Handle window resize
                     window.addEventListener('resize', function() {
