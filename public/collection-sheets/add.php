@@ -1,30 +1,161 @@
 <?php
 /**
- * Collection Sheets - Add (Placeholder)
+ * Collection Sheets - Add/Edit Draft
  */
 require_once __DIR__ . '/../init.php';
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account_officer']);
 
+$service = new CollectionSheetService();
 $pageTitle = 'New Collection Sheet';
+
+// Resolve sheet id: if none and AO, create today's draft
+$sheetId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($sheetId === 0 && $userRole === 'account_officer') {
+    $draft = $service->createDraftSheet($user['id'], date('Y-m-d'));
+    if ($draft) { header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . $draft['id']); exit; }
+}
+
+// Handle POST actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if (!$csrf->validateRequest(false)) {
+        $session->setFlash('error', 'Invalid security token.');
+        header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . (int)$_POST['sheet_id']);
+        exit;
+    }
+    $sheetId = (int)($_POST['sheet_id'] ?? 0);
+    switch ($_POST['action']) {
+        case 'add_item':
+            $clientId = (int)($_POST['client_id'] ?? 0);
+            $loanId = (int)($_POST['loan_id'] ?? 0);
+            $amount = (float)($_POST['amount'] ?? 0);
+            $notes = trim($_POST['notes'] ?? '');
+            $ok = $service->addItem($sheetId, $clientId, $loanId, $amount, $notes);
+            if ($ok) { $session->setFlash('success', 'Item added.'); }
+            else { $session->setFlash('error', $service->getErrorMessage() ?: 'Failed to add item.'); }
+            header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . $sheetId);
+            exit;
+        case 'submit_sheet':
+            $ok = $service->submitSheet($sheetId);
+            if ($ok) { $session->setFlash('success', 'Sheet submitted for review.');
+                header('Location: ' . APP_URL . '/public/collection-sheets/index.php');
+            } else { $session->setFlash('error', $service->getErrorMessage() ?: 'Failed to submit.');
+                header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . $sheetId);
+            }
+            exit;
+    }
+}
+
+// Load details
+$details = $sheetId ? $service->getSheetDetails($sheetId) : false;
+if (!$details) { $session->setFlash('error', 'Sheet not found.'); header('Location: ' . APP_URL . '/public/collection-sheets/index.php'); exit; }
+$sheet = $details['sheet'];
+$items = $details['items'];
+
 include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 <main class="main-content">
   <div class="content-wrapper">
     <div class="notion-page-header mb-4">
-      <div class="d-flex align-items-center">
-        <div class="me-3">
-          <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f0f4fd;">
-            <i data-feather="plus-circle" style="width:24px;height:24px;color:#000;"></i>
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <div class="me-3">
+            <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f0f4fd;">
+              <i data-feather="plus-circle" style="width:24px;height:24px;color:#000;"></i>
+            </div>
+          </div>
+          <div>
+            <h1 class="notion-page-title mb-0">Collection Sheet #<?= (int)$sheet['id'] ?> (<?= htmlspecialchars(ucfirst($sheet['status'])) ?>)</h1>
+            <div class="text-muted small">Date: <?= htmlspecialchars($sheet['sheet_date']) ?> • Officer ID: <?= (int)$sheet['officer_id'] ?></div>
           </div>
         </div>
-        <h1 class="notion-page-title mb-0">New Collection Sheet</h1>
+        <div>
+          <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-sm btn-outline-secondary">Back</a>
+        </div>
       </div>
       <div class="notion-divider my-3"></div>
     </div>
 
-    <div class="alert alert-info">
-      This form will allow Account Officers to create a draft sheet and add multiple client payments. Coming soon.
+    <?php if ($session->hasFlash('success')): ?><div class="alert alert-success"><?= $session->getFlash('success') ?></div><?php endif; ?>
+    <?php if ($session->hasFlash('error')): ?><div class="alert alert-danger"><?= $session->getFlash('error') ?></div><?php endif; ?>
+
+    <?php if ($sheet['status'] === 'draft' && $userRole === 'account_officer'): ?>
+    <div class="card shadow-sm mb-4">
+      <div class="card-header"><strong>Add Item</strong></div>
+      <div class="card-body">
+        <form method="post" class="row g-3">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+          <input type="hidden" name="action" value="add_item">
+          <input type="hidden" name="sheet_id" value="<?= (int)$sheet['id'] ?>">
+          <div class="col-md-3">
+            <label class="form-label">Client ID</label>
+            <input type="number" class="form-control" name="client_id" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Loan ID</label>
+            <input type="number" class="form-control" name="loan_id" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Amount (₱)</label>
+            <input type="number" step="0.01" min="0.01" class="form-control" name="amount" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Notes</label>
+            <input type="text" class="form-control" name="notes" placeholder="Optional">
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary">Add Item</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <?php endif; ?>
+
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Items</strong>
+        <div>
+          <span class="me-3">Total: <strong>₱<?= number_format((float)$sheet['total_amount'], 2) ?></strong></span>
+          <?php if ($sheet['status'] === 'draft' && $userRole === 'account_officer'): ?>
+          <form method="post" class="d-inline">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+            <input type="hidden" name="action" value="submit_sheet">
+            <input type="hidden" name="sheet_id" value="<?= (int)$sheet['id'] ?>">
+            <button type="submit" class="btn btn-success">Submit for Review</button>
+          </form>
+          <?php endif; ?>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Client</th>
+                <th>Loan</th>
+                <th class="text-end">Amount</th>
+                <th>Status</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if (empty($items)): ?>
+                <tr><td colspan="6" class="text-center text-muted py-4">No items yet.</td></tr>
+              <?php else: foreach ($items as $i): ?>
+                <tr>
+                  <td><?= (int)$i['id'] ?></td>
+                  <td><?= htmlspecialchars($i['client_name']) ?> (ID: <?= (int)$i['client_id'] ?>)</td>
+                  <td>#<?= (int)$i['loan_id'] ?> (<?= htmlspecialchars($i['loan_status']) ?>)</td>
+                  <td class="text-end">₱<?= number_format((float)$i['amount'], 2) ?></td>
+                  <td><span class="badge bg-secondary"><?= htmlspecialchars($i['status']) ?></span></td>
+                  <td><?= htmlspecialchars($i['notes'] ?? '') ?></td>
+                </tr>
+              <?php endforeach; endif; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </main>
