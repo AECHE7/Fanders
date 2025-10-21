@@ -63,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Check if the "Apply" button was pressed (not just the 'Calculate' preview)
         if (isset($_POST['submit_loan'])) {
+            error_log("=== SUBMISSION HANDLER TRIGGERED ===");
 
             // Map form data to service expected format
             $loanData = [
@@ -72,24 +73,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
 
             // Log the submission attempt for debugging
-            error_log("DEBUG: Loan submission attempt: client=" . $loan['client_id'] . ", amount=" . $loan['loan_amount'] . ", term=" . $loan['loan_term']);
-            error_log("DEBUG: LoanData being sent to applyForLoan: " . json_encode($loanData));
-            error_log("DEBUG: Current user ID: " . ($user['id'] ?? 'NULL'));
+            error_log("DEBUG SUBMIT 1: Loan submission attempt");
+            error_log("DEBUG SUBMIT 2: client=" . $loan['client_id'] . ", amount=" . $loan['loan_amount'] . ", term=" . $loan['loan_term']);
+            error_log("DEBUG SUBMIT 3: LoanData=" . json_encode($loanData));
+            error_log("DEBUG SUBMIT 4: User ID=" . ($user['id'] ?? 'NULL'));
 
             // Apply for the loan
             $loanId = $loanService->applyForLoan($loanData, $user['id']);
+            error_log("DEBUG SUBMIT 5: applyForLoan returned: " . ($loanId ? "ID=$loanId" : "FALSE"));
 
             if ($loanId) {
                 // Success: Redirect to the loan list page
-                error_log("DEBUG: Loan created successfully. Loan ID: " . $loanId);
+                error_log("DEBUG SUBMIT 6: SUCCESS - Loan created successfully. Loan ID: " . $loanId);
                 $session->setFlash('success', 'Loan application submitted successfully. Pending Manager approval.');
                 header('Location: ' . APP_URL . '/public/loans/index.php');
                 exit;
             } else {
                 // Failure: Store the specific error message from the service
-                $error = $loanService->getErrorMessage() ?: "Failed to submit loan application.";
-                error_log("DEBUG: Loan creation failed: " . $error);
-                error_log("DEBUG: Full error details: " . print_r($loanService->getErrorMessage(), true));
+                $submissionError = $loanService->getErrorMessage();
+                error_log("DEBUG SUBMIT 7: FAILURE - Service returned error: " . ($submissionError ?: 'NULL'));
+                $error = $submissionError ?: "Failed to submit loan application.";
+                error_log("DEBUG SUBMIT 8: Error message set to: " . $error);
+                error_log("DEBUG SUBMIT 9: Setting flash message with error");
+                $session->setFlash('error', $error);
+                error_log("DEBUG SUBMIT 10: Flash message set. Checking if it was stored...");
+                if ($session->hasFlash('error')) {
+                    error_log("DEBUG SUBMIT 11: Flash message confirmed in session");
+                } else {
+                    error_log("DEBUG SUBMIT 12: WARNING - Flash message NOT in session!");
+                }
             }
         }
     }
@@ -120,12 +132,19 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <!-- Flash Messages -->
     <?php if ($session->hasFlash('success')): ?>
         <div class="alert alert-success">
-            <?= $session->getFlash('success') ?>
+            ✓ <?= $session->getFlash('success') ?>
         </div>
     <?php endif; ?>
     <?php if ($session->hasFlash('error')): ?>
         <div class="alert alert-danger">
-            <?= $session->getFlash('error') ?>
+            ✗ <?= $session->getFlash('error') ?>
+        </div>
+    <?php endif; ?>
+    
+    <!-- Check if error variable is set directly -->
+    <?php if (!empty($error) && !$session->hasFlash('error')): ?>
+        <div class="alert alert-warning">
+            <strong>Warning:</strong> Error detected but not in flash: <?= htmlspecialchars($error) ?>
         </div>
     <?php endif; ?>
     
