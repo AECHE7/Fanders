@@ -1,0 +1,17 @@
+--- public/loans/add.php.orig
++++ public/loans/add.php
+@@ -68,9 +68,12 @@
+         $debugLine .= "POST keys: " . implode(", ", array_keys($_POST)) . "\n";
+         $debugLine .= "submit_loan isset? " . (isset($_POST['submit_loan']) ? 'YES' : 'NO') . "\n";
+         $debugLine .= "submit_loan value: " . ($_POST['submit_loan'] ?? 'UNDEFINED') . "\n";
++        $debugLine .= "Error at this point: " . ($error ?? 'NONE') . "\n";
++        $debugLine .= "Calculation success: " . ($loanCalculation ? 'YES' : 'NO') . "\n";
+         file_put_contents(BASE_PATH . '/LOAN_DEBUG_LOG.txt', $debugLine, FILE_APPEND);
+         
+-        // Check if the "Apply" button was pressed (not just the 'Calculate' preview)
+-        if (isset($_POST['submit_loan'])) {
++        // Check if the "Apply" button was pressed AND calculation was successful
++        // IMPORTANT: Only proceed with submission if calculation was successful
++        if (isset($_POST['submit_loan']) && $loanCalculation && !$error) {
+             $debugLog = "\n=== SUBMISSION AT " . date('Y-m-d H:i:s') . " ===\n";
+             $debugLog .= "Client ID: " . $loan['client_id'] . "\n";
