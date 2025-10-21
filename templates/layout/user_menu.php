@@ -7,20 +7,28 @@
 // Get current user and role (safe defaulting)
 $currentUser = $auth->getCurrentUser();
 
-// Use 'role' string directly
-$userRole = isset($currentUser['role']) ? $currentUser['role'] : '';
-// For display, format role if needed
-$roleName = isset($currentUser['role_display']) ? $currentUser['role_display'] : ucfirst(str_replace('-', ' ', $userRole));
+// Safely resolve an AuthService instance even when included inside a function
+$authInstance = null;
+if (isset($auth) && is_object($auth)) {
+    $authInstance = $auth;
+} elseif (isset($GLOBALS['auth']) && is_object($GLOBALS['auth'])) {
+    $authInstance = $GLOBALS['auth'];
+} elseif (class_exists('AuthService')) {
+    // Fallback: create a new instance (re-uses existing PHP session)
+    $authInstance = new AuthService();
+}
 
-// Parse first and last name from 'name'
-$fullName = isset($currentUser['name']) ? $currentUser['name'] : '';
-$nameParts = explode(' ', $fullName, 2);
+// Get current user and role (safe defaulting)
+$currentUser = [];
+if ($authInstance && method_exists($authInstance, 'getCurrentUser')) {
+    $currentUser = $authInstance->getCurrentUser() ?: [];
+}
 $firstName = $nameParts[0] ?? '';
 $lastName = $nameParts[1] ?? '';
 $initials = ($firstName ? substr($firstName, 0, 1) : '') . ($lastName ? substr($lastName, 0, 1) : '');
 
 // For username, prefer 'username', fallback to 'email'
-$usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
+$usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? 'User');
 ?>
 
 <div class="navbar-nav">
@@ -48,7 +56,7 @@ if (isset($auth) && is_object($auth) && method_exists($auth, 'getCurrentUser')) 
                     <div>
                         <small class="text-muted">Signed in as</small><br>
                         <strong class="text-dark"><?= htmlspecialchars($usernameDisplay) ?></strong>
-$usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? 'User');
+                    </div>
                 </div>
             </li>
             <li><hr class="dropdown-divider my-1"></li>
