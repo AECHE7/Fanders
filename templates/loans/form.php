@@ -102,11 +102,13 @@ $isLocked = isset($loanCalculation) && !empty($loanCalculation) && empty($error)
 
     <!-- Form Actions -->
     <div class="d-flex justify-content-end mt-4">
-        <!-- The Calculate button will submit the form and show the preview -->
-        <button type="submit" name="calculate" class="btn btn-outline-info me-2 ripple-effect" aria-label="Calculate Loan">
+        <!-- The Calculate button will submit the form and show the preview - hide after successful calculation -->
+        <?php if (!$isLocked): ?>
+        <button id="calculateBtn" type="submit" name="calculate" class="btn btn-outline-info me-2 ripple-effect" aria-label="Calculate Loan">
             <i data-feather="calculator" class="me-1" style="width:16px;height:16px;" aria-hidden="true"></i>
             Calculate
         </button>
+        <?php endif; ?>
         <?php if (isset($loanCalculation) && !empty($loanCalculation) && empty($error)): ?>
             <!-- Hidden fields and Submit button integrated into main form -->
             <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
@@ -189,6 +191,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (preview) preview.scrollIntoView({behavior: 'smooth'});
         // Client-side debug console message
         console.info('Loan calculation complete - form locked. Submit when ready.');
+        // Hide calculate button as a fallback
+        const calcBtn = document.getElementById('calculateBtn');
+        if (calcBtn) calcBtn.style.display = 'none';
     }
 });
 </script>
