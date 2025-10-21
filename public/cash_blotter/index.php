@@ -4,6 +4,9 @@
  * Displays daily cash flow tracking and balance management
  */
 
+// Start output buffering to prevent "data already output" errors
+ob_start();
+
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
 require_once '../../public/init.php';
 
@@ -32,8 +35,10 @@ $filters = FilterUtility::validateDateRange($filters);
 
 // --- 2. Handle PDF Export ---
 if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
-    // Clean any output buffer to prevent "data already output" error
-    if (ob_get_length()) ob_clean();
+    // Clear and end output buffering to prevent "data already output" error
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
     
     try {
         require_once '../../app/services/ReportService.php';
@@ -43,6 +48,8 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
         $summary = $cashBlotterService->getCashFlowSummary($filters['date_from'], $filters['date_to']);
         $reportService->exportCashBlotterPDF($blotterData, $summary, $currentBalance, $filters);
     } catch (Exception $e) {
+        // Restart output buffering for error handling
+        ob_start();
         $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
         header('Location: ' . APP_URL . '/public/cash_blotter/index.php?' . http_build_query($filters));
         exit;
@@ -52,8 +59,10 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 
 // --- 3. Handle Excel Export ---
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
-    // Clean any output buffer to prevent "data already output" error
-    if (ob_get_length()) ob_clean();
+    // Clear and end output buffering to prevent "data already output" error
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
     
     try {
         require_once '../../app/services/ReportService.php';
@@ -63,6 +72,8 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
         $summary = $cashBlotterService->getCashFlowSummary($filters['date_from'], $filters['date_to']);
         $reportService->exportCashBlotterExcel($blotterData, $summary, $currentBalance, $filters);
     } catch (Exception $e) {
+        // Restart output buffering for error handling
+        ob_start();
         $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
         header('Location: ' . APP_URL . '/public/cash_blotter/index.php?' . http_build_query($filters));
         exit;
