@@ -233,9 +233,15 @@
                                 <?php foreach ($recentPayments as $payment): ?>
                                 <tr>
                                     <td class="ps-4"><?= htmlspecialchars($payment['client_name']) ?></td>
-                                    <td>₱<?= number_format($payment['payment_amount'], 2) ?></td>
-                                    <td>Week <?= $payment['week_number'] ?></td>
-                                    <td><?= date('M d, Y', strtotime($payment['payment_date'])) ?></td>
+                                    <td>₱<?= number_format($payment['amount'] ?? 0, 2) ?></td>
+                                    <td>
+                                        <?php if (isset($payment['week_number'])): ?>
+                                            Week <?= (int)$payment['week_number'] ?>/17
+                                        <?php else: ?>
+                                            Payment #<?= $payment['id'] ?? 'N/A' ?>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= !empty($payment['payment_date']) ? date('M d, Y', strtotime($payment['payment_date'])) : '' ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -278,7 +284,7 @@
                                 <?php foreach (array_slice($activeLoans, 0, 5) as $loan): ?>
                                 <tr>
                                     <td class="ps-4"><?= htmlspecialchars($loan['client_name']) ?></td>
-                                    <td>₱<?= number_format($loan['loan_amount'], 2) ?></td>
+                                    <td>₱<?= number_format($loan['total_loan_amount'] ?? 0, 2) ?></td>
                                     <td>
                                         <span class="badge bg-success">Active</span>
                                     </td>
