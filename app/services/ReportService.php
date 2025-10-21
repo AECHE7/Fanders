@@ -231,37 +231,65 @@ class ReportService extends BaseService {
      * Generate financial summary report
      */
     public function generateFinancialSummary($filters = []) {
-        $dateFrom = $filters['date_from'] ?? date('Y-m-01');
-        $dateTo = $filters['date_to'] ?? date('Y-m-t');
+        // If no dates provided, treat as "All time" (no date constraint)
+        $hasDateFrom = !empty($filters['date_from']);
+        $hasDateTo = !empty($filters['date_to']);
+        $dateFrom = $filters['date_from'] ?? null;
+        $dateTo = $filters['date_to'] ?? null;
 
-        // Total loans disbursed
+        // --- Loans Disbursed ---
+        $loansParams = [];
         $loansQuery = "SELECT
             COUNT(*) as total_loans,
             COALESCE(SUM(principal), 0) as total_principal,
             COALESCE(SUM(total_loan_amount), 0) as total_amount_with_interest
         FROM loans
-        WHERE status IN ('Active', 'Completed')
-        AND disbursement_date BETWEEN ? AND ?";
+        WHERE LOWER(status) IN ('active', 'completed')";
 
-        $loansData = $this->db->single($loansQuery, [$dateFrom, $dateTo]) ?: [
+        if ($hasDateFrom && $hasDateTo) {
+            $loansQuery .= " AND disbursement_date BETWEEN ? AND ?";
+            $loansParams[] = $dateFrom;
+            $loansParams[] = $dateTo;
+        } elseif ($hasDateFrom) {
+            $loansQuery .= " AND disbursement_date >= ?";
+            $loansParams[] = $dateFrom;
+        } elseif ($hasDateTo) {
+            $loansQuery .= " AND disbursement_date <= ?";
+            $loansParams[] = $dateTo;
+        }
+
+        $loansData = $this->db->single($loansQuery, $loansParams) ?: [
             'total_loans' => 0,
             'total_principal' => 0,
             'total_amount_with_interest' => 0
         ];
 
-        // Total payments received
+        // --- Payments Received ---
+        $paymentsParams = [];
         $paymentsQuery = "SELECT
             COUNT(*) as total_payments,
             COALESCE(SUM(amount), 0) as total_payments_received
         FROM payments
-        WHERE payment_date BETWEEN ? AND ?";
+        WHERE 1=1";
 
-        $paymentsData = $this->db->single($paymentsQuery, [$dateFrom, $dateTo]) ?: [
+        if ($hasDateFrom && $hasDateTo) {
+            $paymentsQuery .= " AND payment_date BETWEEN ? AND ?";
+            $paymentsParams[] = $dateFrom;
+            $paymentsParams[] = $dateTo;
+        } elseif ($hasDateFrom) {
+            $paymentsQuery .= " AND payment_date >= ?";
+            $paymentsParams[] = $dateFrom;
+        } elseif ($hasDateTo) {
+            $paymentsQuery .= " AND payment_date <= ?";
+            $paymentsParams[] = $dateTo;
+        }
+
+        $paymentsData = $this->db->single($paymentsQuery, $paymentsParams) ?: [
             'total_payments' => 0,
             'total_payments_received' => 0
         ];
 
-        // Outstanding balances
+        // --- Outstanding Balances (across all active loans) ---
         $outstandingQuery = "SELECT
             COALESCE(SUM(l.total_loan_amount - COALESCE(p.paid_amount, 0)), 0) as total_outstanding
         FROM loans l
@@ -270,14 +298,20 @@ class ReportService extends BaseService {
             FROM payments
             GROUP BY loan_id
         ) p ON l.id = p.loan_id
-        WHERE l.status = 'Active'";
+        WHERE LOWER(l.status) = 'active'";
 
         $outstandingData = $this->db->single($outstandingQuery) ?: [
             'total_outstanding' => 0
         ];
 
+        // Expose a friendly period label
+        $period = [
+            'from' => $dateFrom ?: 'All time',
+            'to' => $dateTo ?: 'Present'
+        ];
+
         return [
-            'period' => ['from' => $dateFrom, 'to' => $dateTo],
+            'period' => $period,
             'loans' => $loansData,
             'payments' => $paymentsData,
             'outstanding' => $outstandingData,

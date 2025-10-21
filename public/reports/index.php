@@ -662,35 +662,62 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 <!-- Financial Summary Rendering -->
                 <?php if (!empty($reportData) && isset($reportData['loans'], $reportData['payments'], $reportData['outstanding'])): ?>
                 <div class="row mb-4">
-                    <div class="col-md-4">
-                        <div class="card text-white bg-primary shadow-sm">
-                            <div class="card-body">
-                                <h6 class="card-title text-uppercase small">Loans Disbursed</h6>
+                    <div class="col-12 col-lg-4 mb-3 mb-lg-0">
+                        <div class="card text-white bg-primary shadow-sm h-100">
+                            <div class="card-body py-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i data-feather="file-text" class="me-2" style="width: 28px; height: 28px; opacity: .75;"></i>
+                                    <h5 class="card-title mb-0 text-uppercase">Loans Disbursed</h5>
+                                </div>
                                 <div class="mt-2">
-                                    <div class="d-flex justify-content-between"><span>Total Loans</span><strong><?= number_format($reportData['loans']['total_loans']) ?></strong></div>
-                                    <div class="d-flex justify-content-between"><span>Total Principal</span><strong>₱<?= number_format($reportData['loans']['total_principal'], 2) ?></strong></div>
-                                    <div class="d-flex justify-content-between"><span>Total (with interest)</span><strong>₱<?= number_format($reportData['loans']['total_amount_with_interest'], 2) ?></strong></div>
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <span class="fw-medium">Total Loans</span>
+                                        <span class="display-6 mb-0 lh-1"><?= number_format($reportData['loans']['total_loans']) ?></span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <span class="fw-medium">Total Principal</span>
+                                        <span class="h3 mb-0">₱<?= number_format($reportData['loans']['total_principal'], 2) ?></span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <span class="fw-medium">Total (with interest)</span>
+                                        <span class="h3 mb-0">₱<?= number_format($reportData['loans']['total_amount_with_interest'], 2) ?></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card text-white bg-success shadow-sm">
-                            <div class="card-body">
-                                <h6 class="card-title text-uppercase small">Payments Received</h6>
+                    <div class="col-12 col-lg-4 mb-3 mb-lg-0">
+                        <div class="card text-white bg-success shadow-sm h-100">
+                            <div class="card-body py-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i data-feather="credit-card" class="me-2" style="width: 28px; height: 28px; opacity: .75;"></i>
+                                    <h5 class="card-title mb-0 text-uppercase">Payments Received</h5>
+                                </div>
                                 <div class="mt-2">
-                                    <div class="d-flex justify-content-between"><span>Total Payments</span><strong><?= number_format($reportData['payments']['total_payments']) ?></strong></div>
-                                    <div class="d-flex justify-content-between"><span>Total Amount</span><strong>₱<?= number_format($reportData['payments']['total_payments_received'], 2) ?></strong></div>
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <span class="fw-medium">Total Payments</span>
+                                        <span class="display-6 mb-0 lh-1"><?= number_format($reportData['payments']['total_payments']) ?></span>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <span class="fw-medium">Total Amount</span>
+                                        <span class="h3 mb-0">₱<?= number_format($reportData['payments']['total_payments_received'], 2) ?></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card text-white bg-warning shadow-sm">
-                            <div class="card-body">
-                                <h6 class="card-title text-uppercase small">Outstanding</h6>
+                    <div class="col-12 col-lg-4">
+                        <div class="card text-white bg-warning shadow-sm h-100">
+                            <div class="card-body py-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i data-feather="alert-triangle" class="me-2" style="width: 28px; height: 28px; opacity: .75;"></i>
+                                    <h5 class="card-title mb-0 text-uppercase">Outstanding</h5>
+                                </div>
                                 <div class="mt-2">
-                                    <div class="d-flex justify-content-between"><span>Total Outstanding Balance</span><strong>₱<?= number_format($reportData['outstanding']['total_outstanding'], 2) ?></strong></div>
+                                    <div class="d-flex justify-content-between align-items-center py-1">
+                                        <span class="fw-medium">Total Outstanding Balance</span>
+                                        <span class="display-6 mb-0 lh-1">₱<?= number_format($reportData['outstanding']['total_outstanding'], 2) ?></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -701,10 +728,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h5 class="mb-1">Financial Summary</h5>
+                                <h4 class="mb-1">Financial Summary</h4>
                                 <small class="text-muted">Period: <?= htmlspecialchars($reportData['period']['from']) ?> to <?= htmlspecialchars($reportData['period']['to']) ?></small>
                             </div>
-                            <a href="?<?= http_build_query(array_merge($filters, ['export' => 'pdf'])) ?>" class="btn btn-success">
+                            <a href="?<?= http_build_query(array_merge($filters, ['export' => 'pdf'])) ?>" class="btn btn-success btn-lg">
                                 <i data-feather="download" class="me-1"></i>Export PDF
                             </a>
                         </div>
