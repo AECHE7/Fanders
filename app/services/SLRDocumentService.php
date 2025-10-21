@@ -60,38 +60,41 @@ class SLRDocumentService extends BaseService {
      * @return string PDF content
      */
     private function createSLRPDF($loan, $client, $payments, $totalPaid, $remainingBalance) {
-        $this->pdfGenerator->setTitle('Statement of Loan Repayment - Loan #' . $loan['id']);
-        $this->pdfGenerator->setAuthor('Fanders Microfinance');
+        // Create a fresh PDF instance for each document to avoid "document closed" errors
+        $pdf = new PDFGenerator();
+        
+        $pdf->setTitle('Statement of Loan Repayment - Loan #' . $loan['id']);
+        $pdf->setAuthor('Fanders Microfinance');
 
         // Header
-        $this->pdfGenerator->addHeaderRaw('FANDERS MICROFINANCE');
-        $this->pdfGenerator->addSubHeader('STATEMENT OF LOAN REPAYMENT (SLR)');
-        $this->pdfGenerator->addSpace();
+        $pdf->addHeaderRaw('FANDERS MICROFINANCE');
+        $pdf->addSubHeader('STATEMENT OF LOAN REPAYMENT (SLR)');
+        $pdf->addSpace();
 
         // Loan and Client Information
-        $this->pdfGenerator->addSubHeader('Loan Information');
-        $this->pdfGenerator->addLine('Loan ID: ' . $loan['id']);
-        $this->pdfGenerator->addLine('Client Name: ' . $client['name']);
-        $this->pdfGenerator->addLine('Client ID: ' . $client['id']);
-        $this->pdfGenerator->addLine('Loan Amount: ₱' . number_format($loan['principal'], 2));
-        $this->pdfGenerator->addLine('Total Loan Amount (with interest): ₱' . number_format($loan['total_loan_amount'], 2));
-        $this->pdfGenerator->addLine('Weekly Payment: ₱' . number_format($loan['total_loan_amount'] / 17, 2));
-        $this->pdfGenerator->addLine('Term: 17 weeks (4 months)');
-        $this->pdfGenerator->addLine('Application Date: ' . date('F d, Y', strtotime($loan['application_date'])));
-        $this->pdfGenerator->addLine('Disbursement Date: ' . ($loan['disbursement_date'] ? date('F d, Y', strtotime($loan['disbursement_date'])) : 'Pending'));
-        $this->pdfGenerator->addLine('Status: ' . ucfirst($loan['status']));
-        $this->pdfGenerator->addSpace();
+        $pdf->addSubHeader('Loan Information');
+        $pdf->addLine('Loan ID: ' . $loan['id']);
+        $pdf->addLine('Client Name: ' . $client['name']);
+        $pdf->addLine('Client ID: ' . $client['id']);
+        $pdf->addLine('Loan Amount: ₱' . number_format($loan['principal'], 2));
+        $pdf->addLine('Total Loan Amount (with interest): ₱' . number_format($loan['total_loan_amount'], 2));
+        $pdf->addLine('Weekly Payment: ₱' . number_format($loan['total_loan_amount'] / 17, 2));
+        $pdf->addLine('Term: 17 weeks (4 months)');
+        $pdf->addLine('Application Date: ' . date('F d, Y', strtotime($loan['application_date'])));
+        $pdf->addLine('Disbursement Date: ' . ($loan['disbursement_date'] ? date('F d, Y', strtotime($loan['disbursement_date'])) : 'Pending'));
+        $pdf->addLine('Status: ' . ucfirst($loan['status']));
+        $pdf->addSpace();
 
         // Payment Summary
-        $this->pdfGenerator->addSubHeader('Payment Summary');
-        $this->pdfGenerator->addLine('Total Amount Paid: ₱' . number_format($totalPaid, 2));
-        $this->pdfGenerator->addLine('Remaining Balance: ₱' . number_format($remainingBalance, 2));
-        $this->pdfGenerator->addLine('Payments Made: ' . count($payments) . ' out of 17');
-        $this->pdfGenerator->addSpace();
+        $pdf->addSubHeader('Payment Summary');
+        $pdf->addLine('Total Amount Paid: ₱' . number_format($totalPaid, 2));
+        $pdf->addLine('Remaining Balance: ₱' . number_format($remainingBalance, 2));
+        $pdf->addLine('Payments Made: ' . count($payments) . ' out of 17');
+        $pdf->addSpace();
 
         // Payment History Table
         if (!empty($payments)) {
-            $this->pdfGenerator->addSubHeader('Payment History');
+            $pdf->addSubHeader('Payment History');
 
             $columns = [
                 ['header' => 'Payment #', 'width' => 25],
@@ -112,27 +115,27 @@ class SLRDocumentService extends BaseService {
                 ];
             }
 
-            $this->pdfGenerator->addTable($columns, $data);
-            $this->pdfGenerator->addSpace();
+            $pdf->addTable($columns, $data);
+            $pdf->addSpace();
         }
 
         // Loan Breakdown
-        $this->pdfGenerator->addSubHeader('Loan Breakdown');
+        $pdf->addSubHeader('Loan Breakdown');
         $interest = $loan['principal'] * 0.05 * 4; // 5% monthly for 4 months
         $insurance = 425.00;
 
-        $this->pdfGenerator->addLine('Principal Amount: ₱' . number_format($loan['principal'], 2));
-        $this->pdfGenerator->addLine('Interest (5% over 4 months): ₱' . number_format($interest, 2));
-        $this->pdfGenerator->addLine('Insurance Fee: ₱' . number_format($insurance, 2));
-        $this->pdfGenerator->addLine('Total Amount: ₱' . number_format($loan['total_loan_amount'], 2));
-        $this->pdfGenerator->addSpace();
+        $pdf->addLine('Principal Amount: ₱' . number_format($loan['principal'], 2));
+        $pdf->addLine('Interest (5% over 4 months): ₱' . number_format($interest, 2));
+        $pdf->addLine('Insurance Fee: ₱' . number_format($insurance, 2));
+        $pdf->addLine('Total Amount: ₱' . number_format($loan['total_loan_amount'], 2));
+        $pdf->addSpace();
 
         // Footer
-        $this->pdfGenerator->addLine('This document serves as an official statement of your loan repayment status.');
-        $this->pdfGenerator->addLine('Generated on: ' . date('F d, Y H:i:s'));
-        $this->pdfGenerator->addLine('Fanders Microfinance - Your Trusted Financial Partner');
+        $pdf->addLine('This document serves as an official statement of your loan repayment status.');
+        $pdf->addLine('Generated on: ' . date('F d, Y H:i:s'));
+        $pdf->addLine('Fanders Microfinance - Your Trusted Financial Partner');
 
-        return $this->pdfGenerator->output('S'); // Return as string
+        return $pdf->output('S'); // Return as string
     }
 
     /**
