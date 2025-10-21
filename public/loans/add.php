@@ -16,6 +16,9 @@ $loanService = new LoanService();
 $loanCalculationService = new LoanCalculationService();
 $clientService = new ClientService();
 
+// Debug file for logging
+$debugFile = BASE_PATH . '/LOAN_DEBUG_LOG.txt';
+
 // --- 1. Initial Data Setup ---
 $loan = [
     'client_id' => isset($_GET['client_id']) ? (int)$_GET['client_id'] : '', // Pre-select if linked from client page
@@ -63,6 +66,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         // Check if the "Apply" button was pressed (not just the 'Calculate' preview)
         if (isset($_POST['submit_loan'])) {
+            $debugLog = "\n=== SUBMISSION AT " . date('Y-m-d H:i:s') . " ===\n";
+            $debugLog .= "Client ID: " . $loan['client_id'] . "\n";
+            $debugLog .= "Amount: " . $loan['loan_amount'] . "\n";
+            $debugLog .= "Term: " . $loan['loan_term'] . "\n";
+            
             error_log("=== SUBMISSION HANDLER TRIGGERED ===");
 
             // Map form data to service expected format
@@ -72,36 +80,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'term_weeks' => $loan['loan_term']
             ];
 
-            // Log the submission attempt for debugging
-            error_log("DEBUG SUBMIT 1: Loan submission attempt");
-            error_log("DEBUG SUBMIT 2: client=" . $loan['client_id'] . ", amount=" . $loan['loan_amount'] . ", term=" . $loan['loan_term']);
-            error_log("DEBUG SUBMIT 3: LoanData=" . json_encode($loanData));
-            error_log("DEBUG SUBMIT 4: User ID=" . ($user['id'] ?? 'NULL'));
+            $debugLog .= "LoanData: " . json_encode($loanData) . "\n";
+            $debugLog .= "User ID: " . ($user['id'] ?? 'NULL') . "\n";
 
             // Apply for the loan
             $loanId = $loanService->applyForLoan($loanData, $user['id']);
-            error_log("DEBUG SUBMIT 5: applyForLoan returned: " . ($loanId ? "ID=$loanId" : "FALSE"));
+            
+            $debugLog .= "applyForLoan returned: " . ($loanId ? "ID=$loanId" : "FALSE/NULL") . "\n";
 
             if ($loanId) {
-                // Success: Redirect to the loan list page
-                error_log("DEBUG SUBMIT 6: SUCCESS - Loan created successfully. Loan ID: " . $loanId);
+                $debugLog .= "RESULT: SUCCESS - Loan created with ID: " . $loanId . "\n";
+                error_log($debugLog);
+                file_put_contents($debugFile, $debugLog, FILE_APPEND);
+                
                 $session->setFlash('success', 'Loan application submitted successfully. Pending Manager approval.');
                 header('Location: ' . APP_URL . '/public/loans/index.php');
                 exit;
             } else {
-                // Failure: Store the specific error message from the service
+                // Failure: Get the error message from the service
                 $submissionError = $loanService->getErrorMessage();
-                error_log("DEBUG SUBMIT 7: FAILURE - Service returned error: " . ($submissionError ?: 'NULL'));
+                $debugLog .= "Service Error: " . ($submissionError ?: 'NO ERROR MESSAGE FROM SERVICE') . "\n";
+                $debugLog .= "RESULT: FAILURE\n";
+                
+                error_log($debugLog);
+                file_put_contents($debugFile, $debugLog, FILE_APPEND);
+                
                 $error = $submissionError ?: "Failed to submit loan application.";
-                error_log("DEBUG SUBMIT 8: Error message set to: " . $error);
-                error_log("DEBUG SUBMIT 9: Setting flash message with error");
                 $session->setFlash('error', $error);
-                error_log("DEBUG SUBMIT 10: Flash message set. Checking if it was stored...");
-                if ($session->hasFlash('error')) {
-                    error_log("DEBUG SUBMIT 11: Flash message confirmed in session");
-                } else {
-                    error_log("DEBUG SUBMIT 12: WARNING - Flash message NOT in session!");
-                }
             }
         }
     }
