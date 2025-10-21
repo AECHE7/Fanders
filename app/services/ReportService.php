@@ -882,4 +882,72 @@ class ReportService extends BaseService {
         $title = 'financial_summary_' . date('Y-m-d') . '.xls';
         ExcelExportUtility::outputKeyValueSheet('Financial Summary', $pairs, $title);
     }
+
+    // --- Cash Blotter Exports ---
+
+    public function exportCashBlotterPDF($blotterData, $summary, $currentBalance, $filters) {
+        $pdf = new PDFGenerator();
+        $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->Cell(0, 10, 'Cash Blotter Report', 0, 1, 'C');
+        $pdf->Ln(5);
+
+        // Period
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(0, 6, 'Period: ' . $filters['date_from'] . ' to ' . $filters['date_to'], 0, 1);
+        $pdf->Cell(0, 6, 'Generated: ' . date('Y-m-d H:i:s'), 0, 1);
+        $pdf->Ln(5);
+
+        // Summary
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->Cell(0, 8, 'Summary', 0, 1);
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(90, 6, 'Current Balance:', 0, 0);
+        $pdf->Cell(0, 6, FormatUtility::peso($currentBalance), 0, 1);
+        $pdf->Cell(90, 6, 'Total Inflow:', 0, 0);
+        $pdf->Cell(0, 6, FormatUtility::peso($summary['total_inflow'] ?? 0), 0, 1);
+        $pdf->Cell(90, 6, 'Total Outflow:', 0, 0);
+        $pdf->Cell(0, 6, FormatUtility::peso($summary['total_outflow'] ?? 0), 0, 1);
+        $pdf->Cell(90, 6, 'Net Flow:', 0, 0);
+        $pdf->Cell(0, 6, FormatUtility::peso(($summary['total_inflow'] ?? 0) - ($summary['total_outflow'] ?? 0)), 0, 1);
+        $pdf->Ln(5);
+
+        // Blotter entries
+        $pdf->SetFont('Arial', 'B', 12);
+        $pdf->Cell(0, 8, 'Transactions', 0, 1);
+        
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(25, 7, 'Date', 1, 0, 'C');
+        $pdf->Cell(70, 7, 'Description', 1, 0, 'C');
+        $pdf->Cell(30, 7, 'Inflow', 1, 0, 'C');
+        $pdf->Cell(30, 7, 'Outflow', 1, 0, 'C');
+        $pdf->Cell(35, 7, 'Balance', 1, 1, 'C');
+
+        $pdf->SetFont('Arial', '', 8);
+        foreach ($blotterData as $entry) {
+            $pdf->Cell(25, 6, date('Y-m-d', strtotime($entry['transaction_date'])), 1, 0);
+            $pdf->Cell(70, 6, substr($entry['description'] ?? '', 0, 35), 1, 0);
+            $pdf->Cell(30, 6, FormatUtility::peso($entry['inflow_amount'] ?? 0), 1, 0, 'R');
+            $pdf->Cell(30, 6, FormatUtility::peso($entry['outflow_amount'] ?? 0), 1, 0, 'R');
+            $pdf->Cell(35, 6, FormatUtility::peso($entry['balance_after'] ?? 0), 1, 1, 'R');
+        }
+
+        $pdf->Output('D', 'cash_blotter_' . date('Y-m-d') . '.pdf');
+    }
+
+    public function exportCashBlotterExcel($blotterData, $summary, $currentBalance, $filters) {
+        $headers = ['Date', 'Description', 'Inflow', 'Outflow', 'Balance'];
+        $rows = [];
+        foreach ($blotterData as $entry) {
+            $rows[] = [
+                date('Y-m-d', strtotime($entry['transaction_date'])),
+                $entry['description'] ?? '',
+                (float)($entry['inflow_amount'] ?? 0),
+                (float)($entry['outflow_amount'] ?? 0),
+                (float)($entry['balance_after'] ?? 0)
+            ];
+        }
+        $title = 'cash_blotter_' . date('Y-m-d') . '.xls';
+        ExcelExportUtility::outputSingleSheet('Cash Blotter', $headers, $rows, $title);
+    }
 }

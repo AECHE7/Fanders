@@ -97,6 +97,20 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
     exit;
 }
 
+// --- 3b. Handle Excel Export ---
+if (isset($_GET['export']) && $_GET['export'] === 'excel') {
+    try {
+        $reportService = new ReportService();
+        $exportData = $loanService->getAllLoansWithClients($filters, 1, 10000); // Get all data without pagination
+        $reportService->exportLoanReportExcel($exportData, $filters);
+    } catch (Exception $e) {
+        $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/loans/index.php?' . http_build_query($filters));
+        exit;
+    }
+    exit;
+}
+
 // --- 4. Handle POST Actions (e.g., Approve/Disburse) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!$csrf->validateRequest()) {
@@ -316,9 +330,14 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Loans List</h5>
-                <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
-                    <i data-feather="download"></i> Export PDF
-                </a>
+                <div class="btn-group">
+                    <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
+                        <i data-feather="download"></i> Export PDF
+                    </a>
+                    <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'excel'])) ?>" class="btn btn-sm btn-outline-success">
+                        <i data-feather="file"></i> Export Excel
+                    </a>
+                </div>
             </div>
         </div>
         <div class="card-body">
