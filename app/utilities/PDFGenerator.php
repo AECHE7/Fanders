@@ -71,6 +71,13 @@ class PDFGenerator {
         $this->pdf->SetFont('Arial', '', $this->textFontSize);
     }
 
+    public function addHeaderRaw($text) {
+        $this->pdf->SetFont('Arial', 'B', $this->titleFontSize);
+        $this->pdf->Cell(0, $this->lineHeight, $text, 0, 1, 'C');
+        $this->pdf->Ln($this->lineHeight / 2);
+        $this->pdf->SetFont('Arial', '', $this->textFontSize);
+    }
+
  
     public function addSubHeader($text) {
         $this->pdf->SetFont('Arial', 'B', $this->subHeaderFontSize);

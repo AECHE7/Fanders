@@ -89,21 +89,31 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="main-content">
     <div class="content-wrapper">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Payment Records</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-sm btn-success me-2">
-                <i data-feather="plus"></i> Record Payment
-            </a>
-            <?php if ($userRole == 'super-admin' || $userRole == 'admin' || $userRole == 'manager'): ?>
-                <a href="<?= APP_URL ?>/public/payments/export.php" class="btn btn-sm btn-outline-secondary me-2">
-                    <i data-feather="download"></i> Export
+    <!-- Dashboard Header with Title, Date and Reports Links -->
+    <div class="notion-page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f0f4fd;">
+                        <i data-feather="dollar-sign" style="width: 24px; height: 24px; color:rgb(0, 0, 0);"></i>
+                    </div>
+                </div>
+                <h1 class="notion-page-title mb-0">Payment Records</h1>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <div class="text-muted d-none d-md-block me-3">
+                    <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
+                    <?= date('l, F j, Y') ?>
+                </div>
+                <a href="<?= APP_URL ?>/public/reports/payments.php" class="btn btn-sm btn-outline-secondary px-3">
+                    <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> Payments Report
                 </a>
-            <?php endif; ?>
-            <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-sm btn-outline-primary">
-                <i data-feather="calendar"></i> Collection Sheets
-            </a>
+                <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-sm btn-success">
+                    <i data-feather="plus" class="me-1" style="width: 14px; height: 14px;"></i> Record Payment
+                </a>
+            </div>
         </div>
+        <div class="notion-divider my-3"></div>
     </div>
 
     <!-- Flash Messages -->

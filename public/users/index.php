@@ -85,23 +85,33 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="main-content">
     <div class="content-wrapper">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Staff Management</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
+    <!-- Dashboard Header with Title, Date and Reports Links -->
+    <div class="notion-page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f0f4fd;">
+                        <i data-feather="users" style="width: 24px; height: 24px; color:rgb(0, 0, 0);"></i>
+                    </div>
+                </div>
+                <h1 class="notion-page-title mb-0">Staff Management</h1>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <div class="text-muted d-none d-md-block me-3">
+                    <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
+                    <?= date('l, F j, Y') ?>
+                </div>
+                <a href="<?= APP_URL ?>/public/reports/users.php" class="btn btn-sm btn-outline-secondary px-3">
+                    <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> Staff Report
+                </a>
                 <?php if ($userRole == 'super-admin' || $userRole == 'admin'): ?>
                     <a href="<?= APP_URL ?>/public/users/add.php" class="btn btn-sm btn-outline-primary">
-                        <i data-feather="user-plus"></i> Add Staff Account
+                        <i data-feather="user-plus" class="me-1" style="width: 14px; height: 14px;"></i> Add Staff
                     </a>
                 <?php endif; ?>
-                <a href="<?= APP_URL ?>/public/users/list.php" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="users"></i> View All Staff
-                </a>
-                <a href="<?= APP_URL ?>/public/reports/users.php" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="file-text"></i> Generate Report
-                </a>
             </div>
         </div>
+        <div class="notion-divider my-3"></div>
     </div>
 
     <?php if ($session->hasFlash('success')): ?>

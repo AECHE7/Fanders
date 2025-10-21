@@ -41,6 +41,19 @@ class LoanModel extends BaseModel {
     }
 
     /**
+     * Get client information by loan ID.
+     * @param int $loanId
+     * @return array|false
+     */
+    public function getClientByLoanId($loanId) {
+        $sql = "SELECT c.* FROM clients c
+                JOIN {$this->table} l ON c.id = l.client_id
+                WHERE l.id = ?";
+
+        return $this->db->single($sql, [$loanId]);
+    }
+
+    /**
      * Enhanced method to retrieve all loan records with client information and filtering
      * @param array $filters Filter parameters from FilterUtility
      * @return array

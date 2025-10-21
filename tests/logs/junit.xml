@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="Tests\Unit\ClientModelTest" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" tests="9" assertions="0" errors="9" failures="0" skipped="0" time="0.000000">
+    <testcase name="testCreateClient" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" line="43" class="Tests\Unit\ClientModelTest" classname="Tests.Unit.ClientModelTest" assertions="0" time="0.000000">
+      <error type="PDOException">Tests\Unit\ClientModelTest::testCreateClient&#13;
+PDOException: SQLSTATE[HY000]: General error: 1 near "'active'": syntax error
+&#13;
+C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php:21</error>
+    </testcase>
+    <testcase name="testFindById" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" line="59" class="Tests\Unit\ClientModelTest" classname="Tests.Unit.ClientModelTest" assertions="0" time="0.000000">
+      <error type="PDOException">Tests\Unit\ClientModelTest::testFindById&#13;
+PDOException: SQLSTATE[HY000]: General error: 1 near "'active'": syntax error
+&#13;
+C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php:21</error>
+    </testcase>
+    <testcase name="testFindByIdReturnsNullForNonExistentClient" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" line="79" class="Tests\Unit\ClientModelTest" classname="Tests.Unit.ClientModelTest" assertions="0" time="0.000000">
+      <error type="PDOException">Tests\Unit\ClientModelTest::testFindByIdReturnsNullForNonExistentClient&#13;
+PDOException: SQLSTATE[HY000]: General error: 1 near "'active'": syntax error
+&#13;
+C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php:21</error>
+    </testcase>
+    <testcase name="testUpdateClient" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" line="86" class="Tests\Unit\ClientModelTest" classname="Tests.Unit.ClientModelTest" assertions="0" time="0.000000">
+      <error type="PDOException">Tests\Unit\ClientModelTest::testUpdateClient&#13;
+PDOException: SQLSTATE[HY000]: General error: 1 near "'active'": syntax error
+&#13;
+C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php:21</error>
+    </testcase>
+    <testcase name="testDeleteClient" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" line="116" class="Tests\Unit\ClientModelTest" classname="Tests.Unit.ClientModelTest" assertions="0" time="0.000000">
+      <error type="PDOException">Tests\Unit\ClientModelTest::testDeleteClient&#13;
+PDOException: SQLSTATE[HY000]: General error: 1 near "'active'": syntax error
+&#13;
+C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php:21</error>
+    </testcase>
+    <testcase name="testGetAllWithPagination" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" line="139" class="Tests\Unit\ClientModelTest" classname="Tests.Unit.ClientModelTest" assertions="0" time="0.000000">
+      <error type="PDOException">Tests\Unit\ClientModelTest::testGetAllWithPagination&#13;
+PDOException: SQLSTATE[HY000]: General error: 1 near "'active'": syntax error
+&#13;
+C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php:21</error>
+    </testcase>
+    <testcase name="testGetTotalCount" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" line="160" class="Tests\Unit\ClientModelTest" classname="Tests.Unit.ClientModelTest" assertions="0" time="0.000000">
+      <error type="PDOException">Tests\Unit\ClientModelTest::testGetTotalCount&#13;
+PDOException: SQLSTATE[HY000]: General error: 1 near "'active'": syntax error
+&#13;
+C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php:21</error>
+    </testcase>
+    <testcase name="testSearchClients" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" line="178" class="Tests\Unit\ClientModelTest" classname="Tests.Unit.ClientModelTest" assertions="0" time="0.000000">
+      <error type="PDOException">Tests\Unit\ClientModelTest::testSearchClients&#13;
+PDOException: SQLSTATE[HY000]: General error: 1 near "'active'": syntax error
+&#13;
+C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php:21</error>
+    </testcase>
+    <testcase name="testGetActiveClients" file="C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php" line="204" class="Tests\Unit\ClientModelTest" classname="Tests.Unit.ClientModelTest" assertions="0" time="0.000000">
+      <error type="PDOException">Tests\Unit\ClientModelTest::testGetActiveClients&#13;
+PDOException: SQLSTATE[HY000]: General error: 1 near "'active'": syntax error
+&#13;
+C:\xampp\htdocs\FandersMicrofinance\tests\Unit\ClientModelTest.php:21</error>
+    </testcase>
+  </testsuite>
+</testsuites>

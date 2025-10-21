@@ -54,19 +54,31 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="main-content">
     <div class="content-wrapper">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Cash Blotter</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="<?= APP_URL ?>/public/cash_blotter/index.php" class="btn btn-sm btn-outline-secondary me-2">
-                <i data-feather="refresh-cw"></i> Refresh
-            </a>
-            <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="exportBlotter()">
-                <i data-feather="download"></i> Export
-            </button>
-            <button type="button" class="btn btn-sm btn-primary" onclick="recalculateBlotter()">
-                <i data-feather="refresh-cw"></i> Recalculate
-            </button>
+    <!-- Dashboard Header with Title, Date and Reports Links -->
+    <div class="notion-page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f0f4fd;">
+                        <i data-feather="book-open" style="width: 24px; height: 24px; color:rgb(0, 0, 0);"></i>
+                    </div>
+                </div>
+                <h1 class="notion-page-title mb-0">Cash Blotter</h1>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <div class="text-muted d-none d-md-block me-3">
+                    <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
+                    <?= date('l, F j, Y') ?>
+                </div>
+                <a href="<?= APP_URL ?>/public/reports/cash_blotter.php" class="btn btn-sm btn-outline-secondary px-3">
+                    <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> Cash Blotter Report
+                </a>
+                <button type="button" class="btn btn-sm btn-primary" onclick="recalculateBlotter()">
+                    <i data-feather="refresh-cw" class="me-1" style="width: 14px; height: 14px;"></i> Recalculate
+                </button>
+            </div>
         </div>
+        <div class="notion-divider my-3"></div>
     </div>
 
     <!-- Flash Messages -->

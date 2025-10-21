@@ -64,7 +64,7 @@ class SLRDocumentService extends BaseService {
         $this->pdfGenerator->setAuthor('Fanders Microfinance');
 
         // Header
-        $this->pdfGenerator->addHeader('FANDERS MICROFINANCE');
+        $this->pdfGenerator->addHeaderRaw('FANDERS MICROFINANCE');
         $this->pdfGenerator->addSubHeader('STATEMENT OF LOAN REPAYMENT (SLR)');
         $this->pdfGenerator->addSpace();
 
@@ -75,7 +75,7 @@ class SLRDocumentService extends BaseService {
         $this->pdfGenerator->addLine('Client ID: ' . $client['id']);
         $this->pdfGenerator->addLine('Loan Amount: ₱' . number_format($loan['principal'], 2));
         $this->pdfGenerator->addLine('Total Loan Amount (with interest): ₱' . number_format($loan['total_loan_amount'], 2));
-        $this->pdfGenerator->addLine('Weekly Payment: ₱' . number_format($loan['weekly_payment'], 2));
+        $this->pdfGenerator->addLine('Weekly Payment: ₱' . number_format($loan['total_loan_amount'] / 17, 2));
         $this->pdfGenerator->addLine('Term: 17 weeks (4 months)');
         $this->pdfGenerator->addLine('Application Date: ' . date('F d, Y', strtotime($loan['application_date'])));
         $this->pdfGenerator->addLine('Disbursement Date: ' . ($loan['disbursement_date'] ? date('F d, Y', strtotime($loan['disbursement_date'])) : 'Pending'));
