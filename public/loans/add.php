@@ -64,6 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
+        // DEBUG: Check what POST variables we're getting
+        $debugLine = "\n=== POST DEBUG AT " . date('Y-m-d H:i:s') . " ===\n";
+        $debugLine .= "POST keys: " . implode(", ", array_keys($_POST)) . "\n";
+        $debugLine .= "submit_loan isset? " . (isset($_POST['submit_loan']) ? 'YES' : 'NO') . "\n";
+        $debugLine .= "submit_loan value: " . ($_POST['submit_loan'] ?? 'UNDEFINED') . "\n";
+        file_put_contents(BASE_PATH . '/LOAN_DEBUG_LOG.txt', $debugLine, FILE_APPEND);
+        
         // Check if the "Apply" button was pressed (not just the 'Calculate' preview)
         if (isset($_POST['submit_loan'])) {
             $debugLog = "\n=== SUBMISSION AT " . date('Y-m-d H:i:s') . " ===\n";
