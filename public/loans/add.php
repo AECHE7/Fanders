@@ -38,7 +38,7 @@ if (!empty($loan['client_id'])) {
 // --- 2. Process Form Submission ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate CSRF token
-    if (!$csrf->validateRequest()) {
+    if (!$csrf->validateRequest(false)) {
         $error = 'Invalid security token. Please refresh and try again.';
     } else {
         // Gather and sanitize input
@@ -53,6 +53,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $loanCalculation = $loanCalculationService->calculateLoan($loan['loan_amount'], $loan['loan_term']);
             if (!$loanCalculation) {
                 $error = $loanCalculationService->getErrorMessage() ?: "Failed to calculate loan details.";
+            } else {
+                // After successful calculation, regenerate CSRF token for the next form submission
+                $csrf->generateToken();
             }
         }
         
