@@ -110,13 +110,10 @@ $isLocked = isset($loanCalculation) && !empty($loanCalculation) && empty($error)
         </button>
         <?php endif; ?>
         <?php if (isset($loanCalculation) && !empty($loanCalculation) && empty($error)): ?>
-            <!-- Hidden fields and Submit button integrated into main form -->
+            <!-- Hidden fields preserved; Submit button moved to preview for clearer UX -->
             <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
             <input type="hidden" name="loan_amount" value="<?= htmlspecialchars($loan['loan_amount']) ?>">
             <input type="hidden" name="loan_term" value="<?= htmlspecialchars($loan['loan_term']) ?>">
-            <button type="submit" name="submit_loan" value="1" class="btn btn-success btn-lg">
-                <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
-            </button>
         <?php endif; ?>
         
         <!-- The Submit button will only appear in the controller preview section -->

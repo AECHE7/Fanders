@@ -284,7 +284,12 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 </div>
             </div>
 
-            <!-- Submit Button (handled in the main form template to avoid duplication) -->
+            <!-- Submit Button: placed in preview for clearer UX; uses main form via form="loanForm" -->
+            <div class="d-flex justify-content-end">
+                <button type="submit" form="loanForm" name="submit_loan" value="1" class="btn btn-success btn-lg">
+                    <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
+                </button>
+            </div>
 
         </div>
     </div>
