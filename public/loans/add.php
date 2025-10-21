@@ -53,6 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $loanCalculation = $loanCalculationService->calculateLoan($loan['loan_amount'], $loan['loan_term']);
             if (!$loanCalculation) {
                 $error = $loanCalculationService->getErrorMessage() ?: "Failed to calculate loan details.";
+                // Log calculation error for debugging
+                error_log("Loan calculation error on add.php: " . $error . " (amount: " . $loan['loan_amount'] . ", term: " . $loan['loan_term'] . ")");
             } else {
                 // After successful calculation, regenerate CSRF token for the next form submission
                 $csrf->generateToken();
@@ -69,17 +71,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'term_weeks' => $loan['loan_term']
             ];
 
+            // Log the submission attempt for debugging
+            error_log("Loan submission attempt: client=" . $loan['client_id'] . ", amount=" . $loan['loan_amount'] . ", term=" . $loan['loan_term']);
+
             // Apply for the loan
             $loanId = $loanService->applyForLoan($loanData, $user['id']);
 
             if ($loanId) {
                 // Success: Redirect to the loan list page
+                error_log("Loan created successfully. Loan ID: " . $loanId);
                 $session->setFlash('success', 'Loan application submitted successfully. Pending Manager approval.');
                 header('Location: ' . APP_URL . '/public/loans/index.php');
                 exit;
             } else {
                 // Failure: Store the specific error message from the service
                 $error = $loanService->getErrorMessage() ?: "Failed to submit loan application.";
+                error_log("Loan creation failed: " . $error);
             }
         }
     }
@@ -209,7 +216,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
                     <input type="hidden" name="loan_amount" value="<?= htmlspecialchars($loan['loan_amount']) ?>">
                     <input type="hidden" name="loan_term" value="<?= htmlspecialchars($loan['loan_term']) ?>">
-                    <button type="submit" name="submit_loan" class="btn btn-success btn-lg">
+                    <button type="submit" name="submit_loan" value="1" class="btn btn-success btn-lg">
                         <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
                     </button>
                 </form>
