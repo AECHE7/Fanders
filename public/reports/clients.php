@@ -18,9 +18,9 @@ $reportService = new ReportService();
 
 // Get filter parameters
 $filters = [
-    'date_from' => $_GET['date_from'] ?? date('Y-m-01'),
-    'date_to' => $_GET['date_to'] ?? date('Y-m-t'),
-    'status' => $_GET['status'] ?? ''
+    'date_from' => $_GET['date_from'] ?? '',
+    'date_to'   => $_GET['date_to'] ?? '',
+    'status'    => $_GET['status'] ?? ''
 ];
 
 // Generate client report data
@@ -53,14 +53,14 @@ include '../../templates/layout/header.php';
                     <form method="GET" action="">
                         <div class="mb-3">
                             <label for="date_from" class="form-label">Date From</label>
-                            <input type="date" class="form-control" id="date_from" name="date_from"
-                                   value="<?= $filters['date_from'] ?>">
+                <input type="date" class="form-control" id="date_from" name="date_from"
+                    value="<?= htmlspecialchars($filters['date_from'] ?: '') ?>">
                         </div>
 
                         <div class="mb-3">
                             <label for="date_to" class="form-label">Date To</label>
-                            <input type="date" class="form-control" id="date_to" name="date_to"
-                                   value="<?= $filters['date_to'] ?>">
+                <input type="date" class="form-control" id="date_to" name="date_to"
+                    value="<?= htmlspecialchars($filters['date_to'] ?: '') ?>">
                         </div>
 
                         <div class="mb-3">
@@ -93,8 +93,12 @@ include '../../templates/layout/header.php';
                 <h1 class="h3 mb-0">Client Reports</h1>
                 <div>
                     <small class="text-muted">
-                        Period: <?= date('M d, Y', strtotime($filters['date_from'])) ?> -
-                        <?= date('M d, Y', strtotime($filters['date_to'])) ?>
+                        <?php if ($filters['date_from'] && $filters['date_to']): ?>
+                            Period: <?= date('M d, Y', strtotime($filters['date_from'])) ?> -
+                            <?= date('M d, Y', strtotime($filters['date_to'])) ?>
+                        <?php else: ?>
+                            <span class="text-muted">All time</span>
+                        <?php endif; ?>
                     </small>
                 </div>
             </div>
@@ -167,20 +171,21 @@ include '../../templates/layout/header.php';
                                         <tr>
                                             <td>
                                                 <a href="<?= APP_URL ?>/public/clients/view.php?id=<?= $client['id'] ?>" class="text-decoration-none">
-                                                    <?= htmlspecialchars($client['client_name']) ?>
+                                                    <?= htmlspecialchars($client['client_name'] ?? '') ?>
                                                 </a>
                                             </td>
                                             <td>
-                                                <a href="mailto:<?= htmlspecialchars($client['email']) ?>" class="text-decoration-none">
-                                                    <?= htmlspecialchars($client['email']) ?>
+                                                <a href="mailto:<?= htmlspecialchars($client['email'] ?? '') ?>" class="text-decoration-none">
+                                                    <?= htmlspecialchars($client['email'] ?? '') ?>
                                                 </a>
                                             </td>
                                             <td>
-                                                <a href="tel:<?= htmlspecialchars($client['phone']) ?>" class="text-decoration-none">
-                                                    <?= htmlspecialchars($client['phone']) ?>
+                                                <a href="tel:<?= htmlspecialchars($client['phone'] ?? '') ?>" class="text-decoration-none">
+                                                    <?= htmlspecialchars($client['phone'] ?? '') ?>
                                                 </a>
                                             </td>
-                                            <td><?= htmlspecialchars(substr($client['address'], 0, 30)) ?><?= strlen($client['address']) > 30 ? '...' : '' ?></td>
+                                            <?php $addr = $client['address'] ?? ''; ?>
+                                            <td><?= htmlspecialchars(substr($addr, 0, 30)) ?><?= strlen($addr) > 30 ? '...' : '' ?></td>
                                             <td>
                                                 <span class="badge bg-primary">
                                                     <?= $client['total_loans'] ?>

@@ -94,6 +94,7 @@ class ReportService extends BaseService {
             p.id as payment_number,
             c.name as client_name,
             l.id as loan_number,
+            l.id as loan_id,
             p.amount,
             p.payment_date,
             p.created_at

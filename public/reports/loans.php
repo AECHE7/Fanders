@@ -18,9 +18,9 @@ $reportService = new ReportService();
 
 // Get filter parameters
 $filters = [
-    'date_from' => $_GET['date_from'] ?? date('Y-m-01'),
-    'date_to' => $_GET['date_to'] ?? date('Y-m-t'),
-    'status' => $_GET['status'] ?? '',
+    'date_from' => $_GET['date_from'] ?? '',
+    'date_to'   => $_GET['date_to'] ?? '',
+    'status'    => $_GET['status'] ?? '',
     'client_id' => $_GET['client_id'] ?? ''
 ];
 
@@ -55,13 +55,13 @@ include '../../templates/layout/header.php';
                         <div class="mb-3">
                             <label for="date_from" class="form-label">Date From</label>
                             <input type="date" class="form-control" id="date_from" name="date_from"
-                                   value="<?= $filters['date_from'] ?>">
+                                   value="<?= htmlspecialchars($filters['date_from'] ?: '') ?>">
                         </div>
 
                         <div class="mb-3">
                             <label for="date_to" class="form-label">Date To</label>
                             <input type="date" class="form-control" id="date_to" name="date_to"
-                                   value="<?= $filters['date_to'] ?>">
+                                   value="<?= htmlspecialchars($filters['date_to'] ?: '') ?>">
                         </div>
 
                         <div class="mb-3">
