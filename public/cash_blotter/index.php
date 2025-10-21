@@ -32,6 +32,9 @@ $filters = FilterUtility::validateDateRange($filters);
 
 // --- 2. Handle PDF Export ---
 if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
+    // Clean any output buffer to prevent "data already output" error
+    if (ob_get_length()) ob_clean();
+    
     try {
         require_once '../../app/services/ReportService.php';
         $reportService = new ReportService();
@@ -49,6 +52,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 
 // --- 3. Handle Excel Export ---
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
+    // Clean any output buffer to prevent "data already output" error
+    if (ob_get_length()) ob_clean();
+    
     try {
         require_once '../../app/services/ReportService.php';
         $reportService = new ReportService();
