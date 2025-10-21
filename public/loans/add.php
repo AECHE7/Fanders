@@ -72,21 +72,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
 
             // Log the submission attempt for debugging
-            error_log("Loan submission attempt: client=" . $loan['client_id'] . ", amount=" . $loan['loan_amount'] . ", term=" . $loan['loan_term']);
+            error_log("DEBUG: Loan submission attempt: client=" . $loan['client_id'] . ", amount=" . $loan['loan_amount'] . ", term=" . $loan['loan_term']);
+            error_log("DEBUG: LoanData being sent to applyForLoan: " . json_encode($loanData));
+            error_log("DEBUG: Current user ID: " . ($user['id'] ?? 'NULL'));
 
             // Apply for the loan
             $loanId = $loanService->applyForLoan($loanData, $user['id']);
 
             if ($loanId) {
                 // Success: Redirect to the loan list page
-                error_log("Loan created successfully. Loan ID: " . $loanId);
+                error_log("DEBUG: Loan created successfully. Loan ID: " . $loanId);
                 $session->setFlash('success', 'Loan application submitted successfully. Pending Manager approval.');
                 header('Location: ' . APP_URL . '/public/loans/index.php');
                 exit;
             } else {
                 // Failure: Store the specific error message from the service
                 $error = $loanService->getErrorMessage() ?: "Failed to submit loan application.";
-                error_log("Loan creation failed: " . $error);
+                error_log("DEBUG: Loan creation failed: " . $error);
+                error_log("DEBUG: Full error details: " . print_r($loanService->getErrorMessage(), true));
             }
         }
     }
