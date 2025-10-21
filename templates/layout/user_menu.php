@@ -1,85 +1,166 @@
-<?php
-/**
- * User Menu Dropdown template for the Fanders Microfinance Loan Management System
- * This file contains the user dropdown menu to separate it from the main header layout
- */
+<?php<?php
 
-// Get current user and role (safe defaulting)
-$currentUser = $auth->getCurrentUser();
+/**/**
 
-// Safely resolve an AuthService instance even when included inside a function
-$authInstance = null;
-if (isset($auth) && is_object($auth)) {
-    $authInstance = $auth;
-} elseif (isset($GLOBALS['auth']) && is_object($GLOBALS['auth'])) {
-    $authInstance = $GLOBALS['auth'];
-} elseif (class_exists('AuthService')) {
-    // Fallback: create a new instance (re-uses existing PHP session)
-    $authInstance = new AuthService();
-}
+ * User Menu Dropdown template for the Fanders Microfinance Loan Management System * User Menu Dropdown template for the Fanders Microfinance Loan Management System
 
-// Get current user and role (safe defaulting)
-$currentUser = [];
-if ($authInstance && method_exists($authInstance, 'getCurrentUser')) {
-    $currentUser = $authInstance->getCurrentUser() ?: [];
-}
-$firstName = $nameParts[0] ?? '';
-$lastName = $nameParts[1] ?? '';
-$initials = ($firstName ? substr($firstName, 0, 1) : '') . ($lastName ? substr($lastName, 0, 1) : '');
+ * This file contains the user dropdown menu to separate it from the main header layout * This file contains the user dropdown menu to separate it from the main header layout
 
-// For username, prefer 'username', fallback to 'email'
-$usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? 'User');
-?>
+ */ */
 
-<div class="navbar-nav">
-    <div class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle px-3 d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-// Make sure we can access the global $auth even when included from within a function scope
-global $auth;
 
-// Get current user and role (safe defaulting)
-$currentUser = [];
-if (isset($auth) && is_object($auth) && method_exists($auth, 'getCurrentUser')) {
-    $currentUser = $auth->getCurrentUser() ?: [];
-}
-            <div class="d-flex align-items-center">
-                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
-                    <span class="fw-bold"><?= htmlspecialchars($initials) ?></span>
-                </div>
-                <span class="d-none d-md-inline"><?= htmlspecialchars($firstName) ?></span>
-            </div>
-        </a>
-        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown">
-            <li class="dropdown-header px-3 py-2">
-                <div class="d-flex align-items-center">
-                    <i data-feather="user" class="me-2 text-muted" style="width: 16px; height: 16px;"></i>
-                    <div>
-                        <small class="text-muted">Signed in as</small><br>
-                        <strong class="text-dark"><?= htmlspecialchars($usernameDisplay) ?></strong>
-                    </div>
-                </div>
-            </li>
-            <li><hr class="dropdown-divider my-1"></li>
-            <li class="px-3 py-1">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
-                    <i data-feather="user-check" class="me-1" style="width: 14px; height: 14px;"></i>
-                    <?= htmlspecialchars($roleName) ?>
-                </span>
-            </li>
-            <li><hr class="dropdown-divider my-1"></li>
-            <li>
-                <a class="dropdown-item d-flex align-items-center py-2" href="<?= APP_URL ?>/public/users/view.php<?= isset($currentUser['id']) ? ('?id=' . (int)$currentUser['id']) : '' ?>">
-                    <i data-feather="settings" class="me-2" style="width: 16px; height: 16px;"></i>
-                    <span>Settings</span>
-                </a>
-            </li>
-            <li><hr class="dropdown-divider my-1"></li>
-            <li>
-                <a class="dropdown-item d-flex align-items-center py-2 text-danger" href="<?= APP_URL ?>/public/logout.php">
-                    <i data-feather="log-out" class="me-2" style="width: 16px; height: 16px;"></i>
-                    <span>Sign out</span>
-                </a>
-            </li>
-        </ul>
-    </div>
-</div>
+
+// Safely resolve an AuthService instance even when included inside a function// Safely resolve an AuthService instance even when included inside a function
+
+$authInstance = null;$authInstance = null;
+
+if (isset($auth) && is_object($auth)) {if (isset($auth) && is_object($auth)) {
+
+    $authInstance = $auth;    $authInstance = $auth;
+
+} elseif (isset($GLOBALS['auth']) && is_object($GLOBALS['auth'])) {} elseif (isset($GLOBALS['auth']) && is_object($GLOBALS['auth'])) {
+
+    $authInstance = $GLOBALS['auth'];    $authInstance = $GLOBALS['auth'];
+
+} elseif (class_exists('AuthService')) {} elseif (class_exists('AuthService')) {
+
+    // Fallback: create a new instance (re-uses existing PHP session)    // Fallback: create a new instance (re-uses existing PHP session)
+
+    $authInstance = new AuthService();    $authInstance = new AuthService();
+
+}}
+
+
+
+// Get current user and role (safe defaulting)// Get current user and role (safe defaulting)
+
+$currentUser = [];$currentUser = [];
+
+if ($authInstance && method_exists($authInstance, 'getCurrentUser')) {if ($authInstance && method_exists($authInstance, 'getCurrentUser')) {
+
+    $currentUser = $authInstance->getCurrentUser() ?: [];    $currentUser = $authInstance->getCurrentUser() ?: [];
+
+}}
+
+
+
+// Use 'role' string directly// Use 'role' string directly
+
+$userRole = isset($currentUser['role']) ? $currentUser['role'] : '';$userRole = isset($currentUser['role']) ? $currentUser['role'] : '';
+
+// For display, format role if needed// For display, format role if needed
+
+$roleName = isset($currentUser['role_display']) ? $currentUser['role_display'] : ucfirst(str_replace('-', ' ', $userRole));$roleName = isset($currentUser['role_display']) ? $currentUser['role_display'] : ucfirst(str_replace('-', ' ', $userRole));
+
+
+
+// Parse first and last name from 'name'// Parse first and last name from 'name'
+
+$fullName = isset($currentUser['name']) ? $currentUser['name'] : '';$fullName = isset($currentUser['name']) ? $currentUser['name'] : '';
+
+$nameParts = explode(' ', $fullName, 2);$nameParts = explode(' ', $fullName, 2);
+
+$firstName = $nameParts[0] ?? '';$firstName = $nameParts[0] ?? '';
+
+$lastName = $nameParts[1] ?? '';$lastName = $nameParts[1] ?? '';
+
+$initials = ($firstName ? substr($firstName, 0, 1) : '') . ($lastName ? substr($lastName, 0, 1) : '');$initials = ($firstName ? substr($firstName, 0, 1) : '') . ($lastName ? substr($lastName, 0, 1) : '');
+
+
+
+// For username, prefer 'username', fallback to 'email'// For username, prefer 'username', fallback to 'email'
+
+$usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? 'User');$usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? 'User');
+
+?>?>
+
+
+
+<div class="navbar-nav"><div class="navbar-nav">
+
+    <div class="nav-item dropdown">    <div class="nav-item dropdown">
+
+        <a class="nav-link dropdown-toggle px-3 d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">        <a class="nav-link dropdown-toggle px-3 d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+
+            <div class="d-flex align-items-center">            <div class="d-flex align-items-center">
+
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+
+                    <span class="fw-bold"><?= htmlspecialchars($initials) ?></span>                    <span class="fw-bold"><?= htmlspecialchars($initials) ?></span>
+
+                </div>                </div>
+
+                <span class="d-none d-md-inline"><?= htmlspecialchars($firstName) ?></span>                <span class="d-none d-md-inline"><?= htmlspecialchars($firstName) ?></span>
+
+            </div>            </div>
+
+        </a>        </a>
+
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown">        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="navbarDropdown">
+
+            <li class="dropdown-header px-3 py-2">            <li class="dropdown-header px-3 py-2">
+
+                <div class="d-flex align-items-center">                <div class="d-flex align-items-center">
+
+                    <i data-feather="user" class="me-2 text-muted" style="width: 16px; height: 16px;"></i>                    <i data-feather="user" class="me-2 text-muted" style="width: 16px; height: 16px;"></i>
+
+                    <div>                    <div>
+
+                        <small class="text-muted">Signed in as</small><br>                        <small class="text-muted">Signed in as</small><br>
+
+                        <strong class="text-dark"><?= htmlspecialchars($usernameDisplay) ?></strong>                        <strong class="text-dark"><?= htmlspecialchars($usernameDisplay) ?></strong>
+
+                    </div>                    </div>
+
+                </div>                </div>
+
+            </li>            </li>
+
+            <li><hr class="dropdown-divider my-1"></li>            <li><hr class="dropdown-divider my-1"></li>
+
+            <li class="px-3 py-1">            <li class="px-3 py-1">
+
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+
+                    <i data-feather="user-check" class="me-1" style="width: 14px; height: 14px;"></i>                    <i data-feather="user-check" class="me-1" style="width: 14px; height: 14px;"></i>
+
+                    <?= htmlspecialchars($roleName) ?>                    <?= htmlspecialchars($roleName) ?>
+
+                </span>                </span>
+
+            </li>            </li>
+
+            <li><hr class="dropdown-divider my-1"></li>            <li><hr class="dropdown-divider my-1"></li>
+
+            <li>            <li>
+
+                <a class="dropdown-item d-flex align-items-center py-2" href="<?= APP_URL ?>/public/users/view.php<?= isset($currentUser['id']) ? ('?id=' . (int)$currentUser['id']) : '' ?>">                <a class="dropdown-item d-flex align-items-center py-2" href="<?= APP_URL ?>/public/users/view.php<?= isset($currentUser['id']) ? ('?id=' . (int)$currentUser['id']) : '' ?>">
+
+                    <i data-feather="settings" class="me-2" style="width: 16px; height: 16px;"></i>                    <i data-feather="settings" class="me-2" style="width: 16px; height: 16px;"></i>
+
+                    <span>Settings</span>                    <span>Settings</span>
+
+                </a>                </a>
+
+            </li>            </li>
+
+            <li><hr class="dropdown-divider my-1"></li>            <li><hr class="dropdown-divider my-1"></li>
+
+            <li>            <li>
+
+                <a class="dropdown-item d-flex align-items-center py-2 text-danger" href="<?= APP_URL ?>/public/logout.php">                <a class="dropdown-item d-flex align-items-center py-2 text-danger" href="<?= APP_URL ?>/public/logout.php">
+
+                    <i data-feather="log-out" class="me-2" style="width: 16px; height: 16px;"></i>                    <i data-feather="log-out" class="me-2" style="width: 16px; height: 16px;"></i>
+
+                    <span>Sign out</span>                    <span>Sign out</span>
+
+                </a>                </a>
+
+            </li>            </li>
+
+        </ul>        </ul>
+
+    </div>    </div>
+
+</div></div>
+
