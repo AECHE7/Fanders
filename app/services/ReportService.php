@@ -89,14 +89,14 @@ class ReportService extends BaseService {
     /**
      * Generate payment report with filtering options
      */
-    publ$query = "SELECT
+    public function generatePaymentReport($filters = []) {
+        $query = "SELECT
             p.id,
             p.id as payment_number,
             c.name as client_name,
             c.email as client_email,
             l.id as loan_number,
             l.id as loan_id,
-            p.amount,oan_id,
             p.amount,
             p.payment_date,
             p.created_at
