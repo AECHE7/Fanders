@@ -37,21 +37,21 @@ class ReportService extends BaseService {
     public function generateLoanReport($filters = []) {
         $query = "SELECT
             l.id,
-            l.loan_number,
-            CONCAT(c.first_name, ' ', c.last_name) as client_name,
-            l.principal_amount,
+            l.id as loan_number,
+            c.name as client_name,
+            l.principal as principal_amount,
             l.interest_rate,
-            l.term_months,
-            l.total_amount,
+            l.term_weeks as term_months,
+            l.total_loan_amount as total_amount,
             l.status,
             l.created_at,
             l.disbursement_date,
-            l.maturity_date,
+            l.completion_date as maturity_date,
             COALESCE(SUM(p.amount), 0) as total_paid,
-            (l.total_amount - COALESCE(SUM(p.amount), 0)) as remaining_balance
+            (l.total_loan_amount - COALESCE(SUM(p.amount), 0)) as remaining_balance
         FROM loans l
         LEFT JOIN clients c ON l.client_id = c.id
-        LEFT JOIN payments p ON l.id = p.loan_id AND p.status = 'completed'
+        LEFT JOIN payments p ON l.id = p.loan_id
         WHERE 1=1";
 
         $params = [];
@@ -89,17 +89,17 @@ class ReportService extends BaseService {
     public function generatePaymentReport($filters = []) {
         $query = "SELECT
             p.id,
-            p.payment_number,
-            CONCAT(c.first_name, ' ', c.last_name) as client_name,
-            l.loan_number,
+            p.id as payment_number,
+            c.name as client_name,
+            l.id as loan_number,
             p.amount,
             p.payment_date,
-            p.payment_method,
-            p.status,
+            'cash' as payment_method,
+            'completed' as status,
             p.created_at,
-            p.principal_amount,
-            p.interest_amount,
-            p.penalty_amount
+            0 as principal_amount,
+            0 as interest_amount,
+            0 as penalty_amount
         FROM payments p
         LEFT JOIN loans l ON p.loan_id = l.id
         LEFT JOIN clients c ON l.client_id = c.id
@@ -145,20 +145,20 @@ class ReportService extends BaseService {
     public function generateClientReport($filters = []) {
         $query = "SELECT
             c.id,
-            CONCAT(c.first_name, ' ', c.last_name) as client_name,
+            c.name as client_name,
             c.email,
-            c.phone,
+            c.phone_number as phone,
             c.address,
             c.status,
             c.created_at,
             c.updated_at,
             COUNT(DISTINCT l.id) as total_loans,
-            COALESCE(SUM(l.principal_amount), 0) as total_principal,
+            COALESCE(SUM(l.principal), 0) as total_principal,
             COALESCE(SUM(p.amount), 0) as total_payments,
-            (COALESCE(SUM(l.total_amount), 0) - COALESCE(SUM(p.amount), 0)) as outstanding_balance
+            (COALESCE(SUM(l.total_loan_amount), 0) - COALESCE(SUM(p.amount), 0)) as outstanding_balance
         FROM clients c
         LEFT JOIN loans l ON c.id = l.client_id
-        LEFT JOIN payments p ON l.id = p.loan_id AND p.status = 'completed'
+        LEFT JOIN payments p ON l.id = p.loan_id
         WHERE 1=1";
 
         $params = [];
@@ -191,11 +191,11 @@ class ReportService extends BaseService {
     public function generateUserReport($filters = []) {
         $query = "SELECT
             u.id,
-            u.username,
-            CONCAT(u.first_name, ' ', u.last_name) as full_name,
+            u.email as username,
+            u.name as full_name,
             u.email,
             u.role,
-            u.is_active,
+            CASE WHEN u.status = 'active' THEN 1 ELSE 0 END as is_active,
             u.created_at,
             u.last_login
         FROM users u
@@ -210,7 +210,7 @@ class ReportService extends BaseService {
         }
 
         if (isset($filters['is_active'])) {
-            $query .= " AND u.is_active = ?";
+            $query .= " AND CASE WHEN u.status = 'active' THEN 1 ELSE 0 END = ?";
             $params[] = $filters['is_active'];
         }
 
@@ -303,28 +303,28 @@ class ReportService extends BaseService {
     public function generateOverdueReport($filters = []) {
         $query = "SELECT
             l.id,
-            l.loan_number,
-            CONCAT(c.first_name, ' ', c.last_name) as client_name,
-            c.phone,
-            l.principal_amount,
-            l.total_amount,
+            l.id as loan_number,
+            c.name as client_name,
+            c.phone_number as phone,
+            l.principal as principal_amount,
+            l.total_loan_amount as total_amount,
             COALESCE(SUM(p.amount), 0) as total_paid,
-            (l.total_amount - COALESCE(SUM(p.amount), 0)) as remaining_balance,
-            l.maturity_date,
-            DATEDIFF(CURDATE(), l.maturity_date) as days_overdue,
+            (l.total_loan_amount - COALESCE(SUM(p.amount), 0)) as remaining_balance,
+            l.completion_date as maturity_date,
+            (CURRENT_DATE - l.completion_date::date) as days_overdue,
             l.status
         FROM loans l
         LEFT JOIN clients c ON l.client_id = c.id
-        LEFT JOIN payments p ON l.id = p.loan_id AND p.status = 'completed'
+        LEFT JOIN payments p ON l.id = p.loan_id
         WHERE l.status = 'active'
-        AND l.maturity_date < CURDATE()
-        GROUP BY l.id
+        AND l.completion_date < CURRENT_DATE
+        GROUP BY l.id, c.id
         HAVING remaining_balance > 0";
 
         $params = [];
 
         if (!empty($filters['days_overdue'])) {
-            $query .= " AND DATEDIFF(CURDATE(), l.maturity_date) >= ?";
+            $query .= " AND (CURRENT_DATE - l.completion_date::date) >= ?";
             $params[] = $filters['days_overdue'];
         }
 
@@ -659,7 +659,7 @@ class ReportService extends BaseService {
     private function getUserInfo($userId) {
         if (!$userId) return [];
 
-        $sql = "SELECT first_name, last_name, role FROM users WHERE id = ?";
+        $sql = "SELECT name, role FROM users WHERE id = ?";
         $result = $this->db->single($sql, [$userId]);
         return $result ?: [];
     }

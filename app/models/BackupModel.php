@@ -27,12 +27,12 @@ class BackupModel extends BaseModel {
         }
 
         if (!empty($filters['date_from'])) {
-            $sql .= " AND DATE(created_at) >= ?";
+            $sql .= " AND created_at::date >= ?";
             $params[] = $filters['date_from'];
         }
 
         if (!empty($filters['date_to'])) {
-            $sql .= " AND DATE(created_at) <= ?";
+            $sql .= " AND created_at::date <= ?";
             $params[] = $filters['date_to'];
         }
 
@@ -158,7 +158,7 @@ class BackupModel extends BaseModel {
     public function hasBackupToday($type = 'scheduled') {
         $today = date('Y-m-d');
         $sql = "SELECT COUNT(*) as count FROM {$this->table}
-                WHERE DATE(created_at) = ? AND type = ? AND status = 'completed'";
+                WHERE created_at::date = ? AND type = ? AND status = 'completed'";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$today, $type]);
@@ -181,7 +181,7 @@ class BackupModel extends BaseModel {
             AND id NOT IN (
                 SELECT id FROM (
                     SELECT id,
-                           ROW_NUMBER() OVER (PARTITION BY YEAR(created_at), MONTH(created_at)
+                           ROW_NUMBER() OVER (PARTITION BY EXTRACT(YEAR FROM created_at), EXTRACT(MONTH FROM created_at)
                                              ORDER BY created_at DESC) as rn
                     FROM {$this->table}
                     WHERE created_at < ?

@@ -458,7 +458,7 @@ class UserService extends BaseService {
             $stats['inactive_staff'] = $result ? $result['count'] : 0;
 
             // Staff added this month
-            $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())";
+            $sql = "SELECT COUNT(*) as count FROM {$this->userModel->getTable()} WHERE role IN ('" . implode("','", $operationalRoles) . "') AND EXTRACT(MONTH FROM created_at) = EXTRACT(MONTH FROM CURRENT_DATE) AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE)";
             $result = $this->userModel->query($sql, [], true);
             $stats['recent_staff'] = $result ? $result['count'] : 0;
 
@@ -504,17 +504,17 @@ class UserService extends BaseService {
         $stats = [];
 
         // Loans processed (created/approved) - simplified for now
-        $sql = "SELECT COUNT(*) as count FROM loans WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $sql = "SELECT COUNT(*) as count FROM loans WHERE created_at >= NOW() - INTERVAL '30 days'";
         $result = $this->userModel->query($sql, [], true);
         $stats['loans_processed'] = $result ? $result['count'] : 0;
 
         // Payments recorded
-        $sql = "SELECT COUNT(*) as count FROM payments WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $sql = "SELECT COUNT(*) as count FROM payments WHERE user_id = ? AND created_at >= NOW() - INTERVAL '30 days'";
         $result = $this->userModel->query($sql, [$userId], true);
         $stats['payments_recorded'] = $result ? $result['count'] : 0;
 
         // Clients served (unique clients from loans/payments)
-        $sql = "SELECT COUNT(DISTINCT client_id) as count FROM loans WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+        $sql = "SELECT COUNT(DISTINCT client_id) as count FROM loans WHERE created_at >= NOW() - INTERVAL '30 days'";
         $result = $this->userModel->query($sql, [], true);
         $stats['clients_served'] = $result ? $result['count'] : 0;
 

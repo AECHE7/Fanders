@@ -253,7 +253,7 @@ class PaymentModel extends BaseModel {
                           c.phone_number,
                           c.id as client_id,
                           u.name AS recorded_by_name,
-                          DATEDIFF(CURDATE(), p.payment_date) as days_since_last_payment
+                          (CURRENT_DATE - p.payment_date::date) as days_since_last_payment
                     FROM {$this->table} p
                     JOIN loans l ON p.loan_id = l.id
                     JOIN clients c ON l.client_id = c.id
@@ -264,7 +264,7 @@ class PaymentModel extends BaseModel {
                         FROM payments 
                         WHERE loan_id = p.loan_id
                     )
-                    AND DATEDIFF(CURDATE(), p.payment_date) > 30
+                    AND (CURRENT_DATE - p.payment_date::date) > 30
                     ORDER BY days_since_last_payment DESC";
 
         return $this->db->resultSet($baseSql);
