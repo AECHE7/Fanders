@@ -139,6 +139,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <?php else: ?>
                 - ✗ Calculation failed: <?= htmlspecialchars($error ?: 'Unknown error') ?>
             <?php endif; ?>
+            
+            <?php if (isset($_POST['submit_loan'])): ?>
+                <hr>
+                <strong>Submission Status:</strong>
+                <?php if ($error): ?>
+                    ✗ SUBMISSION FAILED: <?= htmlspecialchars($error) ?>
+                <?php else: ?>
+                    ✓ No error recorded
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 
