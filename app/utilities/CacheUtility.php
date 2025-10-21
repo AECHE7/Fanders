@@ -28,15 +28,41 @@ class CacheUtility
             return false;
         }
 
-        $data = unserialize(file_get_contents($file));
+        try {
+            $content = file_get_contents($file);
+            if ($content === false) {
+                return false;
+            }
 
-        // Check if cache has expired
-        if (time() > $data['expires']) {
+            // Use error suppression and validation for unserialize
+            $data = @unserialize($content, ['allowed_classes' => false]);
+
+            // Check if unserialize was successful
+            if ($data === false) {
+                // If unserialize failed, delete the corrupted cache
+                $this->delete($key);
+                return false;
+            }
+
+            // Validate data structure
+            if (!is_array($data) || !isset($data['value']) || !isset($data['expires'])) {
+                $this->delete($key);
+                return false;
+            }
+
+            // Check if cache has expired
+            if (time() > $data['expires']) {
+                $this->delete($key);
+                return false;
+            }
+
+            return $data['value'];
+        } catch (Exception $e) {
+            // Log the error and delete corrupted cache
+            error_log("Cache read error for key '{$key}': " . $e->getMessage());
             $this->delete($key);
             return false;
         }
-
-        return $data['value'];
     }
 
     /**
@@ -44,15 +70,30 @@ class CacheUtility
      */
     public function set($key, $value, $ttl = null)
     {
-        $ttl = $ttl ?: $this->defaultTtl;
-        $data = [
-            'value' => $value,
-            'expires' => time() + $ttl,
-            'created' => time()
-        ];
+        try {
+            $ttl = $ttl ?: $this->defaultTtl;
+            $data = [
+                'value' => $value,
+                'expires' => time() + $ttl,
+                'created' => time(),
+                'version' => 1 // Add version for future compatibility
+            ];
 
-        $file = $this->getCacheFile($key);
-        return file_put_contents($file, serialize($data)) !== false;
+            $file = $this->getCacheFile($key);
+            $serialized = serialize($data);
+
+            // Verify serialization was successful by attempting to unserialize
+            $test = @unserialize($serialized, ['allowed_classes' => false]);
+            if ($test === false) {
+                error_log("Cache serialization failed for key '{$key}'");
+                return false;
+            }
+
+            return file_put_contents($file, $serialized) !== false;
+        } catch (Exception $e) {
+            error_log("Cache write error for key '{$key}': " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
@@ -79,6 +120,46 @@ class CacheUtility
             }
         }
         return true;
+    }
+
+    /**
+     * Clear corrupted cache entries
+     * Removes all cache files that cannot be properly unserialized
+     */
+    public function clearCorrupted()
+    {
+        $files = glob($this->cacheDir . '/*');
+        $cleared = 0;
+
+        foreach ($files as $file) {
+            if (!is_file($file)) {
+                continue;
+            }
+
+            try {
+                $content = file_get_contents($file);
+                if ($content === false) {
+                    unlink($file);
+                    $cleared++;
+                    continue;
+                }
+
+                $data = @unserialize($content, ['allowed_classes' => false]);
+
+                if ($data === false || !is_array($data) || !isset($data['expires'])) {
+                    unlink($file);
+                    $cleared++;
+                }
+            } catch (Exception $e) {
+                if (file_exists($file)) {
+                    unlink($file);
+                    $cleared++;
+                }
+            }
+        }
+
+        error_log("Cache cleanup: Removed {$cleared} corrupted entries");
+        return $cleared;
     }
 
     /**
@@ -121,17 +202,40 @@ class CacheUtility
             'total_files' => count($files),
             'total_size' => 0,
             'valid_entries' => 0,
-            'expired_entries' => 0
+            'expired_entries' => 0,
+            'corrupted_entries' => 0
         ];
 
         foreach ($files as $file) {
+            if (!is_file($file)) {
+                continue;
+            }
+
             $stats['total_size'] += filesize($file);
 
-            $data = unserialize(file_get_contents($file));
-            if (time() > $data['expires']) {
-                $stats['expired_entries']++;
-            } else {
-                $stats['valid_entries']++;
+            try {
+                $content = file_get_contents($file);
+                if ($content === false) {
+                    $stats['corrupted_entries']++;
+                    continue;
+                }
+
+                $data = @unserialize($content, ['allowed_classes' => false]);
+
+                // Check if unserialize was successful and data is valid
+                if ($data === false || !is_array($data) || !isset($data['expires'])) {
+                    $stats['corrupted_entries']++;
+                    continue;
+                }
+
+                if (time() > $data['expires']) {
+                    $stats['expired_entries']++;
+                } else {
+                    $stats['valid_entries']++;
+                }
+            } catch (Exception $e) {
+                $stats['corrupted_entries']++;
+                error_log("Cache stats error: " . $e->getMessage());
             }
         }
 
