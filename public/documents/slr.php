@@ -38,7 +38,7 @@ switch ($action) {
  * Show the SLR document generation interface
  */
 function showSLRInterface() {
-    global $loanService, $clientService, $session;
+    global $loanService, $clientService, $session, $csrf;
 
     // Get active loans for selection
     $activeLoans = $loanService->getAllActiveLoansWithClients();
