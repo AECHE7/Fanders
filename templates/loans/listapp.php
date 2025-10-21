@@ -32,6 +32,24 @@ if (!function_exists('getLoanStatusBadgeClass')) {
         No loans found matching the current filters.
     </div>
 <?php else: ?>
+    <!-- Agreements Section -->
+    <div class="mb-4">
+        <h5 class="mb-2">Generated Agreements</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead>
+                    <tr>
+                        <th>Loan ID</th>
+                        <th>Agreement File</th>
+                        <th>Download</th>
+                    </tr>
+                </thead>
+                <tbody id="agreements-list">
+                    <!-- Agreements will be loaded here by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
     <div class="table-responsive">
         <table class="table table-striped table-hover align-middle mb-0">
             <thead class="table-light">
@@ -153,5 +171,32 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                 }
             });
         });
+
+        // Agreements fetch and render
+        fetch('<?= APP_URL ?>/public/agreements/list.php')
+            .then(response => response.json())
+            .then(data => {
+                const agreementsList = document.getElementById('agreements-list');
+                agreementsList.innerHTML = '';
+                if (data.agreements && data.agreements.length > 0) {
+                    data.agreements.forEach(agreement => {
+                        // Try to extract loan ID from filename
+                        let loanId = '';
+                        const match = agreement.name.match(/loan_(\d+)_|Loan(\d+)/i);
+                        if (match) {
+                            loanId = match[1] || match[2] || '';
+                        }
+                        agreementsList.innerHTML += `
+                            <tr>
+                                <td>${loanId}</td>
+                                <td>${agreement.name}</td>
+                                <td><a href="${agreement.url}" target="_blank" class="btn btn-sm btn-outline-primary">Download</a></td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    agreementsList.innerHTML = '<tr><td colspan="3">No agreements found.</td></tr>';
+                }
+            });
     });
 </script>
