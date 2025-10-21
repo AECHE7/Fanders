@@ -610,8 +610,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td><?= htmlspecialchars($row['email']) ?></td>
-                                                    <td><?= htmlspecialchars($row['phone']) ?></td>
+                                                    <td><?= htmlspecialchars($row['email'] ?? '') ?></td>
+                                                    <td><?= htmlspecialchars($row['phone'] ?? '') ?></td>
                                                     <td class="text-center">
                                                         <span class="badge bg-primary"><?= $row['total_loans'] ?></span>
                                                     </td>
@@ -626,8 +626,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td><?= htmlspecialchars($row['full_name']) ?></td>
-                                                    <td><?= htmlspecialchars($row['email']) ?></td>
+                                                    <td><?= htmlspecialchars($row['full_name'] ?? '') ?></td>
+                                                    <td><?= htmlspecialchars($row['email'] ?? '') ?></td>
                                                     <td><span class="badge bg-info"><?= ucfirst($row['role']) ?></span></td>
                                                     <td><span class="badge bg-<?= $row['is_active'] ? 'success' : 'danger' ?>"><?= $row['is_active'] ? 'Active' : 'Inactive' ?></span></td>
                                                 <?php elseif ($filters['type'] === 'overdue'): ?>
@@ -642,7 +642,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td><?= htmlspecialchars($row['phone']) ?></td>
+                                                    <td><?= htmlspecialchars($row['phone'] ?? '') ?></td>
                                                     <td>₱<?= number_format($row['principal_amount'], 2) ?></td>
                                                     <td class="text-danger fw-bold">₱<?= number_format($row['remaining_balance'], 2) ?></td>
                                                     <td><span class="badge bg-danger"><?= $row['days_overdue'] ?> days</span></td>
