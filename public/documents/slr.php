@@ -114,6 +114,11 @@ function handleGenerateSLR() {
         exit;
     }
 
+    // Clear any output buffers to prevent PDF corruption
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+
     // Output PDF
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="SLR_Loan_' . $loanId . '_' . date('Y-m-d') . '.pdf"');
@@ -169,6 +174,11 @@ function handleBulkSLR() {
 
     $zip->close();
 
+    // Clear any output buffers to prevent ZIP corruption
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+
     // Output ZIP file
     header('Content-Type: application/zip');
     header('Content-Disposition: attachment; filename="SLR_Bulk_' . date('Y-m-d') . '.zip"');
@@ -214,6 +224,11 @@ function handleClientSLR() {
         $loanId = key($documents);
         $pdfContent = current($documents);
 
+        // Clear any output buffers to prevent PDF corruption
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
         header('Content-Type: application/pdf');
         header('Content-Disposition: attachment; filename="SLR_Client_' . $clientId . '_Loan_' . $loanId . '_' . date('Y-m-d') . '.pdf"');
         header('Content-Length: ' . strlen($pdfContent));
@@ -237,6 +252,11 @@ function handleClientSLR() {
         }
 
         $zip->close();
+
+        // Clear any output buffers to prevent ZIP corruption
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
 
         header('Content-Type: application/zip');
         header('Content-Disposition: attachment; filename="SLR_Client_' . $clientId . '_' . date('Y-m-d') . '.zip"');
