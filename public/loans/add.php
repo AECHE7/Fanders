@@ -125,6 +125,19 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <?= $session->getFlash('error') ?>
         </div>
     <?php endif; ?>
+    
+    <!-- DEBUG: Show calculation status -->
+    <?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['client_id']) && isset($_POST['loan_amount'])): ?>
+        <div class="alert alert-info">
+            <strong>Debug Info:</strong> 
+            Form submitted with Amount=₱<?= htmlspecialchars($_POST['loan_amount']) ?>, Term=<?= htmlspecialchars($_POST['loan_term']) ?> weeks
+            <?php if ($loanCalculation): ?>
+                - ✓ Calculation successful
+            <?php else: ?>
+                - ✗ Calculation failed: <?= htmlspecialchars($error ?: 'Unknown error') ?>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 
     <!-- Loan Application Form -->
     <div class="card shadow-sm">
@@ -137,6 +150,13 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div>
 
     <!-- Loan Calculation Preview (Displayed only if successful calculation exists) -->
+    <?php 
+        // DEBUG: Show what's happening with calculation
+        error_log("DEBUG add.php: loanCalculation=" . ($loanCalculation ? 'SET' : 'NULL') . ", error=" . ($error ?: 'EMPTY'));
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['client_id']) && isset($_POST['loan_amount'])) {
+            error_log("DEBUG add.php: POST data - client_id={$_POST['client_id']}, amount={$_POST['loan_amount']}, term={$_POST['loan_term']}");
+        }
+    ?>
     <?php if ($loanCalculation && empty($error)): ?>
         <?php
         // Calculate approximate weekly breakdown
