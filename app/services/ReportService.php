@@ -907,24 +907,22 @@ class ReportService extends BaseService {
         $pdf->addSpace();
 
         // Transactions Table
-        $pdf->addSubHeader('Transactions');
+        $pdf->addSubHeader('Daily Cash Flow');
         
         $columns = [
-            ['header' => 'Date', 'width' => 25],
-            ['header' => 'Description', 'width' => 70],
-            ['header' => 'Inflow', 'width' => 30],
-            ['header' => 'Outflow', 'width' => 30],
-            ['header' => 'Balance', 'width' => 35]
+            ['header' => 'Date', 'width' => 30],
+            ['header' => 'Inflow', 'width' => 40],
+            ['header' => 'Outflow', 'width' => 40],
+            ['header' => 'Balance', 'width' => 40]
         ];
 
         $tableData = [];
         foreach ($blotterData as $entry) {
             $tableData[] = [
-                date('Y-m-d', strtotime($entry['transaction_date'])),
-                substr($entry['description'] ?? '', 0, 50),
-                FormatUtility::peso($entry['inflow_amount'] ?? 0),
-                FormatUtility::peso($entry['outflow_amount'] ?? 0),
-                FormatUtility::peso($entry['balance_after'] ?? 0)
+                date('M j, Y', strtotime($entry['blotter_date'] ?? 'today')),
+                FormatUtility::peso($entry['total_inflow'] ?? 0),
+                FormatUtility::peso($entry['total_outflow'] ?? 0),
+                FormatUtility::peso($entry['calculated_balance'] ?? 0)
             ];
         }
 
@@ -934,15 +932,14 @@ class ReportService extends BaseService {
     }
 
     public function exportCashBlotterExcel($blotterData, $summary, $currentBalance, $filters) {
-        $headers = ['Date', 'Description', 'Inflow', 'Outflow', 'Balance'];
+        $headers = ['Date', 'Inflow', 'Outflow', 'Closing Balance'];
         $rows = [];
         foreach ($blotterData as $entry) {
             $rows[] = [
-                date('Y-m-d', strtotime($entry['transaction_date'])),
-                $entry['description'] ?? '',
-                (float)($entry['inflow_amount'] ?? 0),
-                (float)($entry['outflow_amount'] ?? 0),
-                (float)($entry['balance_after'] ?? 0)
+                date('Y-m-d', strtotime($entry['blotter_date'] ?? 'today')),
+                (float)($entry['total_inflow'] ?? 0),
+                (float)($entry['total_outflow'] ?? 0),
+                (float)($entry['calculated_balance'] ?? 0)
             ];
         }
         $title = 'cash_blotter_' . date('Y-m-d') . '.xls';
