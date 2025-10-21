@@ -41,8 +41,10 @@ try {
     $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
     $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
 
-    // Get loans based on applied filters with pagination
-    $loans = $loanService->getAllLoansWithClients($filters, $page, $limit);
+    // Inject pagination into filters and get loans with pagination
+    $filters['page'] = $page;
+    $filters['limit'] = $limit;
+    $loans = $loanService->getAllLoansWithClients($filters);
 
     // Get total count for pagination
     $totalLoans = $loanService->getTotalLoansCount($filters);
@@ -57,6 +59,9 @@ try {
 
     // Get loan statistics for the dashboard cards
     $loanStats = $loanService->getLoanStats();
+    // Map/augment stats for template compatibility
+    $loanStats['total_disbursed'] = $loanStats['total_principal_disbursed'] ?? 0;
+    $loanStats['active_loans'] = $loanService->getTotalLoansCount(['status' => 'Active']);
 
     // Prepare filter summary for display
     $filterSummary = FilterUtility::getFilterSummary($filters);
@@ -143,6 +148,7 @@ $pageTitle = "Loans Management";
 
 // Helper function to get loan status badge class (used in the template)
 function getLoanStatusBadgeClass($status) {
+    $status = strtolower($status ?? '');
     switch($status) {
         case 'active': return 'primary';
         case 'application': return 'info';
