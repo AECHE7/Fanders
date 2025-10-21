@@ -26,8 +26,14 @@ $newClient = [
 ];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // 1. Validate CSRF token
-    if (!$csrf->validateRequest()) {
+    // 1. Validate CSRF token (don't regenerate to avoid interference with session timeout checks)
+    if (!$csrf->validateRequest(false)) {
+        // Debug information in development mode
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("CSRF Token Validation Failed for Client Add");
+            error_log("POST Token: " . ($_POST['csrf_token'] ?? 'MISSING'));
+            error_log("Session Token: " . $csrf->getToken());
+        }
         $session->setFlash('error', 'Invalid security token. Please refresh and try again.');
         header('Location: ' . APP_URL . '/public/clients/add.php');
         exit;
@@ -88,7 +94,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <div class="card shadow-sm">
         <div class="card-body">
             <?php
-            // The form template handles the HTML structure, using the $newClient variable for default values.
+            // The form template expects $clientData, so we assign $newClient to $clientData
+            $clientData = $newClient;
             include_once BASE_PATH . '/templates/clients/form.php';
             ?>
         </div>

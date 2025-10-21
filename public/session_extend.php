@@ -56,8 +56,8 @@ $user = $auth->getCurrentUser();
 
 // Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate CSRF token
-    if (!$csrf->validateToken($_POST['csrf_token'] ?? '')) {
+    // Validate CSRF token (don't regenerate for session timeout checks)
+    if (!$csrf->validateToken($_POST['csrf_token'] ?? '', false)) {
         echo json_encode(['success' => false, 'message' => 'Invalid request']);
         exit;
     }
@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Handle session timeout check requests
+// Handle session timeout check requests (no CSRF validation needed for read-only check)
 if (isset($_POST['check_session_timeout'])) {
     $timedOut = $auth->checkSessionTimeout();
     echo json_encode(['timed_out' => $timedOut]);

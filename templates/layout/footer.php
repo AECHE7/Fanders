@@ -41,6 +41,7 @@
         <!-- Custom JavaScript files -->
         <script src="<?= APP_URL ?>/assets/js/main.js"></script>
         <script src="<?= APP_URL ?>/assets/js/interactive.js"></script>
+        <script src="<?= APP_URL ?>/assets/js/csrf-fix.js"></script>
 
         <!-- Initialize components -->
         <script>
@@ -62,13 +63,20 @@
                     return new bootstrap.Popover(popoverTriggerEl);
                 });
 
-                // Add loading states to forms
+                // Add loading states to forms (with prevention of double submission)
                 document.querySelectorAll('form').forEach(form => {
-                    form.addEventListener('submit', function() {
+                    form.addEventListener('submit', function(e) {
                         const submitBtn = form.querySelector('button[type="submit"]');
-                        if (submitBtn) {
+                        if (submitBtn && !submitBtn.disabled) {
                             submitBtn.disabled = true;
+                            const originalText = submitBtn.innerHTML;
                             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+                            
+                            // Re-enable button after 10 seconds in case of network issues
+                            setTimeout(() => {
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = originalText;
+                            }, 10000);
                         }
                     });
                 });

@@ -33,8 +33,8 @@ if (!$clientData) {
 
 // --- 2. Process Form Submission ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Validate CSRF token
-    if (!$csrf->validateRequest()) {
+    // Validate CSRF token (don't regenerate to avoid interference)
+    if (!$csrf->validateRequest(false)) {
         $session->setFlash('error', 'Invalid security token. Please refresh and try again.');
         header('Location: ' . APP_URL . '/public/clients/edit.php?id=' . $clientId);
         exit;

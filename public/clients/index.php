@@ -39,7 +39,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 
 // --- 3. Handle POST Actions (Status Change, Delete) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    if (!$csrf->validateRequest()) {
+    if (!$csrf->validateRequest(false)) {
         $session->setFlash('error', 'Invalid security token. Please try again.');
         header('Location: ' . APP_URL . '/public/clients/index.php');
         exit;

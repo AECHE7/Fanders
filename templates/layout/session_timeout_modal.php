@@ -73,7 +73,7 @@ function checkSessionTimeout() {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-Requested-With': 'XMLHttpRequest'
         },
-        body: 'check_session_timeout=1&csrf_token=<?= urlencode($csrfToken) ?>'
+        body: 'check_session_timeout=1'
     })
     .then(response => response.json())
     .then(data => {

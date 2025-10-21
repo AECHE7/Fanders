@@ -48,7 +48,7 @@ foreach ($loanHistory as $loan) {
 
 // --- 3. Handle POST Actions (Status Management) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    if (!$csrf->validateRequest()) {
+    if (!$csrf->validateRequest(false)) {
         $session->setFlash('error', 'Invalid security token. Please try again.');
         header('Location: ' . APP_URL . '/public/clients/view.php?id=' . $clientId);
         exit;
