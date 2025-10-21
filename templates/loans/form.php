@@ -8,7 +8,6 @@
  * @var array|null $loanCalculation Detailed calculation preview data
  * @var CSRF $csrf The CSRF utility object
  */
- */
 // Lock form fields after successful calculation to prevent edits
 $isLocked = isset($loanCalculation) && !empty($loanCalculation) && empty($error);
 ?>
