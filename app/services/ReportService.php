@@ -131,11 +131,11 @@ class ReportService extends BaseService {
 
     /**
      * Generate client report with filtering options
-     */$query = "SELECT
+     */
+    public function generateClientReport($filters = []) {
+        $query = "SELECT
             c.id,
             c.id as client_id,
-            c.name as client_name,
-            c.id,
             c.name as client_name,
             c.email,
             c.phone_number as phone,
@@ -177,12 +177,12 @@ class ReportService extends BaseService {
     }
 
     /**
-     * G$query = "SELECT
-            u.id,
-            u.id as user_id,
-            u.email as username,Report($filters = []) {
+     * Generate user report with filtering options
+     */
+    public function generateUserReport($filters = []) {
         $query = "SELECT
             u.id,
+            u.id as user_id,
             u.email as username,
             u.name as full_name,
             u.email,
@@ -280,15 +280,15 @@ class ReportService extends BaseService {
         ];
     }
 
-    /**$query = "SELECT
+    /**
+     * Generate overdue loans report
+     */
+    public function generateOverdueReport($filters = []) {
+        $query = "SELECT
             l.id,
             l.id as loan_number,
             c.name as client_name,
             c.email as client_email,
-            c.phone_number as phone,
-            l.id,
-            l.id as loan_number,
-            c.name as client_name,
             c.phone_number as phone,
             l.principal as principal_amount,
             l.total_loan_amount as total_amount,
