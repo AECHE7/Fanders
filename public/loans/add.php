@@ -59,8 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Log calculation error for debugging
                 error_log("Loan calculation error on add.php: " . $error . " (amount: " . $loan['loan_amount'] . ", term: " . $loan['loan_term'] . ")");
             } else {
-                // After successful calculation, regenerate CSRF token for the next form submission
-                $csrf->generateToken();
+                // Do NOT regenerate CSRF token here on calculate - keep token consistent until final submission
+                // The submit action will rely on the same token generated for the initial form render
+                // $csrf->generateToken(); // intentionally disabled
             }
         }
         
@@ -284,16 +285,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </div>
 
             <!-- Submit Button (appears after successful calculation) -->
-             <div class="d-flex justify-content-end">
-                <form action="<?= APP_URL ?>/public/loans/add.php" method="post" id="submitLoanForm">
-                    <?= $csrf->getTokenField() ?>
-                    <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
-                    <input type="hidden" name="loan_amount" value="<?= htmlspecialchars($loan['loan_amount']) ?>">
-                    <input type="hidden" name="loan_term" value="<?= htmlspecialchars($loan['loan_term']) ?>">
-                    <button type="submit" name="submit_loan" value="1" class="btn btn-success btn-lg">
-                        <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
-                    </button>
-                </form>
+            <div class="d-flex justify-content-end">
+                <!-- The submit button will be part of the main form (templates/loans/form.php) and displayed when calculation is successful -->
+                <button type="submit" form="loanForm" name="submit_loan" value="1" class="btn btn-success btn-lg">
+                    <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
+                </button>
             </div>
 
         </div>

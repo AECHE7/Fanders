@@ -8,9 +8,12 @@
  * @var array|null $loanCalculation Detailed calculation preview data
  * @var CSRF $csrf The CSRF utility object
  */
+ */
+// Lock form fields after successful calculation to prevent edits
+$isLocked = isset($loanCalculation) && !empty($loanCalculation) && empty($error);
 ?>
 
-<form action="" method="post" class="notion-form needs-validation" novalidate>
+<form action="<?= APP_URL ?>/public/loans/add.php" method="post" id="loanForm" class="notion-form needs-validation" novalidate>
     <?= $csrf->getTokenField() ?>
 
     <!-- Form Title and Icon -->
@@ -37,6 +40,7 @@
                         class="notion-form-select form-select custom-select-animated"
                         id="client_id"
                         name="client_id"
+                        <?= $isLocked ? 'disabled' : '' ?>
                         required
                         aria-required="true">
                         <option value="">Select a client...</option>
@@ -46,6 +50,9 @@
                             </option>
                         <?php endforeach; ?>
                     </select>
+                    <?php if ($isLocked): ?>
+                        <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
+                    <?php endif; ?>
                     <div class="invalid-feedback">Please select a client.</div>
                 </div>
             </div>
@@ -58,6 +65,7 @@
                         id="loan_amount"
                         name="loan_amount"
                         value="<?= htmlspecialchars($loan['loan_amount'] ?? '') ?>"
+                        <?= $isLocked ? 'readonly' : '' ?>
                         required
                         min="1000"
                         max="50000"
@@ -79,6 +87,7 @@
                         id="loan_term"
                         name="loan_term"
                         value="<?= htmlspecialchars($loan['loan_term'] ?? 17) ?>"
+                        <?= $isLocked ? 'readonly' : '' ?>
                         required
                         min="4"
                         max="52"
@@ -99,6 +108,15 @@
             <i data-feather="calculator" class="me-1" style="width:16px;height:16px;" aria-hidden="true"></i>
             Calculate
         </button>
+        <?php if (isset($loanCalculation) && !empty($loanCalculation) && empty($error)): ?>
+            <!-- Hidden fields and Submit button integrated into main form -->
+            <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
+            <input type="hidden" name="loan_amount" value="<?= htmlspecialchars($loan['loan_amount']) ?>">
+            <input type="hidden" name="loan_term" value="<?= htmlspecialchars($loan['loan_term']) ?>">
+            <button type="submit" name="submit_loan" value="1" class="btn btn-success btn-lg">
+                <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
+            </button>
+        <?php endif; ?>
         
         <!-- The Submit button will only appear in the controller preview section -->
         <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-outline-secondary px-4 ripple-effect">
@@ -158,6 +176,21 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => ripple.remove(), 600);
         });
     });
+    // If calculation succeeded, lock the form inputs and focus preview
+    const isLocked = <?= (isset($isLocked) && $isLocked) ? 'true' : 'false' ?>;
+    if (isLocked) {
+        document.querySelectorAll('#loanForm input, #loanForm select').forEach(el => {
+            if (!el.hasAttribute('readonly') && !el.disabled) {
+                el.setAttribute('readonly', 'readonly');
+            }
+            if (!el.disabled) el.classList.add('locked-input');
+        });
+        // Scroll to calculation preview if present
+        const preview = document.querySelector('.card.mt-4');
+        if (preview) preview.scrollIntoView({behavior: 'smooth'});
+        // Client-side debug console message
+        console.info('Loan calculation complete - form locked. Submit when ready.');
+    }
 });
 </script>
 
@@ -202,5 +235,6 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .notion-form-group input:required:invalid:not(:placeholder-shown) { border-color: #dc3545; }
 .notion-form-group input:required:invalid:not(:placeholder-shown) ~ .notion-form-label { color: #dc3545; }
+.locked-input { background-color: #f8f9fa; }
 .text-primary { color: #9d71ea !important; }
 </style>
