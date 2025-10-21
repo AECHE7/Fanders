@@ -385,20 +385,101 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <input type="hidden" name="backup_id" id="delete_backup_id">
 </form>
 
+<!-- Restore Backup Modal -->
+<div class="modal fade" id="restoreBackupModal" tabindex="-1" aria-labelledby="restoreBackupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="restoreBackupModalLabel">
+                    <i data-feather="refresh-cw"></i> Confirm Database Restore
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i data-feather="alert-triangle"></i> <strong>CRITICAL ACTION:</strong> This will overwrite the current database!
+                </div>
+                <p>You are about to restore from backup:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Filename:</strong> <span id="modalRestoreFilename"></span></li>
+                </ul>
+                <p class="text-danger fw-bold">THIS ACTION CANNOT BE UNDONE!</p>
+                <p class="text-muted small">Make sure you have a recent backup of the current database before proceeding.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmRestoreBtn">
+                    <i data-feather="refresh-cw"></i> Confirm Restore
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Backup Modal -->
+<div class="modal fade" id="deleteBackupModal" tabindex="-1" aria-labelledby="deleteBackupModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteBackupModalLabel">
+                    <i data-feather="trash-2"></i> Confirm Backup Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i data-feather="alert-triangle"></i> <strong>Warning:</strong> This will permanently delete the backup file.
+                </div>
+                <p>You are about to delete backup:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Filename:</strong> <span id="modalDeleteFilename"></span></li>
+                </ul>
+                <p class="text-danger fw-bold">This action cannot be undone!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i data-feather="trash-2"></i> Confirm Deletion
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+let currentBackupId = null;
+let currentFilename = null;
+let currentAction = null;
+
 function restoreBackup(backupId, filename) {
-    if (confirm(`Are you sure you want to restore the database from backup "${filename}"?\n\nThis will overwrite the current database and cannot be undone.`)) {
-        document.getElementById('restore_backup_id').value = backupId;
-        document.getElementById('restoreForm').submit();
-    }
+    currentBackupId = backupId;
+    currentFilename = filename;
+    currentAction = 'restore';
+    
+    document.getElementById('modalRestoreFilename').textContent = filename;
+    const restoreModal = new bootstrap.Modal(document.getElementById('restoreBackupModal'));
+    restoreModal.show();
 }
 
 function deleteBackup(backupId, filename) {
-    if (confirm(`Are you sure you want to delete the backup "${filename}"?\n\nThis action cannot be undone.`)) {
-        document.getElementById('delete_backup_id').value = backupId;
-        document.getElementById('deleteForm').submit();
-    }
+    currentBackupId = backupId;
+    currentFilename = filename;
+    currentAction = 'delete';
+    
+    document.getElementById('modalDeleteFilename').textContent = filename;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteBackupModal'));
+    deleteModal.show();
 }
+
+document.getElementById('confirmRestoreBtn').addEventListener('click', function() {
+    document.getElementById('restore_backup_id').value = currentBackupId;
+    document.getElementById('restoreForm').submit();
+});
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    document.getElementById('delete_backup_id').value = currentBackupId;
+    document.getElementById('deleteForm').submit();
+});
 </script>
 
 <?php

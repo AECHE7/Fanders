@@ -141,11 +141,12 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <form action="<?= $_SERVER['PHP_SELF'] ?>" method="post" style="display:inline;">
-                                    <input type="hidden" name="transaction_id" value="<?= htmlspecialchars($transaction['id']) ?>">
-                                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf->getToken()) ?>">
-                                    <button type="submit" name="action" value="approve" class="btn btn-success btn-sm" onclick="return confirm('Are you sure you want to approve this request?')">Record</button>
-                                </form>
+                                <button type="button" class="btn btn-success btn-sm btn-approve-request" 
+                                        data-transaction-id="<?= htmlspecialchars($transaction['id']) ?>"
+                                        data-book-title="<?= htmlspecialchars($transaction['book_title']) ?>"
+                                        data-borrower-name="<?= htmlspecialchars($transaction['borrower_name']) ?>">
+                                    Record
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -155,6 +156,63 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php endif; ?>
     </div>
 </main>
+
+<!-- Approve Request Modal -->
+<div class="modal fade" id="approveRequestModal" tabindex="-1" aria-labelledby="approveRequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="approveRequestModalLabel">
+                    <i data-feather="check-circle"></i> Confirm Payment Record
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to record payment for:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Transaction ID:</strong> <span id="modalTransactionId"></span></li>
+                    <li><strong>Book:</strong> <span id="modalBookTitle"></span></li>
+                    <li><strong>Borrower:</strong> <span id="modalBorrowerName"></span></li>
+                </ul>
+                <div class="alert alert-info mt-3">
+                    <i data-feather="info"></i> This will approve and record the payment request.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>" method="post" id="approveRequestForm" style="display:inline;">
+                    <input type="hidden" name="transaction_id" id="formTransactionId">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf->getToken()) ?>">
+                    <button type="submit" name="action" value="approve" class="btn btn-success">
+                        <i data-feather="check-circle"></i> Confirm Record
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const approveButtons = document.querySelectorAll('.btn-approve-request');
+    const modal = new bootstrap.Modal(document.getElementById('approveRequestModal'));
+    
+    approveButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const transactionId = this.getAttribute('data-transaction-id');
+            const bookTitle = this.getAttribute('data-book-title');
+            const borrowerName = this.getAttribute('data-borrower-name');
+            
+            document.getElementById('modalTransactionId').textContent = transactionId;
+            document.getElementById('modalBookTitle').textContent = bookTitle;
+            document.getElementById('modalBorrowerName').textContent = borrowerName;
+            document.getElementById('formTransactionId').value = transactionId;
+            
+            modal.show();
+        });
+    });
+});
+</script>
 
 <?php
 include_once BASE_PATH . '/templates/layout/footer.php';

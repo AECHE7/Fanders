@@ -122,13 +122,45 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
     <div class="alert alert-warning">
         <p>Are you sure you want to delete this transaction? This action cannot be undone.</p>
-        <form method="post" action="">
-            <?= $csrf->getTokenField() ?>
-            <button type="submit" class="btn btn-danger">Delete</button>
-            <a href="<?= APP_URL ?>/public/transactions/index.php" class="btn btn-secondary">Cancel</a>
-        </form>
+        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteTransactionModal">
+            Delete Transaction
+        </button>
+        <a href="<?= APP_URL ?>/public/transactions/index.php" class="btn btn-secondary">Cancel</a>
     </div>
 </main>
+
+<!-- Delete Transaction Modal -->
+<div class="modal fade" id="deleteTransactionModal" tabindex="-1" aria-labelledby="deleteTransactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteTransactionModalLabel">
+                    <i data-feather="trash-2"></i> Confirm Transaction Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i data-feather="alert-triangle"></i> <strong>PERMANENT DELETION:</strong> This action cannot be undone!
+                </div>
+                <p>You are about to delete transaction:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Transaction ID:</strong> <?= htmlspecialchars($transactionId) ?></li>
+                </ul>
+                <p class="text-danger fw-bold">Are you absolutely sure you want to proceed?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="" style="display:inline;">
+                    <?= $csrf->getTokenField() ?>
+                    <button type="submit" class="btn btn-danger">
+                        <i data-feather="trash-2"></i> Confirm Deletion
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php
 // Include footer

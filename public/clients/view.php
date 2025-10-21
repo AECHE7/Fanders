@@ -189,35 +189,27 @@ function getClientStatusBadgeClass($status) {
 
                     <div class="d-flex flex-wrap gap-2">
                         <?php if ($clientData['status'] !== 'active'): ?>
-                            <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" onsubmit="return confirm('Confirm activation of client: <?= htmlspecialchars($clientData['name']) ?>?');">
-                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                                <input type="hidden" name="action" value="activate">
-                                <button type="submit" class="btn btn-success"><i data-feather="user-check"></i> Activate</button>
-                            </form>
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#activateClientModal">
+                                <i data-feather="user-check"></i> Activate
+                            </button>
                         <?php endif; ?>
 
                         <?php if ($clientData['status'] === 'active'): ?>
-                            <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" onsubmit="return confirm('WARNING: Deactivating this client prevents new loans. Continue?');">
-                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                                <input type="hidden" name="action" value="deactivate">
-                                <button type="submit" class="btn btn-warning"><i data-feather="user-minus"></i> Deactivate</button>
-                            </form>
+                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#deactivateClientModal">
+                                <i data-feather="user-minus"></i> Deactivate
+                            </button>
                         <?php endif; ?>
                         
                         <?php if ($clientData['status'] !== 'blacklisted'): ?>
-                            <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" onsubmit="return confirm('WARNING: Blacklisting is permanent and prevents ALL future loans. Continue?');">
-                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                                <input type="hidden" name="action" value="blacklist">
-                                <button type="submit" class="btn btn-danger"><i data-feather="slash"></i> Blacklist</button>
-                            </form>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#blacklistClientModal">
+                                <i data-feather="slash"></i> Blacklist
+                            </button>
                         <?php endif; ?>
 
                         <?php if (!$hasActiveLoan && $auth->hasRole(['super-admin', 'admin'])): ?>
-                            <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" onsubmit="return confirm('DANGER: This will permanently DELETE the client record and all loan history (if no active loans exist). ARE YOU SURE?');">
-                                <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                                <input type="hidden" name="action" value="delete">
-                                <button type="submit" class="btn btn-outline-danger"><i data-feather="trash-2"></i> Delete Record</button>
-                            </form>
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteClientModal">
+                                <i data-feather="trash-2"></i> Delete Record
+                            </button>
                         <?php endif; ?>
                     </div>
 
@@ -288,6 +280,148 @@ function getClientStatusBadgeClass($status) {
         </div>
     </div>
 </main>
+
+<!-- Activate Client Modal -->
+<div class="modal fade" id="activateClientModal" tabindex="-1" aria-labelledby="activateClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="activateClientModalLabel">
+                    <i data-feather="user-check"></i> Confirm Client Activation
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to activate client:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Name:</strong> <?= htmlspecialchars($clientData['name']) ?></li>
+                    <li><strong>Current Status:</strong> <span class="badge text-bg-secondary"><?= ucfirst($clientData['status']) ?></span></li>
+                </ul>
+                <div class="alert alert-info mt-3">
+                    <i data-feather="info"></i> Activating this client will allow them to apply for new loans.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                    <input type="hidden" name="action" value="activate">
+                    <button type="submit" class="btn btn-success">
+                        <i data-feather="user-check"></i> Confirm Activation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Client Modal -->
+<div class="modal fade" id="deactivateClientModal" tabindex="-1" aria-labelledby="deactivateClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="deactivateClientModalLabel">
+                    <i data-feather="user-minus"></i> Confirm Client Deactivation
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i data-feather="alert-triangle"></i> <strong>Warning:</strong> Deactivating this client will prevent new loan applications.
+                </div>
+                <p>Client to deactivate:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Name:</strong> <?= htmlspecialchars($clientData['name']) ?></li>
+                    <li><strong>Phone:</strong> <?= htmlspecialchars($clientData['phone_number']) ?></li>
+                </ul>
+                <p class="text-muted small">Note: This preserves all history and existing loans.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                    <input type="hidden" name="action" value="deactivate">
+                    <button type="submit" class="btn btn-warning">
+                        <i data-feather="user-minus"></i> Confirm Deactivation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Blacklist Client Modal -->
+<div class="modal fade" id="blacklistClientModal" tabindex="-1" aria-labelledby="blacklistClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="blacklistClientModalLabel">
+                    <i data-feather="slash"></i> Confirm Client Blacklist
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i data-feather="alert-triangle"></i> <strong>DANGER:</strong> Blacklisting is permanent and prevents ALL future loans.
+                </div>
+                <p>Client to blacklist:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Name:</strong> <?= htmlspecialchars($clientData['name']) ?></li>
+                    <li><strong>Phone:</strong> <?= htmlspecialchars($clientData['phone_number']) ?></li>
+                    <li><strong>Address:</strong> <?= htmlspecialchars($clientData['address']) ?></li>
+                </ul>
+                <p class="text-danger fw-bold">This action should only be taken for serious violations.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                    <input type="hidden" name="action" value="blacklist">
+                    <button type="submit" class="btn btn-danger">
+                        <i data-feather="slash"></i> Confirm Blacklist
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Client Modal -->
+<div class="modal fade" id="deleteClientModal" tabindex="-1" aria-labelledby="deleteClientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteClientModalLabel">
+                    <i data-feather="trash-2"></i> Confirm Client Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i data-feather="alert-triangle"></i> <strong>PERMANENT DELETION:</strong> This will permanently delete the client record and all loan history.
+                </div>
+                <p>Client to delete:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>ID:</strong> <?= htmlspecialchars($clientData['id']) ?></li>
+                    <li><strong>Name:</strong> <?= htmlspecialchars($clientData['name']) ?></li>
+                    <li><strong>Phone:</strong> <?= htmlspecialchars($clientData['phone_number']) ?></li>
+                </ul>
+                <p class="text-danger fw-bold">THIS ACTION CANNOT BE UNDONE!</p>
+                <p class="text-muted small">Note: Only available when client has no active loans.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
+                    <input type="hidden" name="action" value="delete">
+                    <button type="submit" class="btn btn-danger">
+                        <i data-feather="trash-2"></i> Confirm Deletion
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php
 include_once BASE_PATH . '/templates/layout/footer.php';

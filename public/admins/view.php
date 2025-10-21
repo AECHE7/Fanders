@@ -240,27 +240,90 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <div class="card-body">
                 <?php if ($viewUser['status']): ?>
                     <p class="card-text">This staff user is currently active. You can deactivate this account.</p>
-                    <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" onsubmit="return confirm('Are you sure you want to deactivate this staff user?');">
-                        <?= $csrf->getTokenField() ?>
-                        <input type="hidden" name="action" value="deactivate">
-                        <button type="submit" class="btn btn-warning">
-                            <i data-feather="user-x"></i> Deactivate Staff User
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#deactivateAdminModal">
+                        <i data-feather="user-x"></i> Deactivate Staff User
+                    </button>
                 <?php else: ?>
                     <p class="card-text">This staff user is currently inactive. You can activate this account.</p>
-                    <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post">
-                        <?= $csrf->getTokenField() ?>
-                        <input type="hidden" name="action" value="activate">
-                        <button type="submit" class="btn btn-success">
-                            <i data-feather="user-check"></i> Activate Staff User
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#activateAdminModal">
+                        <i data-feather="user-check"></i> Activate Staff User
+                    </button>
                 <?php endif; ?>
             </div>
         </div>
     <?php endif; ?>
 </main>
+
+<!-- Activate Admin Modal -->
+<div class="modal fade" id="activateAdminModal" tabindex="-1" aria-labelledby="activateAdminModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="activateAdminModalLabel">
+                    <i data-feather="user-check"></i> Confirm Staff Activation
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to activate staff user:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['full_name']) ?></li>
+                    <li><strong>Username:</strong> <?= htmlspecialchars($viewUser['username']) ?></li>
+                    <li><strong>Role:</strong> <span class="badge text-bg-primary"><?= ucfirst($viewUser['role']) ?></span></li>
+                </ul>
+                <div class="alert alert-info mt-3">
+                    <i data-feather="info"></i> Activating this account will restore system access.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" style="display:inline;">
+                    <?= $csrf->getTokenField() ?>
+                    <input type="hidden" name="action" value="activate">
+                    <button type="submit" class="btn btn-success">
+                        <i data-feather="user-check"></i> Confirm Activation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Deactivate Admin Modal -->
+<div class="modal fade" id="deactivateAdminModal" tabindex="-1" aria-labelledby="deactivateAdminModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="deactivateAdminModalLabel">
+                    <i data-feather="user-x"></i> Confirm Staff Deactivation
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i data-feather="alert-triangle"></i> <strong>Warning:</strong> Deactivating this staff user will revoke system access.
+                </div>
+                <p>Staff user to deactivate:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['full_name']) ?></li>
+                    <li><strong>Username:</strong> <?= htmlspecialchars($viewUser['username']) ?></li>
+                    <li><strong>Role:</strong> <span class="badge text-bg-primary"><?= ucfirst($viewUser['role']) ?></span></li>
+                </ul>
+                <p class="text-muted small">This staff user will no longer be able to log in to the system.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" style="display:inline;">
+                    <?= $csrf->getTokenField() ?>
+                    <input type="hidden" name="action" value="deactivate">
+                    <button type="submit" class="btn btn-warning">
+                        <i data-feather="user-x"></i> Confirm Deactivation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php
 // Include footer
