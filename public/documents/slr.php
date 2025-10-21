@@ -38,7 +38,7 @@ switch ($action) {
  * Show the SLR document generation interface
  */
 function showSLRInterface() {
-    global $loanService, $clientService;
+    global $loanService, $clientService, $session;
 
     // Get active loans for selection
     $activeLoans = $loanService->getAllActiveLoansWithClients();
@@ -90,7 +90,7 @@ function showSLRInterface() {
  * Handle single SLR generation
  */
 function handleGenerateSLR() {
-    global $slrService;
+    global $slrService, $session;
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header('Location: slr.php');
@@ -100,7 +100,7 @@ function handleGenerateSLR() {
     $loanId = isset($_POST['loan_id']) ? (int)$_POST['loan_id'] : 0;
 
     if ($loanId <= 0) {
-        $_SESSION['error'] = 'Invalid loan ID.';
+        $session->setFlash('error', 'Invalid loan ID.');
         header('Location: slr.php');
         exit;
     }
@@ -109,7 +109,7 @@ function handleGenerateSLR() {
     $pdfContent = $slrService->generateSLRDocument($loanId);
 
     if ($pdfContent === false) {
-        $_SESSION['error'] = $slrService->getErrorMessage();
+        $session->setFlash('error', $slrService->getErrorMessage());
         header('Location: slr.php');
         exit;
     }
@@ -129,7 +129,7 @@ function handleGenerateSLR() {
  * Handle bulk SLR generation
  */
 function handleBulkSLR() {
-    global $slrService;
+    global $slrService, $session;
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header('Location: slr.php');
@@ -139,7 +139,7 @@ function handleBulkSLR() {
     $loanIds = isset($_POST['loan_ids']) ? $_POST['loan_ids'] : [];
 
     if (empty($loanIds)) {
-        $_SESSION['error'] = 'No loans selected for bulk SLR generation.';
+        $session->setFlash('error', 'No loans selected for bulk SLR generation.');
         header('Location: slr.php');
         exit;
     }
@@ -148,7 +148,7 @@ function handleBulkSLR() {
     $documents = $slrService->generateBulkSLRDocuments($loanIds);
 
     if (empty($documents)) {
-        $_SESSION['error'] = 'Failed to generate SLR documents.';
+        $session->setFlash('error', 'Failed to generate SLR documents.');
         header('Location: slr.php');
         exit;
     }
@@ -158,7 +158,7 @@ function handleBulkSLR() {
 
     $zip = new ZipArchive();
     if ($zip->open($zipFile, ZipArchive::CREATE) !== TRUE) {
-        $_SESSION['error'] = 'Failed to create ZIP file.';
+        $session->setFlash('error', 'Failed to create ZIP file.');
         header('Location: slr.php');
         exit;
     }
@@ -185,7 +185,7 @@ function handleBulkSLR() {
  * Handle client SLR generation
  */
 function handleClientSLR() {
-    global $slrService;
+    global $slrService, $session;
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         header('Location: slr.php');
@@ -195,7 +195,7 @@ function handleClientSLR() {
     $clientId = isset($_POST['client_id']) ? (int)$_POST['client_id'] : 0;
 
     if ($clientId <= 0) {
-        $_SESSION['error'] = 'Invalid client ID.';
+        $session->setFlash('error', 'Invalid client ID.');
         header('Location: slr.php');
         exit;
     }
@@ -204,7 +204,7 @@ function handleClientSLR() {
     $documents = $slrService->generateClientSLRDocuments($clientId);
 
     if (empty($documents)) {
-        $_SESSION['error'] = 'No SLR documents could be generated for this client.';
+        $session->setFlash('error', 'No SLR documents could be generated for this client.');
         header('Location: slr.php');
         exit;
     }
@@ -227,7 +227,7 @@ function handleClientSLR() {
 
         $zip = new ZipArchive();
         if ($zip->open($zipFile, ZipArchive::CREATE) !== TRUE) {
-            $_SESSION['error'] = 'Failed to create ZIP file.';
+            $session->setFlash('error', 'Failed to create ZIP file.');
             header('Location: slr.php');
             exit;
         }
