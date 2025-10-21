@@ -284,13 +284,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 </div>
             </div>
 
-            <!-- Submit Button (appears after successful calculation) -->
-            <div class="d-flex justify-content-end">
-                <!-- The submit button will be part of the main form (templates/loans/form.php) and displayed when calculation is successful -->
-                <button type="submit" form="loanForm" name="submit_loan" value="1" class="btn btn-success btn-lg">
-                    <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
-                </button>
-            </div>
+            <!-- Submit Button (handled in the main form template to avoid duplication) -->
 
         </div>
     </div>
