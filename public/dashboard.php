@@ -107,7 +107,7 @@ $userService = new UserService();
         }
 
         // Get active loans count using enhanced method
-        $activeLoansFilter = ['status' => 'active', 'limit' => 1]; // Just get count efficiently
+        $activeLoansFilter = ['status' => 'Active'];
         $stats['active_loans'] = $loanService->getTotalLoansCount($activeLoansFilter);
 
         // Get overdue payments using enhanced method
@@ -118,30 +118,43 @@ $userService = new UserService();
         $recentPayments = $paymentService->getRecentPayments(5);
         $stats['recent_transactions'] = is_array($recentPayments) ? $recentPayments : [];
 
-        // Get analytics
-        // $analytics = $reportService->getMonthlyActivitySummary();
+        // Get active loans list with details
+        $activeLoansFullFilter = ['status' => 'Active', 'limit' => 5];
+        $activeLoans = $loanService->getAllLoansWithClients($activeLoansFullFilter);
+        $stats['active_loans_list'] = is_array($activeLoans) ? $activeLoans : [];
 
-        // Fetch total penalties amount from all penalty records
-        // $totalPenaltiesDue = $penaltyService->getTotalPenalties();
-        // $stats['total_penalties'] = $totalPenaltiesDue;
+        // Get recent loans
+        $recentLoans = $loanService->getRecentLoans(5);
+        $stats['recent_loans'] = is_array($recentLoans) ? $recentLoans : [];
+
+        // Get analytics placeholder
+        $analytics = [
+            'borrower_growth_text' => 'Active borrowers compared to last month',
+            'monthly' => []
+        ];
 
         // Map total_principal_disbursed to total_disbursed for template compatibility
         $stats['total_disbursed'] = $stats['total_principal_disbursed'] ?? 0;
 
+        // Get total clients count
+        $clientsFilter = [];
+        $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
+
         if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
-            // Additional super admin data
-            $users = $userService->getAllUsersWithRoleNames();
-            $users = is_array($users) ? $users : [];
-            $clientsFilter = ['status' => 'active', 'limit' => 1]; // Just get count efficiently
-            $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
-        } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_MANAGER])) {
-            // Additional admin/branch manager data
-            $clientsFilter = ['status' => 'active', 'limit' => 1];
-            $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
+            // Additional super admin data - User role counts
+            $userStats = $userService->getUserStats();
+            if (is_array($userStats) && isset($userStats['role_counts'])) {
+                $stats['total_students'] = ($userStats['role_counts'][UserModel::$ROLE_STUDENT] ?? 0);
+                $stats['total_staff'] = ($userStats['role_counts'][UserModel::$ROLE_ACCOUNT_OFFICER] ?? 0) +
+                                       ($userStats['role_counts'][UserModel::$ROLE_CASHIER] ?? 0) +
+                                       ($userStats['role_counts'][UserModel::$ROLE_MANAGER] ?? 0);
+                $stats['total_admins'] = ($userStats['role_counts'][UserModel::$ROLE_ADMIN] ?? 0) +
+                                        ($userStats['role_counts'][UserModel::$ROLE_SUPER_ADMIN] ?? 0);
+                $stats['total_others'] = ($userStats['role_counts'][UserModel::$ROLE_OTHER] ?? 0);
+            }
         } else {
-            // Account officer/cashier data
-            $clientsFilter = ['status' => 'active', 'limit' => 1];
-            $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
+            // For non-super-admin, show total borrowers
+            $stats['total_borrowers'] = $stats['total_clients'];
         }
 
         $dashboardTemplate = BASE_PATH . '/templates/dashboard/admin.php';

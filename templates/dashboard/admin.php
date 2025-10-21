@@ -244,7 +244,10 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <?php if (isset($recentPayments) && !empty($recentPayments)): ?>
+                    <?php 
+                    $recentPayments = $stats['recent_transactions'] ?? [];
+                    if (!empty($recentPayments)): 
+                    ?>
                     <div class="table-responsive">
                         <table class="table mb-0">
                             <thead class="table-light">
@@ -296,7 +299,10 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <?php if (isset($activeLoans) && !empty($activeLoans)): ?>
+                    <?php 
+                    $activeLoans = $stats['active_loans_list'] ?? [];
+                    if (!empty($activeLoans)): 
+                    ?>
                     <div class="table-responsive">
                         <table class="table mb-0">
                             <thead class="table-light">

@@ -163,6 +163,64 @@ class LoanService extends BaseService {
     }
 
     /**
+     * Get recent loans
+     * @param int $limit Number of loans to retrieve
+     * @return array
+     */
+    public function getRecentLoans($limit = 5) {
+        return $this->loanModel->getRecentLoans($limit);
+    }
+
+    /**
+     * Get total loans count matching filters
+     * @param array $filters
+     * @return int
+     */
+    public function getTotalLoansCount($filters = []) {
+        return $this->loanModel->getTotalLoansCount($filters);
+    }
+
+    /**
+     * Get all loans with client details
+     * @param array $filters
+     * @return array
+     */
+    public function getAllLoansWithClients($filters = []) {
+        return $this->loanModel->getAllLoansWithClients($filters);
+    }
+
+    /**
+     * Invalidate loan-related cache entries
+     */
+    protected function invalidateCache() {
+    /**
+     * Get recent loans
+     * @param int $limit Number of loans to retrieve
+     * @return array
+     */
+    public function getRecentLoans($limit = 5) {
+        return $this->loanModel->getRecentLoans($limit);
+    }
+
+    /**
+     * Get total loans count matching filters
+     * @param array $filters
+     * @return int
+     */
+    public function getTotalLoansCount($filters = []) {
+        return $this->loanModel->getTotalLoansCount($filters);
+    }
+
+    /**
+     * Get all loans with client details
+     * @param array $filters
+     * @return array
+     */
+    public function getAllLoansWithClients($filters = []) {
+        return $this->loanModel->getAllLoansWithClients($filters);
+    }
+
+    /**
      * Invalidate loan-related cache entries
      */
     protected function invalidateCache() {

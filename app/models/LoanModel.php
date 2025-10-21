@@ -363,7 +363,29 @@ class LoanModel extends BaseModel {
         // Overdue loans count (We will rely on LoanService for this complexity)
         $stats['overdue_loans_count'] = 0;
 
+        // Loans this month
+        $sql = "SELECT COUNT(*) as count FROM {$this->table} 
+                WHERE EXTRACT(MONTH FROM created_at) = EXTRACT(MONTH FROM CURRENT_DATE) 
+                AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE)";
+        $result = $this->db->single($sql);
+        $stats['loans_this_month'] = $result ? $result['count'] : 0;
+
         return $stats;
+    }
+
+    /**
+     * Get recent loans with client information
+     * @param int $limit Number of loans to fetch
+     * @return array
+     */
+    public function getRecentLoans($limit = 5) {
+        $sql = "SELECT l.*, c.name as client_name, c.phone_number
+                FROM {$this->table} l
+                JOIN clients c ON l.client_id = c.id
+                ORDER BY l.created_at DESC
+                LIMIT ?";
+        
+        return $this->db->resultSet($sql, [$limit]);
     }
     
     // --- Loan Creation Helper ---
