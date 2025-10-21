@@ -74,17 +74,18 @@ $currentIdType = $clientData['identification_type'] ?? '';
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
                     <input type="date" class="notion-form-control" id="date_of_birth" name="date_of_birth"
-                        value="<?= htmlspecialchars($clientData['date_of_birth'] ?? '') ?>" placeholder=" ">
-                    <label for="date_of_birth" class="notion-form-label">Date of Birth</label>
-                    <div class="invalid-feedback">Client must be 18+ (checked on submission).</div>
+                        value="<?= htmlspecialchars($clientData['date_of_birth'] ?? '') ?>" placeholder=" " max="<?= date('Y-m-d', strtotime('-18 years')) ?>">
+                    <label for="date_of_birth" class="notion-form-label">Date of Birth (Optional, must be 18+)</label>
+                    <div class="invalid-feedback">Client must be at least 18 years old.</div>
                 </div>
             </div>
             
             <!-- Address Field -->
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
-                    <textarea class="notion-form-control" id="address" name="address" rows="1" placeholder=" "><?= htmlspecialchars($clientData['address'] ?? '') ?></textarea>
-                    <label for="address" class="notion-form-label">Residential Address</label>
+                    <textarea class="notion-form-control" id="address" name="address" rows="1" required placeholder=" "><?= htmlspecialchars($clientData['address'] ?? '') ?></textarea>
+                    <label for="address" class="notion-form-label">Residential Address (Required)</label>
+                    <div class="invalid-feedback">Please enter the client's residential address.</div>
                 </div>
             </div>
             
@@ -103,8 +104,8 @@ $currentIdType = $clientData['identification_type'] ?? '';
             <!-- Identification Type Field -->
             <div class="col-md-6">
                 <div class="notion-form-group">
-                    <label for="identification_type" class="notion-form-label">Primary ID Type</label>
-                    <select class="notion-form-select form-select" id="identification_type" name="identification_type">
+                    <label for="identification_type" class="notion-form-label">Primary ID Type (Required)</label>
+                    <select class="notion-form-select form-select" id="identification_type" name="identification_type" required>
                         <option value="">Select ID type...</option>
                         <option value="passport" <?= $currentIdType === 'passport' ? 'selected' : '' ?>>Passport</option>
                         <option value="drivers_license" <?= $currentIdType === 'drivers_license' ? 'selected' : '' ?>>Driver's License</option>
@@ -113,6 +114,7 @@ $currentIdType = $clientData['identification_type'] ?? '';
                         <option value="sss" <?= $currentIdType === 'sss' ? 'selected' : '' ?>>SSS/GSIS ID</option>
                         <option value="other" <?= $currentIdType === 'other' ? 'selected' : '' ?>>Other</option>
                     </select>
+                    <div class="invalid-feedback">Please select an identification type.</div>
                 </div>
             </div>
 
@@ -120,9 +122,9 @@ $currentIdType = $clientData['identification_type'] ?? '';
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
                     <input type="text" class="notion-form-control" id="identification_number" name="identification_number"
-                        value="<?= htmlspecialchars($clientData['identification_number'] ?? '') ?>" placeholder=" ">
-                    <label for="identification_number" class="notion-form-label">ID Number (Unique)</label>
-                    <div class="invalid-feedback">ID number must be unique.</div>
+                        value="<?= htmlspecialchars($clientData['identification_number'] ?? '') ?>" required placeholder=" ">
+                    <label for="identification_number" class="notion-form-label">ID Number (Required & Unique)</label>
+                    <div class="invalid-feedback">ID number is required and must be unique.</div>
                 </div>
             </div>
 

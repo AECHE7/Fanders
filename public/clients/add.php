@@ -63,6 +63,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // Failure: Store the specific error message from the service
         $error = $clientService->getErrorMessage() ?: "Failed to add client due to an unknown error.";
+        
+        // Log the error for debugging
+        if (defined('APP_DEBUG') && APP_DEBUG) {
+            error_log("Client Creation Failed: " . $error);
+            error_log("Client Data: " . json_encode($newClient));
+        }
+        
         $session->setFlash('error', $error);
         // Note: $newClient still holds the submitted data for repopulating the form
     }

@@ -47,6 +47,7 @@ class BaseModel {
             
             if (empty($filteredData)) {
                 $this->setLastError('No valid data provided for creation.');
+                error_log("BaseModel::create failed - No valid fillable data. Table: {$this->table}, Data keys: " . implode(', ', array_keys($data)));
                 return false;
             }
             
@@ -64,10 +65,16 @@ class BaseModel {
                 return (int) $this->db->lastInsertId();
             }
             
-            $this->setLastError('Failed to create record.');
+            // Get database error if available
+            $dbError = $this->db->getError();
+            $errorMsg = 'Failed to create record' . ($dbError ? ": $dbError" : '.');
+            $this->setLastError($errorMsg);
+            error_log("BaseModel::create failed - Table: {$this->table}, Error: {$errorMsg}");
             return false;
         } catch (\Exception $e) {
-            $this->setLastError($e->getMessage());
+            $errorMsg = $e->getMessage();
+            $this->setLastError($errorMsg);
+            error_log("BaseModel::create exception - Table: {$this->table}, Error: {$errorMsg}");
             return false;
         }
     }

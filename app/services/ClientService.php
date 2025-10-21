@@ -211,7 +211,23 @@ class ClientService extends BaseService {
         $newId = $this->clientModel->create($clientData);
 
         if (!$newId) {
-             $this->setErrorMessage($this->clientModel->getLastError() ?: 'Failed to create client due to unknown database error.');
+             $modelError = $this->clientModel->getLastError();
+             $dbError = $this->db->getError();
+             
+             // Construct a detailed error message
+             $errorDetails = [];
+             if ($modelError) $errorDetails[] = "Model: $modelError";
+             if ($dbError) $errorDetails[] = "Database: $dbError";
+             
+             $errorMessage = !empty($errorDetails) 
+                 ? 'Failed to create client: ' . implode('; ', $errorDetails)
+                 : 'Failed to create client due to unknown database error.';
+             
+             $this->setErrorMessage($errorMessage);
+             
+             // Log for debugging
+             error_log("ClientService::createClient failed - " . $errorMessage);
+             
              return false;
         }
 
