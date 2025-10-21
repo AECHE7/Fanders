@@ -12,6 +12,7 @@
 
 require_once BASE_PATH . '/app/core/BaseService.php';
 require_once BASE_PATH . '/app/utilities/PDFGenerator.php';
+require_once BASE_PATH . '/app/utilities/ExcelExportUtility.php';
 require_once BASE_PATH . '/app/utilities/FormatUtility.php';
 
 class ReportService extends BaseService {
@@ -778,5 +779,107 @@ class ReportService extends BaseService {
         $pdf->addLine('Average Days Overdue: ' . number_format($avgDays, 1));
 
         return $pdf->output('D', 'overdue_loans_' . date('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Excel Exports - Excel 2003 XML (SpreadsheetML)
+     */
+    public function exportLoanReportExcel($data, $filters = []) {
+        $headers = ['Loan #', 'Client', 'Principal', 'Total', 'Paid', 'Balance', 'Status'];
+        $rows = [];
+        foreach ($data as $loan) {
+            $rows[] = [
+                $loan['loan_number'],
+                $loan['client_name'],
+                (float)$loan['principal_amount'],
+                (float)$loan['total_amount'],
+                (float)$loan['total_paid'],
+                (float)$loan['remaining_balance'],
+                ucfirst((string)$loan['status'])
+            ];
+        }
+        $title = 'loans_' . date('Y-m-d') . '.xls';
+        ExcelExportUtility::outputSingleSheet('Loans', $headers, $rows, $title);
+    }
+
+    public function exportPaymentReportExcel($data, $filters = []) {
+        $headers = ['Payment #', 'Client', 'Loan #', 'Amount', 'Date'];
+        $rows = [];
+        foreach ($data as $p) {
+            $rows[] = [
+                $p['payment_number'],
+                $p['client_name'],
+                $p['loan_number'],
+                (float)$p['amount'],
+                date('Y-m-d', strtotime($p['payment_date']))
+            ];
+        }
+        $title = 'payments_' . date('Y-m-d') . '.xls';
+        ExcelExportUtility::outputSingleSheet('Payments', $headers, $rows, $title);
+    }
+
+    public function exportClientReportExcel($data, $filters = []) {
+        $headers = ['Client Name', 'Email', 'Phone', 'Loans', 'Outstanding', 'Status'];
+        $rows = [];
+        foreach ($data as $c) {
+            $rows[] = [
+                $c['client_name'],
+                $c['email'] ?? '',
+                $c['phone'] ?? '',
+                (int)$c['total_loans'],
+                (float)$c['outstanding_balance'],
+                ucfirst((string)$c['status'])
+            ];
+        }
+        $title = 'clients_' . date('Y-m-d') . '.xls';
+        ExcelExportUtility::outputSingleSheet('Clients', $headers, $rows, $title);
+    }
+
+    public function exportUserReportExcel($data, $filters = []) {
+        $headers = ['Username', 'Full Name', 'Email', 'Role', 'Status'];
+        $rows = [];
+        foreach ($data as $u) {
+            $rows[] = [
+                $u['username'],
+                $u['full_name'] ?? '',
+                $u['email'] ?? '',
+                ucfirst((string)$u['role']),
+                !empty($u['is_active']) ? 'Active' : 'Inactive'
+            ];
+        }
+        $title = 'users_' . date('Y-m-d') . '.xls';
+        ExcelExportUtility::outputSingleSheet('Users', $headers, $rows, $title);
+    }
+
+    public function exportOverdueReportExcel($data, $filters = []) {
+        $headers = ['Loan #', 'Client', 'Phone', 'Principal', 'Balance', 'Days Overdue'];
+        $rows = [];
+        foreach ($data as $r) {
+            $rows[] = [
+                $r['loan_number'],
+                $r['client_name'],
+                $r['phone'] ?? '',
+                (float)$r['principal_amount'],
+                (float)$r['remaining_balance'],
+                (int)$r['days_overdue']
+            ];
+        }
+        $title = 'overdue_' . date('Y-m-d') . '.xls';
+        ExcelExportUtility::outputSingleSheet('Overdue', $headers, $rows, $title);
+    }
+
+    public function exportFinancialSummaryExcel($data) {
+        $pairs = [
+            'Period' => $data['period']['from'] . ' to ' . $data['period']['to'],
+            'Total Loans' => (int)$data['loans']['total_loans'],
+            'Total Principal' => (float)$data['loans']['total_principal'],
+            'Total Amount (with interest)' => (float)$data['loans']['total_amount_with_interest'],
+            'Total Payments' => (int)$data['payments']['total_payments'],
+            'Total Amount Received' => (float)$data['payments']['total_payments_received'],
+            'Total Outstanding' => (float)$data['outstanding']['total_outstanding'],
+            'Generated At' => $data['generated_at']
+        ];
+        $title = 'financial_summary_' . date('Y-m-d') . '.xls';
+        ExcelExportUtility::outputKeyValueSheet('Financial Summary', $pairs, $title);
     }
 }

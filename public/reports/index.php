@@ -142,6 +142,37 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
     exit;
 }
 
+// --- 3b. Handle Excel Export ---
+if (isset($_GET['export']) && $_GET['export'] === 'excel') {
+    try {
+        switch ($filters['type']) {
+            case 'loans':
+                $reportService->exportLoanReportExcel($reportData, $filters);
+                break;
+            case 'payments':
+                $reportService->exportPaymentReportExcel($reportData, $filters);
+                break;
+            case 'clients':
+                $reportService->exportClientReportExcel($reportData, $filters);
+                break;
+            case 'users':
+                $reportService->exportUserReportExcel($reportData, $filters);
+                break;
+            case 'financial':
+                $reportService->exportFinancialSummaryExcel($reportData);
+                break;
+            case 'overdue':
+                $reportService->exportOverdueReportExcel($reportData, $filters);
+                break;
+        }
+    } catch (Exception $e) {
+        $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/reports/index.php?' . http_build_query($filters));
+        exit;
+    }
+    exit;
+}
+
 // --- 4. Display View ---
 $pageTitle = "Reports - " . $reportTitle;
 
@@ -229,6 +260,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <a href="?<?= http_build_query(array_merge($filters, ['export' => 'pdf'])) ?>"
                        class="btn btn-success">
                         <i data-feather="download" class="me-1"></i>Export PDF
+                    </a>
+                    <a href="?<?= http_build_query(array_merge($filters, ['export' => 'excel'])) ?>"
+                       class="btn btn-outline-success">
+                        <i data-feather=\"file\" class=\"me-1\"></i>Export Excel
                     </a>
                     <!-- Date Presets -->
                     <div class="ms-auto d-flex align-items-center gap-1 flex-wrap">
