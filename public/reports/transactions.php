@@ -175,10 +175,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="avatar-circle me-2" style="width: 32px; height: 32px; background-color: #e9ecef; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                                <span class="fw-bold text-muted" style="font-size: 12px;"><?= strtoupper(substr($transaction['first_name'] ?? '', 0, 1)) ?></span>
+                                                <?php $displayName = $transaction['user_name'] ?? ''; ?>
+                                                <span class="fw-bold text-muted" style="font-size: 12px;"><?= strtoupper(substr($displayName, 0, 1)) ?></span>
                                             </div>
                                             <div>
-                                                <div class="fw-bold"><?= htmlspecialchars(($transaction['first_name'] ?? '') . ' ' . ($transaction['last_name'] ?? '')) ?></div>
+                                                <div class="fw-bold"><?= htmlspecialchars($transaction['user_name'] ?? '') ?></div>
                                                 <small class="text-muted"><?= ucfirst($transaction['role'] ?? '') ?></small>
                                             </div>
                                         </div>

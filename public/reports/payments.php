@@ -19,9 +19,7 @@ $reportService = new ReportService();
 // Get filter parameters
 $filters = [
     'date_from' => $_GET['date_from'] ?? date('Y-m-01'),
-    'date_to' => $_GET['date_to'] ?? date('Y-m-t'),
-    'status' => $_GET['status'] ?? '',
-    'payment_method' => $_GET['payment_method'] ?? '',
+    'date_to'   => $_GET['date_to'] ?? date('Y-m-t'),
     'client_id' => $_GET['client_id'] ?? ''
 ];
 
@@ -65,26 +63,7 @@ include '../../templates/layout/header.php';
                                    value="<?= $filters['date_to'] ?>">
                         </div>
 
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select class="form-select" id="status" name="status">
-                                <option value="">All Status</option>
-                                <option value="completed" <?= $filters['status'] === 'completed' ? 'selected' : '' ?>>Completed</option>
-                                <option value="pending" <?= $filters['status'] === 'pending' ? 'selected' : '' ?>>Pending</option>
-                                <option value="failed" <?= $filters['status'] === 'failed' ? 'selected' : '' ?>>Failed</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="payment_method" class="form-label">Payment Method</label>
-                            <select class="form-select" id="payment_method" name="payment_method">
-                                <option value="">All Methods</option>
-                                <option value="cash" <?= $filters['payment_method'] === 'cash' ? 'selected' : '' ?>>Cash</option>
-                                <option value="bank_transfer" <?= $filters['payment_method'] === 'bank_transfer' ? 'selected' : '' ?>>Bank Transfer</option>
-                                <option value="check" <?= $filters['payment_method'] === 'check' ? 'selected' : '' ?>>Check</option>
-                                <option value="online" <?= $filters['payment_method'] === 'online' ? 'selected' : '' ?>>Online</option>
-                            </select>
-                        </div>
+                        
 
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">
@@ -156,12 +135,9 @@ include '../../templates/layout/header.php';
                                     <th>Client</th>
                                     <th>Loan #</th>
                                     <th>Amount</th>
-                                    <th>Principal</th>
-                                    <th>Interest</th>
-                                    <th>Penalty</th>
+                                    
                                     <th>Date</th>
-                                    <th>Method</th>
-                                    <th>Status</th>
+                                    
                                 </tr>
                             </thead>
                             <tbody>
@@ -184,20 +160,9 @@ include '../../templates/layout/header.php';
                                                 </a>
                                             </td>
                                             <td>₱<?= number_format($payment['amount'], 2) ?></td>
-                                            <td>₱<?= number_format($payment['principal_amount'], 2) ?></td>
-                                            <td>₱<?= number_format($payment['interest_amount'], 2) ?></td>
-                                            <td>₱<?= number_format($payment['penalty_amount'], 2) ?></td>
+                                        
                                             <td><?= date('M d, Y', strtotime($payment['payment_date'])) ?></td>
-                                            <td>
-                                                <span class="badge bg-secondary">
-                                                    <?= ucfirst(str_replace('_', ' ', $payment['payment_method'])) ?>
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-<?= $payment['status'] === 'completed' ? 'success' : ($payment['status'] === 'pending' ? 'warning' : 'danger') ?>">
-                                                    <?= ucfirst($payment['status']) ?>
-                                                </span>
-                                            </td>
+                                        
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php endif; ?>

@@ -175,8 +175,9 @@ include '../../templates/layout/header.php';
                                             <td>₱<?= number_format($loan['total_amount'], 2) ?></td>
                                             <td>₱<?= number_format($loan['total_paid'], 2) ?></td>
                                             <td>₱<?= number_format($loan['remaining_balance'], 2) ?></td>
+                                            <?php $status = strtolower($loan['status']); ?>
                                             <td>
-                                                <span class="badge bg-<?= $loan['status'] === 'active' ? 'success' : ($loan['status'] === 'completed' ? 'primary' : 'secondary') ?>">
+                                                <span class="badge bg-<?= $status === 'active' ? 'success' : ($status === 'completed' ? 'primary' : 'secondary') ?>">
                                                     <?= ucfirst($loan['status']) ?>
                                                 </span>
                                             </td>

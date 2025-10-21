@@ -68,8 +68,10 @@ class ReportService extends BaseService {
         }
 
         if (!empty($filters['status'])) {
+            // Normalize status to match DB values (e.g., 'Active', 'Completed')
+            $normalizedStatus = ucfirst(strtolower($filters['status']));
             $query .= " AND l.status = ?";
-            $params[] = $filters['status'];
+            $params[] = $normalizedStatus;
         }
 
         if (!empty($filters['client_id'])) {
@@ -94,12 +96,7 @@ class ReportService extends BaseService {
             l.id as loan_number,
             p.amount,
             p.payment_date,
-            'cash' as payment_method,
-            'completed' as status,
-            p.created_at,
-            0 as principal_amount,
-            0 as interest_amount,
-            0 as penalty_amount
+            p.created_at
         FROM payments p
         LEFT JOIN loans l ON p.loan_id = l.id
         LEFT JOIN clients c ON l.client_id = c.id
@@ -116,16 +113,6 @@ class ReportService extends BaseService {
         if (!empty($filters['date_to'])) {
             $query .= " AND p.payment_date <= ?";
             $params[] = $filters['date_to'];
-        }
-
-        if (!empty($filters['status'])) {
-            $query .= " AND p.status = ?";
-            $params[] = $filters['status'];
-        }
-
-        if (!empty($filters['payment_method'])) {
-            $query .= " AND p.payment_method = ?";
-            $params[] = $filters['payment_method'];
         }
 
         if (!empty($filters['client_id'])) {
@@ -240,10 +227,10 @@ class ReportService extends BaseService {
         // Total loans disbursed
         $loansQuery = "SELECT
             COUNT(*) as total_loans,
-            COALESCE(SUM(principal_amount), 0) as total_principal,
-            COALESCE(SUM(total_amount), 0) as total_amount_with_interest
+            COALESCE(SUM(principal), 0) as total_principal,
+            COALESCE(SUM(total_loan_amount), 0) as total_amount_with_interest
         FROM loans
-        WHERE status IN ('active', 'completed')
+        WHERE status IN ('Active', 'Completed')
         AND disbursement_date BETWEEN ? AND ?";
 
         $loansData = $this->db->single($loansQuery, [$dateFrom, $dateTo]) ?: [
@@ -255,34 +242,25 @@ class ReportService extends BaseService {
         // Total payments received
         $paymentsQuery = "SELECT
             COUNT(*) as total_payments,
-            COALESCE(SUM(amount), 0) as total_payments_received,
-            COALESCE(SUM(principal_amount), 0) as principal_paid,
-            COALESCE(SUM(interest_amount), 0) as interest_received,
-            COALESCE(SUM(penalty_amount), 0) as penalties_received
+            COALESCE(SUM(amount), 0) as total_payments_received
         FROM payments
-        WHERE status = 'completed'
-        AND payment_date BETWEEN ? AND ?";
+        WHERE payment_date BETWEEN ? AND ?";
 
         $paymentsData = $this->db->single($paymentsQuery, [$dateFrom, $dateTo]) ?: [
             'total_payments' => 0,
-            'total_payments_received' => 0,
-            'principal_paid' => 0,
-            'interest_received' => 0,
-            'penalties_received' => 0
+            'total_payments_received' => 0
         ];
 
         // Outstanding balances
         $outstandingQuery = "SELECT
-            COALESCE(SUM(total_amount - COALESCE(paid_amount, 0)), 0) as total_outstanding
-        FROM (
-            SELECT
-                l.total_amount,
-                SUM(p.amount) as paid_amount
-            FROM loans l
-            LEFT JOIN payments p ON l.id = p.loan_id AND p.status = 'completed'
-            WHERE l.status = 'active'
-            GROUP BY l.id
-        ) as loan_balances";
+            COALESCE(SUM(l.total_loan_amount - COALESCE(p.paid_amount, 0)), 0) as total_outstanding
+        FROM loans l
+        LEFT JOIN (
+            SELECT loan_id, SUM(amount) as paid_amount
+            FROM payments
+            GROUP BY loan_id
+        ) p ON l.id = p.loan_id
+        WHERE l.status = 'Active'";
 
         $outstandingData = $this->db->single($outstandingQuery) ?: [
             'total_outstanding' => 0
@@ -408,15 +386,13 @@ class ReportService extends BaseService {
         $pdf->addLine('Generated on: ' . date('Y-m-d H:i:s'));
         $pdf->addSpace();
 
-        // Define columns
+        // Define columns (limited to fields present in DB)
         $columns = [
-            ['header' => 'Payment Number', 'width' => 30],
-            ['header' => 'Client', 'width' => 35],
+            ['header' => 'Payment #', 'width' => 30],
+            ['header' => 'Client', 'width' => 40],
             ['header' => 'Loan #', 'width' => 25],
             ['header' => 'Amount', 'width' => 25],
-            ['header' => 'Date', 'width' => 25],
-            ['header' => 'Method', 'width' => 20],
-            ['header' => 'Status', 'width' => 20]
+            ['header' => 'Date', 'width' => 25]
         ];
 
         // Prepare data
@@ -427,9 +403,7 @@ class ReportService extends BaseService {
                 $payment['client_name'],
                 $payment['loan_number'],
                 number_format($payment['amount'], 2),
-                date('Y-m-d', strtotime($payment['payment_date'])),
-                ucfirst($payment['payment_method']),
-                ucfirst($payment['status'])
+                date('Y-m-d', strtotime($payment['payment_date']))
             ];
         }
 
@@ -569,15 +543,14 @@ class ReportService extends BaseService {
 
             $transformedData[] = [
                 'timestamp' => $transaction['created_at'],
-                'first_name' => $userInfo['first_name'] ?? null,
-                'last_name' => $userInfo['last_name'] ?? null,
+                // Use single name field from users table
+                'user_name' => $userInfo['name'] ?? null,
                 'role' => $userInfo['role'] ?? null,
                 'action' => $details['action'] ?? $this->getActionFromTransactionType($transaction['transaction_type']),
                 'entity_type' => $entityType,
                 'entity_id' => $transaction['reference_id'],
                 'details' => $transaction['details'],
                 'transaction_type' => $transaction['transaction_type'],
-                'user_name' => $transaction['user_name'] ?? null,
                 'user_email' => $transaction['user_email'] ?? null,
                 'created_at' => $transaction['created_at']
             ];
@@ -692,12 +665,9 @@ class ReportService extends BaseService {
         $pdf->addSpace();
 
         // Payments Section
-        $pdf->addSubHeader('Payments Received');
-        $pdf->addLine('Total Payments: ' . number_format($data['payments']['total_payments']));
-        $pdf->addLine('Total Amount Received: ₱' . number_format($data['payments']['total_payments_received'], 2));
-        $pdf->addLine('Principal Paid: ₱' . number_format($data['payments']['principal_paid'], 2));
-        $pdf->addLine('Interest Received: ₱' . number_format($data['payments']['interest_received'], 2));
-        $pdf->addLine('Penalties Received: ₱' . number_format($data['payments']['penalties_received'], 2));
+    $pdf->addSubHeader('Payments Received');
+    $pdf->addLine('Total Payments: ' . number_format($data['payments']['total_payments']));
+    $pdf->addLine('Total Amount Received: ₱' . number_format($data['payments']['total_payments_received'], 2));
         $pdf->addSpace();
 
         // Outstanding Section

@@ -540,8 +540,6 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                 <th>Loan #</th>
                                                 <th>Amount</th>
                                                 <th>Date</th>
-                                                <th>Method</th>
-                                                <th>Status</th>
                                             <?php elseif ($filters['type'] === 'clients'): ?>
                                                 <th>Client Name</th>
                                                 <th>Email</th>
@@ -584,7 +582,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                     <td>₱<?= number_format($row['total_amount'], 2) ?></td>
                                                     <td class="text-success">₱<?= number_format($row['total_paid'], 2) ?></td>
                                                     <td class="text-warning">₱<?= number_format($row['remaining_balance'], 2) ?></td>
-                                                    <td><span class="badge bg-<?= $row['status'] === 'active' ? 'success' : ($row['status'] === 'completed' ? 'primary' : 'secondary') ?>"><?= ucfirst($row['status']) ?></span></td>
+                                                    <?php $status = strtolower($row['status']); ?>
+                                                    <td><span class="badge bg-<?= $status === 'active' ? 'success' : ($status === 'completed' ? 'primary' : 'secondary') ?>"><?= ucfirst($row['status']) ?></span></td>
                                                 <?php elseif ($filters['type'] === 'payments'): ?>
                                                     <td>
                                                         <span class="badge bg-info">#<?= htmlspecialchars($row['payment_number']) ?></span>
@@ -602,8 +601,6 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                     </td>
                                                     <td class="fw-bold text-success">₱<?= number_format($row['amount'], 2) ?></td>
                                                     <td><?= date('M d, Y', strtotime($row['payment_date'])) ?></td>
-                                                    <td><?= ucfirst($row['payment_method']) ?></td>
-                                                    <td><span class="badge bg-<?= $row['status'] === 'completed' ? 'success' : 'warning' ?>"><?= ucfirst($row['status']) ?></span></td>
                                                 <?php elseif ($filters['type'] === 'clients'): ?>
                                                     <td>
                                                         <div class="d-flex align-items-center">
