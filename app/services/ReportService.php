@@ -708,20 +708,20 @@ class ReportService extends BaseService {
 
         // Loans Section
         $pdf->addSubHeader('Loan Disbursements');
-        $pdf->addLine('Total Loans: ' . number_format($data['loans']['total_loans']));
-        $pdf->addLine('Total Principal: ₱' . number_format($data['loans']['total_principal'], 2));
-        $pdf->addLine('Total Amount (with interest): ₱' . number_format($data['loans']['total_amount_with_interest'], 2));
+        $pdf->addEmphasisLine('Total Loans: ' . number_format($data['loans']['total_loans']), 14, true);
+        $pdf->addEmphasisLine('Total Principal: ₱' . number_format($data['loans']['total_principal'], 2), 14, true);
+        $pdf->addEmphasisLine('Total Amount (with interest): ₱' . number_format($data['loans']['total_amount_with_interest'], 2), 14, true);
         $pdf->addSpace();
 
         // Payments Section
-    $pdf->addSubHeader('Payments Received');
-    $pdf->addLine('Total Payments: ' . number_format($data['payments']['total_payments']));
-    $pdf->addLine('Total Amount Received: ₱' . number_format($data['payments']['total_payments_received'], 2));
+        $pdf->addSubHeader('Payments Received');
+        $pdf->addEmphasisLine('Total Payments: ' . number_format($data['payments']['total_payments']), 14, true);
+        $pdf->addEmphasisLine('Total Amount Received: ₱' . number_format($data['payments']['total_payments_received'], 2), 14, true);
         $pdf->addSpace();
 
         // Outstanding Section
         $pdf->addSubHeader('Outstanding Balances');
-        $pdf->addLine('Total Outstanding: ₱' . number_format($data['outstanding']['total_outstanding'], 2));
+        $pdf->addEmphasisLine('Total Outstanding: ₱' . number_format($data['outstanding']['total_outstanding'], 2), 14, true);
 
         return $pdf->output('D', 'financial_summary_' . date('Y-m-d') . '.pdf');
     }

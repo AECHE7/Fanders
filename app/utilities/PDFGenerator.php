@@ -90,6 +90,13 @@ class PDFGenerator {
         $this->pdf->Cell(0, $this->lineHeight, $text, 0, 1, 'L');
     }
 
+    // Add emphasized single line with adjustable font size and weight
+    public function addEmphasisLine($text, $fontSize = 14, $bold = true, $align = 'L') {
+        $this->pdf->SetFont('Arial', $bold ? 'B' : '', $fontSize);
+        $this->pdf->Cell(0, $this->lineHeight + 2, $text, 0, 1, $align);
+        $this->pdf->SetFont('Arial', '', $this->textFontSize);
+    }
+
 
     public function addSpace($height = null) {
         if ($height === null) {

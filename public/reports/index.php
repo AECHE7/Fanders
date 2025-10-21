@@ -13,6 +13,7 @@ $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account-officer']);
 
 // Initialize services
 $reportService = new ReportService();
+require_once BASE_PATH . '/app/utilities/FormatUtility.php';
 
 // --- 1. Process Filters ---
 require_once '../../app/utilities/FilterUtility.php';
@@ -183,7 +184,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <h5 class="card-title mb-0">Report Filters</h5>
         </div>
         <div class="card-body">
-            <form method="GET" action="">
+            <form method="GET" action="" id="report-filter-form">
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <label for="type" class="form-label">Report Type</label>
@@ -229,6 +230,14 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                        class="btn btn-success">
                         <i data-feather="download" class="me-1"></i>Export PDF
                     </a>
+                    <!-- Date Presets -->
+                    <div class="ms-auto d-flex align-items-center gap-1 flex-wrap">
+                        <span class="text-muted me-1">Presets:</span>
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" data-preset="today">Today</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" data-preset="this-month">This Month</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" data-preset="ytd">YTD</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm preset-btn" data-preset="last-month">Last Month</button>
+                    </div>
                 </div>
             </form>
 
@@ -676,11 +685,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center py-1">
                                         <span class="fw-medium">Total Principal</span>
-                                        <span class="h3 mb-0">₱<?= number_format($reportData['loans']['total_principal'], 2) ?></span>
+                                        <span class="h3 mb-0"><?= FormatUtility::peso($reportData['loans']['total_principal']) ?></span>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center py-1">
                                         <span class="fw-medium">Total (with interest)</span>
-                                        <span class="h3 mb-0">₱<?= number_format($reportData['loans']['total_amount_with_interest'], 2) ?></span>
+                                        <span class="h3 mb-0"><?= FormatUtility::peso($reportData['loans']['total_amount_with_interest']) ?></span>
                                     </div>
                                 </div>
                             </div>
@@ -700,7 +709,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center py-1">
                                         <span class="fw-medium">Total Amount</span>
-                                        <span class="h3 mb-0">₱<?= number_format($reportData['payments']['total_payments_received'], 2) ?></span>
+                                        <span class="h3 mb-0"><?= FormatUtility::peso($reportData['payments']['total_payments_received']) ?></span>
                                     </div>
                                 </div>
                             </div>
@@ -716,7 +725,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                 <div class="mt-2">
                                     <div class="d-flex justify-content-between align-items-center py-1">
                                         <span class="fw-medium">Total Outstanding Balance</span>
-                                        <span class="display-6 mb-0 lh-1">₱<?= number_format($reportData['outstanding']['total_outstanding'], 2) ?></span>
+                                        <span class="display-6 mb-0 lh-1"><?= FormatUtility::peso($reportData['outstanding']['total_outstanding']) ?></span>
                                     </div>
                                 </div>
                             </div>
@@ -773,6 +782,36 @@ document.getElementById('type').addEventListener('change', function() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('type').dispatchEvent(new Event('change'));
+    // Date preset logic
+    const form = document.getElementById('report-filter-form');
+    const from = document.getElementById('date_from');
+    const to = document.getElementById('date_to');
+    function pad(n){return n<10? '0'+n : n}
+    function fmt(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+    function firstDayOfMonth(d){return new Date(d.getFullYear(), d.getMonth(), 1)}
+    function lastDayOfMonth(d){return new Date(d.getFullYear(), d.getMonth()+1, 0)}
+    function firstDayOfYear(d){return new Date(d.getFullYear(), 0, 1)}
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const now = new Date();
+            const preset = btn.getAttribute('data-preset');
+            if (preset === 'today') {
+                const t = fmt(now);
+                from.value = t; to.value = t;
+            } else if (preset === 'this-month') {
+                from.value = fmt(firstDayOfMonth(now));
+                to.value = fmt(lastDayOfMonth(now));
+            } else if (preset === 'ytd') {
+                from.value = fmt(firstDayOfYear(now));
+                to.value = fmt(now);
+            } else if (preset === 'last-month') {
+                const prev = new Date(now.getFullYear(), now.getMonth()-1, 1);
+                from.value = fmt(firstDayOfMonth(prev));
+                to.value = fmt(lastDayOfMonth(prev));
+            }
+            form.requestSubmit();
+        });
+    });
 });
 </script>
 
