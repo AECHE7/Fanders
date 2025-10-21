@@ -41,13 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 2. Gather and sanitize input
     $newClient = [
-        'name' => $_POST['name'] ?? '',
-        'email' => $_POST['email'] ?? '',
-        'phone_number' => $_POST['phone_number'] ?? '',
-        'address' => $_POST['address'] ?? '',
-        'date_of_birth' => $_POST['date_of_birth'] ?? '',
-        'identification_type' => $_POST['identification_type'] ?? '',
-        'identification_number' => $_POST['identification_number'] ?? '',
+        'name' => trim($_POST['name'] ?? ''),
+        'email' => trim($_POST['email'] ?? ''),
+        'phone_number' => trim($_POST['phone_number'] ?? ''),
+        'address' => trim($_POST['address'] ?? ''),
+        'date_of_birth' => trim($_POST['date_of_birth'] ?? ''),
+        'identification_type' => trim($_POST['identification_type'] ?? ''),
+        'identification_number' => trim($_POST['identification_number'] ?? ''),
         // Status is forced to active upon creation
         'status' => ClientModel::STATUS_ACTIVE,
     ];

@@ -206,8 +206,17 @@ class ClientService extends BaseService {
 
         // 2. Set default status and create timestamps via BaseModel/Model's create override
         $clientData['status'] = $clientData['status'] ?? ClientModel::STATUS_ACTIVE;
+        
+        // 3. Convert empty strings to NULL for unique fields (PostgreSQL unique constraint compatibility)
+        // Empty strings violate unique constraints, but NULL values don't
+        if (isset($clientData['email']) && trim($clientData['email']) === '') {
+            $clientData['email'] = null;
+        }
+        if (isset($clientData['identification_number']) && trim($clientData['identification_number']) === '') {
+            $clientData['identification_number'] = null;
+        }
 
-        // 3. Create client
+        // 4. Create client
         $newId = $this->clientModel->create($clientData);
 
         if (!$newId) {
@@ -231,10 +240,10 @@ class ClientService extends BaseService {
              return false;
         }
 
-        // 4. Clear relevant caches
+        // 5. Clear relevant caches
         $this->cache->delete('client_stats');
 
-        // 5. Log transaction for audit trail
+        // 6. Log transaction for audit trail
         if (class_exists('TransactionService')) {
             $transactionService = new TransactionService();
             $transactionService->logClientTransaction('created', $newId, $createdBy, [
@@ -265,7 +274,15 @@ class ClientService extends BaseService {
             return false;
         }
 
-        // 3. Update client
+        // 3. Convert empty strings to NULL for unique fields (PostgreSQL unique constraint compatibility)
+        if (isset($clientData['email']) && trim($clientData['email']) === '') {
+            $clientData['email'] = null;
+        }
+        if (isset($clientData['identification_number']) && trim($clientData['identification_number']) === '') {
+            $clientData['identification_number'] = null;
+        }
+
+        // 4. Update client
         return $this->clientModel->update($id, $clientData);
     }
 

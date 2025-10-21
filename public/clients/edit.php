@@ -42,13 +42,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Gather and sanitize input (status is only updatable by high-level admins in the service)
     $updatedData = [
-        'name' => $_POST['name'] ?? $clientData['name'],
-        'email' => $_POST['email'] ?? $clientData['email'],
-        'phone_number' => $_POST['phone_number'] ?? $clientData['phone_number'],
-        'address' => $_POST['address'] ?? $clientData['address'],
-        'date_of_birth' => $_POST['date_of_birth'] ?? $clientData['date_of_birth'],
-        'identification_type' => $_POST['identification_type'] ?? $clientData['identification_type'],
-        'identification_number' => $_POST['identification_number'] ?? $clientData['identification_number'],
+        'name' => trim($_POST['name'] ?? $clientData['name']),
+        'email' => trim($_POST['email'] ?? $clientData['email']),
+        'phone_number' => trim($_POST['phone_number'] ?? $clientData['phone_number']),
+        'address' => trim($_POST['address'] ?? $clientData['address']),
+        'date_of_birth' => trim($_POST['date_of_birth'] ?? $clientData['date_of_birth']),
+        'identification_type' => trim($_POST['identification_type'] ?? $clientData['identification_type']),
+        'identification_number' => trim($_POST['identification_number'] ?? $clientData['identification_number']),
         // Include status if user is allowed to post it (handled by validation in service layer)
         'status' => $_POST['status'] ?? $clientData['status']
     ];
