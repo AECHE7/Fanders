@@ -65,6 +65,7 @@ $navItems = [
     'collection-sheets' => [
         'icon' => 'clipboard',
         'title' => 'Collection Sheets',
+        // Point to the new Collection Sheets landing (placeholder until full implementation)
         'url' => APP_URL . '/public/collection-sheets/index.php',
         'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier'],
         'active_pages' => ['collection-sheets']
@@ -79,7 +80,8 @@ $navItems = [
     'slr-documents' => [
         'icon' => 'file',
         'title' => 'SLR Documents',
-        'url' => APP_URL . '/public/slr-documents/index.php',
+        // Link to existing SLR documents controller interface
+        'url' => APP_URL . '/public/documents/slr.php',
         'roles' => ['super-admin', 'admin', 'manager', 'account_officer'],
         'active_pages' => ['slr-documents', 'documents']
     ],
