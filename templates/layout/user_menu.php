@@ -26,6 +26,14 @@ $usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
 <div class="navbar-nav">
     <div class="nav-item dropdown">
         <a class="nav-link dropdown-toggle px-3 d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+// Make sure we can access the global $auth even when included from within a function scope
+global $auth;
+
+// Get current user and role (safe defaulting)
+$currentUser = [];
+if (isset($auth) && is_object($auth) && method_exists($auth, 'getCurrentUser')) {
+    $currentUser = $auth->getCurrentUser() ?: [];
+}
             <div class="d-flex align-items-center">
                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
                     <span class="fw-bold"><?= htmlspecialchars($initials) ?></span>
@@ -40,7 +48,7 @@ $usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
                     <div>
                         <small class="text-muted">Signed in as</small><br>
                         <strong class="text-dark"><?= htmlspecialchars($usernameDisplay) ?></strong>
-                    </div>
+$usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? 'User');
                 </div>
             </li>
             <li><hr class="dropdown-divider my-1"></li>
@@ -52,7 +60,7 @@ $usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
             </li>
             <li><hr class="dropdown-divider my-1"></li>
             <li>
-                <a class="dropdown-item d-flex align-items-center py-2" href="<?= APP_URL ?>/public/users/view.php?id=<?= $currentUser['id'] ?>">
+                <a class="dropdown-item d-flex align-items-center py-2" href="<?= APP_URL ?>/public/users/view.php<?= isset($currentUser['id']) ? ('?id=' . (int)$currentUser['id']) : '' ?>">
                     <i data-feather="settings" class="me-2" style="width: 16px; height: 16px;"></i>
                     <span>Settings</span>
                 </a>

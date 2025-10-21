@@ -1,0 +1,480 @@
+Loaning Management System
+Requirements Specification
+Client: Fanders Microfinance Inc.
+Document Version: 1.0
+Date: October 16, 2025
+Purpose: This document specifies the functional and non-functional requirements for the
+Loaning Management System (LMS) designed to replace the current Excel-based operations
+at Fanders Microfinance Inc.
+
+Project Title & Introduction
+The Loaning Management System (LMS) for Fanders Microfinance Inc. is a
+comprehensive digital solution intended to streamline loan monitoring, payment processing,
+and financial reporting. Its primary purpose is to address critical business pain points,
+including:
+●​ Eliminating calculation errors caused by manual data entry.
+●​ Ensuring data integrity and providing secure, centralized storage.
+●​ Automating the creation of cash blotters and financial statements.
+The system will encompass the entire loan lifecycle, from initial application entry and approval
+to final payment processing and reporting, providing reliable data for management decisions.
+
+Feature-based Sections
+1. Authentication & Role-Based Access
+Users must authenticate securely to access the system, with access levels strictly determined
+by their assigned role. This ensures appropriate data access and separation of duties.
+Role
+
+Access Level & Key Responsibilities
+
+Administrator
+
+Full System Access (Similar to
+Super-Admin): Manages user accounts
+(Managers, Cashiers, Account Officers).
+Manages system configuration and
+performs secure backups. Accesses all
+financial reports and audit trails.
+
+Manager
+
+Oversight and Approval: Reviews and
+approves loan applications. Accesses all
+financial reports and analytics. Monitors
+
+overall cash position and performance.
+Cashier
+
+Operational Processing: Processes
+weekly client payments (UR-002).
+Processes Loan Release (SLR)
+documentation (UR-007). Generates the
+Digital Cash Blotter (UR-004).
+
+Account Officer
+
+Field Operations (Limited Access):
+Processes collection sheets and client
+payment entries in the field (UR-006).
+Views data only for assigned clients.
+
+2. Dashboard Overview
+After successful login, users are directed to a role-specific dashboard for real-time visibility
+into operations:
+●​ Administrator / Manager Sees:
+○​ Total Loan Portfolio Value (Principal + Interest).
+○​ Total number of Active Loans.
+○​ Number of Overdue Payments / Clients.
+○​ Real-time Cash Position (based on Digital Cash Blotter).
+○​ Alerts for failed backups or system issues.
+●​ Cashier Sees:
+○​ Today's Collections target vs. actual.
+○​ Pending Loan Releases for the day.
+○​ Real-time Cash Blotter summary (inflow/outflow).
+○​ List of payments to be posted.
+●​ Account Officer Sees:
+○​ List of assigned clients with outstanding balances.
+○​ Weekly Collection targets.
+○​ Alerts for overdue payments on their assigned accounts.
+
+3. Loan Management
+This module replaces the Book Management section and covers the core financial operations:
+
+Create Loan Record (FR-001)
+●​ Input Fields: Client Information (Linked to Client Account), Principal Amount, Loan Term
+(Fixed at 4 months/17 weeks).
+●​ Processing: The system generates a unique loan identifier and validates input.
+●​ Automated Calculations (FR-002, FR-009):
+
+○​ Interest: Automatically calculated as Principal (5% monthly interest over 4 months).
+○​ Fees: Fixed Insurance Fee of ₱425.
+○​ Total Amount Due: Principal + Interest + Insurance Fee.
+●​ Payment Schedule Generation (FR-003): Automatically generates a 17-week schedule
+by dividing the Total Amount Due by 17.
+
+View & Track Loans (UR-001)
+●​ A comprehensive view of each loan, including the complete 17-week payment schedule,
+principal, interest, fees, and the running Outstanding Balance (FR-005).
+●​ Status tracking: Loans must progress through states: Applied Approved Fund
+Disbursed (Active) Fully Paid (Closed) or Missed Payment (Overdue) Defaulted.
+
+4. Client Management (Borrowers)
+This module handles the non-financial records of Fanders Microfinance Inc. clients.
+●​ Create Client Account: Fields must include Full Name, Email Address, Phone Number,
+and Physical Address.
+●​ View Client Account: Displays detailed client information, account status
+(Active/Inactive), and a comprehensive list of all associated loans, including:
+○​ Loan Status (Active, Overdue, Closed).
+○​ Last Payment Date and Amount.
+○​ Current Outstanding Balance.
+●​ Update Client Account: Managers and Administrators can modify profiles. Clients
+should be able to modify their own non-critical profile information.
+●​ Deactivate Client: Client accounts should be deactivated (not deleted) to preserve
+historical loan and payment records. Deactivated clients cannot submit new loan
+applications.
+
+5. Transaction Management (Loan Releases & Payments)
+The heart of the system, managing the inflow and outflow of funds and ensuring real-time
+balance updates.
+
+Loan Release (Disbursement) (FR-007)
+●​ Admins/Managers confirm the release of funds to the client.
+●​ Process: Records the disbursement, generates the SLR document, and immediately
+updates the Digital Cash Blotter (FR-006) to reflect the cash outflow.
+
+Payment Recording (FR-004)
+●​ Cashiers or Account Officers record weekly client payments.
+●​ Process: The system accepts Client ID, payment amount, and date. It validates the
+payment against the schedule and updates the Outstanding Balance in real-time
+(FR-005).
+●​ Audit Trail: Every payment entry must be timestamped and logged to the Transactions
+
+entity (FR-010).
+●​ Cash Blotter Update: Payment data is instantly added to the Digital Cash Blotter to
+reflect cash inflow (FR-006).
+
+Overdue Detection & Alerts (FR-012)
+●​ The system automatically flags an account as Overdue if a scheduled payment date is
+missed.
+●​ Alerts: Generates automatic alerts for staff/management for payments that are 1 day
+overdue and 1 week in advance of the due date.
+
+6. Admin Management (Administrator Only)
+The Administrator role provides the highest level of system control and security oversight.
+●​ Create/Update User (Manager/Cashier/Account Officer): Manages all non-client user
+accounts, including role assignment and status (Active/Inactive).
+●​ Reset Password: Administrator can trigger a password reset for any user by generating
+a secure temporary password.
+●​ Deactivate User: Non-client user accounts should be deactivated (not permanently
+deleted) to preserve the accountability of actions logged in the audit trail.
+●​ Financial Reporting (FR-005): Accesses all financial reports, including the capability to
+export transactions and financial statements to PDF and Excel formats.
+
+7. Account Security Features
+The system must meet high security and reliability standards:
+●​ Password Security: User passwords must be securely hashed (e.g., using Bcrypt) and
+salted.
+●​ Session Management: Implement secure session controls with a period of inactivity
+leading to automatic logout.
+●​ Data Integrity: All financial transactions must maintain 100% accuracy, protected
+through validation and rollback mechanisms.
+●​ Audit Logging (FR-010): The system must log 100% of user activities and data changes
+to maintain a complete and traceable audit trail.
+●​ Automated Backup (UR-008): Daily automated backups of the database to a secure
+cloud storage location are mandatory.
+
+Database Structure
+The underlying data model uses a relational database system (MySQL/PHP) designed for data
+integrity and efficient transaction processing.
+Table Name
+
+Field Name
+
+Data Type
+
+Description
+
+users
+
+clients
+
+loans
+
+id
+
+INT (11) PK, AI
+
+Unique User ID
+
+name
+
+VARCHAR(100)
+
+Full name
+
+email
+
+VARCHAR(100)
+UNIQUE
+
+Unique email for
+login
+
+password
+
+VARCHAR(255)
+
+Hashed password
+
+role
+
+VARCHAR(20)
+
+User role (Admin,
+Manager, Cashier,
+AO)
+
+status
+
+VARCHAR(20)
+
+Account status
+(active, inactive)
+
+created_at
+
+TIMESTAMP
+
+Timestamp created
+
+updated_at
+
+TIMESTAMP
+
+Timestamp
+modified
+
+id
+
+INT (11) PK, AI
+
+Unique Client ID
+
+name
+
+VARCHAR(100)
+
+Full name
+
+email
+
+VARCHAR(100)
+UNIQUE
+
+Unique email
+
+phone_number
+
+VARCHAR(20)
+UNIQUE
+
+Unique phone
+number
+
+address
+
+VARCHAR(255)
+
+Client's residential
+address
+
+status
+
+VARCHAR(20)
+
+Client status
+(active, inactive)
+
+created_at
+
+TIMESTAMP
+
+Timestamp created
+
+id
+
+INT (11) PK, AI
+
+Unique Loan ID
+
+client_id
+
+INT (11) FK
+
+Linked to clients.id
+
+principal
+
+DECIMAL(10, 2)
+
+Original loan
+
+amount
+
+payments
+
+cash_blotter
+
+interest_rate
+
+DECIMAL(5, 4)
+
+Fixed at 0.05 (5%)
+
+term_weeks
+
+INT (3)
+
+Fixed at 17 weeks
+
+total_interest
+
+DECIMAL(10, 2)
+
+Calculated total
+interest
+
+insurance_fee
+
+DECIMAL(10, 2)
+
+Fixed at 425.00
+
+total_loan_amount
+
+DECIMAL(10, 2)
+
+Principal + Interest
++ Fee
+
+status
+
+VARCHAR(20)
+
+Loan status (Active,
+Overdue, Closed)
+
+start_date
+
+TIMESTAMP
+
+Date of fund
+disbursement
+
+created_at
+
+TIMESTAMP
+
+Timestamp created
+
+id
+
+INT (11) PK, AI
+
+Unique Payment ID
+
+loan_id
+
+INT (11) FK
+
+Linked to loans.id
+
+user_id
+
+INT (11) FK
+
+Cashier/AO who
+recorded payment
+
+amount
+
+DECIMAL(10, 2)
+
+Amount paid
+
+payment_date
+
+TIMESTAMP
+
+Date payment was
+recorded
+
+created_at
+
+TIMESTAMP
+
+Timestamp created
+
+id
+
+INT (11) PK, AI
+
+Unique Blotter ID
+
+blotter_date
+
+DATE UNIQUE
+
+Date of the cash
+blotter entry
+
+total_inflow
+
+DECIMAL(10, 2)
+
+Sum of all
+collections and
+inflows
+
+transactions
+
+total_outflow
+
+DECIMAL(10, 2)
+
+Sum of all loan
+releases and
+outflows
+
+calculated_balance
+
+DECIMAL(10, 2)
+
+Daily net cash
+position
+
+id
+
+INT (11) PK, AI
+
+Unique Audit Log ID
+
+user_id
+
+INT (11) FK
+
+User who
+performed the
+action
+
+transaction_type
+
+VARCHAR(50)
+
+Type of action (e.g.,
+PAYMENT_RECORD
+ED,
+LOAN_CREATED)
+
+reference_id
+
+INT (11)
+
+ID of the affected
+record (loan,
+payment, client)
+
+details
+
+TEXT
+
+JSON string of
+changes made
+
+created_at
+
+TIMESTAMP
+
+Timestamp of the
+action
+
+

@@ -1,0 +1,630 @@
+Requirements Engineering Documentation of Loaning Management System for Fanders
+Microfinance Inc.
+Date: September 12, 2025
+Project Team:
+Gadiano, Noriel S.
+Gavino, Kim Joshia
+Carillo, John Andrei
+Mana, Mark
+Gutierrez, Nigel
+Agustin, Joshua Vone
+
+Transcript of Interview
+Interview Information
+
+Detail
+
+Information
+
+Documentation Source
+
+Business process documentation and proposal
+
+Client
+
+Fanders Microfinance Inc.
+
+Owner
+
+John Joseph Carillo
+
+Location
+
+Centro East, Santiago City, Isabela
+
+Interview Method
+
+Document analysis and process observation
+
+Purpose
+
+Gather requirements for Loaning Management System
+
+Interview Summary with Fanders Microfinance Inc.
+Date: 06/09/2025
+Participants: Business stakeholders and development team
+Purpose: Gather requirements for Loaning Management System
+Key Findings from Business Process Documentation:
+Current Daily Operations:
+●​ "Sa araw araw ang cashier ay gumagawa ng tinatawag na cash blotter kung saan
+makikita rito ang pag pasok at paglabas ng pera ng isang branches"
+●​ Cashiers create daily cash blotters showing money inflow and outflow for each branch
+Collection Process:
+
+●​ "Mapapansin sa Cash blotter meron itong collection na ito ay nakabatay sa Collection
+sheet ng bawat account officer"
+●​ Cash blotter collections are based on collection sheets from each account officer
+●​ "Ang Collection sheet ay kailangan I post ng cashier sa tinatawag na Monitoring of loan
+(Payment and Release)"
+●​ Collection sheets must be posted by cashier to the loan monitoring system
+Loan Release Process:
+●​ "Bumalik sa Cash Blotter mapapansin na sa right side may nakalagay rito ang loan
+release ito ay nakabatay naman sa Summary of Loan Release"
+●​ Cash blotter shows loan releases on the right side based on Summary of Loan Release
+●​ This confirms that clients have received loans from the company
+Business Pain Points Identified:
+●​ Excel-based operations creating risks of errors and inefficiencies
+●​ Data integrity issues from accidental deletion/modification
+●​ Imbalanced reports due to Excel errors
+●​ Inefficient backup processes with Google Drive storage limitations
+●​ Manual calculations prone to errors
+Interest Calculation Process:
+●​ Question: "Paano makuha ang Interest sa posting ng SLR (Summary of Loan Release)"
+●​ Answer: "Principal X .05 or 5% = answer multiply by 4 months"
+●​ Example provided: "7000*6%=420 *4 months =1680"
+
+Payment Structure:
+●​ Clients pay weekly over 17 weeks (4 months)
+●​ Every payment includes additional insurance and savings
+●​ Total insurance amount: ₱425 (fixed amount until loan is fully paid)
+●​ Savings amount varies based on loan amount
+
+Preface
+Document Information
+This Requirements Specification document defines the functional and non-functional
+requirements for the Loaning Management System to be developed for Fanders Microfinance
+Inc. The document is version 1.0, dated September 12, 2025, prepared for client John Joseph
+Carillo, owner of Fanders Microfinance Inc., located in Centro East, Santiago City, Isabela.
+Expected Readership
+This document is intended for business stakeholders who need to validate requirements
+and make approval decisions, requiring knowledge of current business processes. System
+developers will use this for implementation guidance and technical specifications, needing
+software development experience. Project managers will reference this for planning, tracking,
+and resource allocation with project management expertise. Quality assurance teams will
+develop test cases and validation criteria based on testing methodology knowledge. System
+
+administrators will use this for deployment planning and security configuration, requiring IT
+infrastructure experience.
+Version History
+Version 0.1 (September 5, 2025): Initial draft created by the development team based on
+business process analysis and stakeholder interviews. This established the foundation document
+structure.
+Version 0.5 (September 8, 2025): Added detailed functional requirements and expanded
+technical specifications based on stakeholder feedback and deeper business process analysis.
+Version 1.0 (September 12, 2025): Final requirements document with improved organization
+and comprehensive coverage, incorporating all stakeholder feedback and technical review
+comments.
+
+1. Introduction
+1.1 System Overview
+The Loaning Management System is a comprehensive digital solution designed to
+replace the current Excel-based loan operations at Fanders Microfinance Inc. The system
+encompasses loan monitoring, payment processing, accounting functions, and financial
+reporting capabilities. Primary users include cashiers, account officers, managers, and system
+administrators, each with role-specific access and functionality.
+
+1.2 Business Need
+Fanders Microfinance Inc. currently operates using Excel spreadsheets for all financial
+operations, creating significant risks and inefficiencies. Manual data entry leads to calculation
+errors, accidental deletion or modification of critical data affects report accuracy, and
+imbalanced financial statements compromise business decision-making. The current backup
+process relies on Google Drive storage, which frequently reaches capacity limits, disrupting
+smooth operations.
+The proposed Loaning Management System addresses these challenges by providing
+automated loan management with integrated payment processing, eliminating manual
+calculation errors through built-in business rules, ensuring data integrity through centralized
+database storage, and implementing secure cloud-based backup solutions that eliminate
+storage limitations.
+1.3 System Functions Summary
+The system provides comprehensive loan management capabilities, tracking loans from
+initial application through final payment completion, improving oversight and accuracy.
+Payment processing functions handle weekly payment collection with automatic balance
+updates, streamlining cash flow management. Interest calculation features automate
+computation using established business rules, eliminating manual calculation errors. Financial
+reporting generates balanced financial statements, providing reliable support for business
+
+decisions. Cash flow monitoring offers real-time cash position tracking, enhancing liquidity
+management.
+1.4 Strategic Alignment
+The system directly supports key business objectives including financial accuracy by
+eliminating manual calculation errors and ensuring 100% accurate interest calculations.
+Operational efficiency improvements target a 50% reduction in processing time through
+process automation. Business growth support includes scalable operations capable of handling
+three times the current loan volume. Risk management enhancements provide improved data
+security with 99.9% data availability. Regulatory compliance maintains complete audit trails
+with 100% transaction traceability.
+
+2. Glossary
+Technical Terms
+●​ Cash Blotter - refers to the daily record of cash inflows and outflows for each branch,
+currently maintained manually using Excel spreadsheets.
+●​ Collection Sheets - are documents recording client payments collected by account
+officers, generated in the field and posted by cashiers to the central system.
+●​ SLR (Summary of Loan Release) - represents documentation confirming loan
+disbursement to clients, posted to the monitoring system by cashiers.
+
+●​ Account Officer - is a field-based staff member responsible for client relationships and
+payment collection, managing assigned clients.
+●​ Outstanding Balance - indicates the remaining amount owed by a client after payments,
+calculated as Total Loan Amount minus Payments Made.
+Business Terms
+●​ Principal - represents the original loan amount borrowed by the client, serving as the
+base amount for interest calculations.
+●​ Interest Rate - is the monthly charge applied to the loan amount, fixed at 5% per month
+for all loans.
+●​ Insurance Fee - is a mandatory insurance component charged as a fixed amount of ₱425
+per loan regardless of the principal amount.
+●​ Payment Schedule - defines the weekly payment plan for loan repayment, standard at
+17 weeks for all 4-month loans.
+●​ Loan Term - specifies the duration of the loan repayment period, standardized at 4
+months for all loans.
+System Terms
+●​ Audit Trail - provides a complete log of all system changes and transactions, required for
+all financial operations.
+●​ Role-based Access - defines user permissions based on job function, including
+Administrator, Manager, Cashier, and Account Officer roles.
+
+●​ Real-time Processing - ensures immediate system updates upon transaction entry,
+particularly critical for balance calculations.
+●​ Backup Retention - specifies the period for maintaining backup copies, set at a minimum
+of 30 days with a recommended one-year retention.
+
+3. User Requirements Definition
+3.1 Functional User Requirements
+UR-001: Loan Tracking - Users require complete loan lifecycle management from application
+submission through final completion. This high-priority requirement affects managers and
+cashiers, addressing the current pain point of manual Excel tracking errors. The business value
+includes eliminating manual errors and improving loan oversight. Success is measured by the
+system's ability to accurately record and make accessible all loan data.
+UR-002: Payment Processing - The system must handle weekly payment collection with
+automatic balance updates. This high-priority requirement primarily affects cashiers, solving the
+current problem of manual posting from collection sheets. Business value includes streamlined
+workflow and reduced posting errors. Acceptance criteria require that payments are recorded
+instantly with immediate balance updates.
+UR-003: Interest and Fee Calculation - Automated computation following established business
+rules (5% monthly interest over 4 months) is essential. This high-priority requirement affects
+cashiers and managers, eliminating current manual calculation errors. Business value includes
+
+ensuring calculation consistency and accuracy. Success requires that system results match
+manual calculations exactly.
+UR-004: Cash Flow Management - A digital equivalent of the current daily cash blotter
+functionality is needed. This high-priority requirement affects cashiers, addressing the manual
+cash blotter creation process. Business value provides real-time cash position visibility. Success
+criteria require that daily cash positions are accurate and timely.
+UR-005: Financial Reporting - The system must generate balanced and accurate financial
+statements, replacing current Excel-based reports. This high-priority requirement affects
+managers and the business owner, solving Excel-based report imbalances. Business value
+includes reliable financial statements for decision-making. Success requires reports that are free
+from the errors currently experienced with Excel.
+UR-006: Collection Integration - Seamless processing of account officer collection sheets is
+required. This medium-priority requirement affects account officers and cashiers, improving the
+current manual collection posting process. Business value includes maintaining accountability
+while improving efficiency. Success criteria require that collection data flows without manual
+re-entry.
+UR-007: Loan Release Documentation - Digital processing of Summary of Loan Release (SLR)
+documents is needed. This medium-priority requirement affects cashiers and managers,
+addressing current manual SLR posting procedures. Business value ensures that all loan
+
+disbursements are properly documented. Success requires comprehensive documentation of all
+releases.
+UR-008: Data Security and Backup - Secure data storage replacing current Google Drive backup
+issues is essential. This high-priority requirement affects all users, solving storage limitations
+and backup failures. Business value includes data protection and business continuity. Success
+criteria require guaranteed data recovery capabilities.
+3.2 Non-Functional User Requirements
+Performance requirements specify that response time for all operations must be under 3
+seconds, improving user productivity and maintaining operational efficiency. The system must
+support 10 or more concurrent users simultaneously to handle peak usage periods and support
+business growth.
+Reliability requirements mandate 99.5% system availability during business hours to ensure
+uninterrupted business operations, critical for daily activities. System recovery time must be
+under 4 hours to minimize business disruption during any technical issues.
+Usability requirements specify that training time for basic system use should be under 4 hours
+to ensure quick user adoption and minimize business disruption during the transition period.
+Security requirements include role-based access control with four distinct user role levels to
+ensure appropriate data access and protect sensitive financial information.
+3.3 Product and Process Standards
+
+Data accuracy standards require that all financial calculations be accurate to the centavo level,
+implemented through automated validation and mandatory for system approval. Audit
+requirements mandate complete transaction logging for all system activities, verified through
+audit trail reviews. Backup standards specify daily automated backups with 30-day retention,
+validated through regular backup testing. Security standards require encrypted storage of all
+sensitive data, verified through comprehensive security assessments. User interface standards
+recommend consistent navigation and layout throughout the system, validated through usability
+testing.
+
+4. System Architecture
+4.1 High-Level Architecture Overview
+The system follows a layered architecture approach with five distinct components. The
+Presentation Layer provides user interface and interaction capabilities through a web-based
+responsive interface, offering high reusability through standard web components. The Business
+Logic Layer contains core system functionality and business rules, implemented through an
+application server with loan-specific logic offering medium reusability. The Data Access Layer
+handles database operations and data management through a database abstraction layer,
+providing high reusability with standard CRUD operations. The Database Layer manages data
+storage and persistence using a relational database system with high reusability through
+standard database design principles. The Integration Layer facilitates external system
+
+connections through API and file processing services, offering medium reusability specific to
+integration requirements.
+4.2 System Module Distribution
+The User Management module handles authentication, authorization, and role
+management with high priority, depending on the database layer. Loan Management provides
+loan creation, tracking, and status management capabilities with high priority, requiring user
+management and database dependencies. Payment Processing manages payment recording
+and balance calculation with high priority, depending on loan management and the calculation
+engine. The Calculation Engine performs interest, payment schedule, and balance calculations
+with high priority, requiring business rules and database access. Cash Flow Management
+handles daily blotter and cash position tracking with high priority, depending on payment
+processing and reporting systems. The Reporting System generates financial reports, analytics,
+and dashboards with medium priority, requiring access to all modules and the database.
+4.3 Architectural Components for Reuse
+The Authentication Module managing user login and session management offers high
+reuse potential for other microfinance applications, providing security consistency. The
+Calculation Engine handling financial computations can be reused for different loan products,
+ensuring calculation accuracy across applications. The Reporting Framework for report
+generation and formatting provides development efficiency benefits for various business
+reports. The Audit Trail System for transaction logging and tracking ensures regulatory
+
+consistency across compliance requirements. The Database Schema defining data structure and
+relationships enables data model reuse for similar financial systems.
+
+5. System Requirements Specification
+5.1 Functional Requirements Detail
+Core Loan Management Functions
+FR-001: Loan Record Creation - The system must create comprehensive loan records by
+accepting client information, loan amount, and terms as input. Processing involves generating a
+unique identifier and validating all data according to business rules. Output includes a complete
+loan record with tracking number. The business rule requires that each loan must have a unique
+identifier and complete documentation.
+FR-002: Interest Calculation - The system must perform automated interest calculation by
+accepting principal amount, interest rate (fixed at 5%), and loan term (4 months) as input.
+Processing applies the formula: Principal × 0.05 × 4 to calculate total interest. Output provides
+the exact total interest amount. The business rule mandates a fixed 5% monthly rate for all
+loans, and results must match manual calculations exactly.
+FR-003: Payment Schedule Generation - The system generates 17-week payment schedules by
+accepting principal, calculated interest, and fees as input. Processing divides the total amount
+by 17 weeks to create the payment plan. Output provides a complete 17-week payment
+
+schedule. The business rule specifies that 4-month loans equal exactly 17 weekly payments with
+no exceptions.
+FR-004: Payment Recording - The system processes weekly client payments by accepting client
+ID, payment amount, and date as input. Processing updates the outstanding balance and logs
+the transaction with a timestamp. Output includes payment confirmation and updated balance.
+The business rule requires that all payments must be recorded with timestamp and complete
+audit trail.
+FR-005: Balance Calculation - The system calculates outstanding balances in real-time by
+accepting total loan amount and payments made as input. Processing applies the formula:
+Outstanding Balance = Total Amount - Sum of All Payments. Output provides the current
+balance owed by the client. The business rule mandates that balance must update immediately
+upon payment entry.
+Cash Management Functions
+FR-006: Digital Cash Blotter - The system generates automated daily cash blotters by accepting
+daily collections, loan releases, and other transactions as input. Processing categorizes and
+summarizes all cash movements. Output provides a comprehensive daily cash position report.
+The business rule requires separate tracking of collections and loan releases, integrating data
+from collection sheets and the SLR system.
+FR-007: Collection Processing - The system processes account officer collection data by
+accepting officer ID, client payments, and collection date as input. Processing validates
+
+payments against client records and aggregates data by officer. Output provides collection
+summaries for cash blotter integration. The business rule requires that each collection must be
+traceable to a specific account officer.
+FR-008: Loan Release (SLR) System - The system processes loan disbursements by accepting
+approved loan details, disbursement amount, and client confirmation as input. Processing
+records the loan release, updates cash position, and generates documentation. Output includes
+release confirmation and updated cash blotter entry. The business rule mandates that all
+releases must be approved and documented before cash disbursement.
+FR-009: Fee Management - The system manages insurance and savings components by
+accepting loan details as input. Processing calculates the fixed insurance fee of ₱425 and
+variable savings amounts. Output provides a complete fee breakdown integrated with the
+payment schedule. The business rule specifies that insurance is fixed at ₱425 regardless of
+principal amount.
+FR-010: Transaction History - The system maintains complete chronological payment records by
+accepting all client payments with dates, amounts, and methods as input. Processing stores
+payment history with full audit trail capabilities. Output provides complete payment history
+reports per client. The business rule prohibits deletion of payment records, allowing only
+corrections with proper documentation.
+Reporting and Monitoring Functions
+
+FR-011: Client Dashboard - The system provides summary views of client loan status by
+accepting client loan data, payment history, and current balance as input. Processing calculates
+status indicators including current, overdue, and completed states. Output displays client
+dashboard showing loan summary and current status. The business rule requires real-time
+status updates with payments.
+FR-012: Alert System - The system generates alerts for overdue payments by accepting payment
+schedules, current date, and business rules as input. Processing checks for overdue payments
+and upcoming due dates. Output provides alert notifications for staff and management. The
+business rule generates alerts for payments 1 day overdue and 1 week in advance.
+5.2 Non-Functional Requirements Specification
+Performance Requirements
+Response Time - All transaction processing must complete within 3 seconds under normal load
+conditions with 10 concurrent users, measured through response time monitoring and validated
+through load testing.
+Throughput - The system must handle a minimum of 100 transactions per hour during peak
+usage periods, tracked through transaction logging and validated through performance testing.
+Scalability - The system must support 10 or more simultaneous users during normal operations,
+verified through load testing and concurrent user session tracking.
+
+Database Performance - All standard database queries must respond within 2 seconds,
+monitored through database performance tools and validated through query optimization
+testing.
+Reliability Requirements
+System Availability - The system must maintain 99.5% uptime during business hours (8 AM - 6
+PM), monitored through availability tracking tools and validated through uptime testing.
+Data Integrity - All financial transactions must maintain 100% accuracy, protected through
+rollback mechanisms and validated through comprehensive data validation testing.
+Backup Success - Daily backup operations must complete successfully 100% of the time, with
+failure alerts and verification through automated backup testing.
+Recovery Time - Complete system restoration must be achievable within 4 hours following any
+system failure, supported by disaster recovery plans and validated through recovery testing
+procedures.
+Security Requirements
+Access Control - The system must implement role-based permissions with four distinct user
+roles: Administrator, Manager, Cashier, and Account Officer. Access permissions are validated
+through comprehensive permission testing and security audits.
+
+Data Encryption - All sensitive data must be encrypted both in storage and transmission,
+implemented through industry-standard encryption methods and validated through security
+assessments.
+Session Management - User sessions must be secure with appropriate timeout and validation
+mechanisms, preventing unauthorized access and validated through security testing
+procedures.
+Audit Logging - The system must log 100% of user activities and data changes, maintaining
+complete audit trails validated through audit log reviews and compliance testing.
+5.3 Interface Requirements
+User Interface Requirements
+The Login Screen provides secure authentication with role selection capabilities for all users,
+designed with standard web accessibility features and responsive design principles.
+The Dashboard offers role-specific home screens displaying key metrics and navigation options
+tailored to each user type, implementing responsive design for various devices and screen sizes.
+Loan Management Interface provides comprehensive loan lifecycle management capabilities
+for cashiers and managers, featuring form validation, data entry assistance, and clear workflow
+guidance.
+Payment Entry Interface enables quick payment recording with real-time validation for
+cashiers, including keyboard shortcuts for efficiency and immediate balance updates.
+
+Reporting Interface allows managers to generate and export various reports, supporting
+multiple formats including PDF and Excel with print capabilities.
+External System Interfaces
+Backup System Interface manages daily automated export of database backups to secure cloud
+storage, including failure notification and retry mechanisms for reliability.
+Report Export Interface enables on-demand export of system reports in PDF and Excel formats
+with format validation and error handling.
+Future Banking API Interface designed for potential bidirectional communication with banking
+systems using JSON/XML formats, including comprehensive API error handling and real-time
+processing capabilities.
+
+6. System Models
+6.1 Data Flow Models
+Payment Processing Data Flow
+The payment processing workflow begins with Payment Entry, where cashiers input
+client ID, payment amount, and date. The system validates the payment information and creates
+a payment record, then proceeds to Balance Update where the payment amount and current
+balance are processed to calculate the new outstanding balance. The updated balance triggers
+
+History Update, where the payment record is appended to the client's payment history,
+maintaining chronological order. The process continues with Cash Blotter Update, where
+payment data is added to the daily cash totals, affecting the branch's cash position. Finally,
+Notification Check evaluates the updated balance against the payment schedule to determine if
+alerts are needed for overdue or upcoming payments.
+Loan Creation Data Flow
+The loan creation process starts with Application Entry, where client details and loan
+amount are input and validated according to credit policies, creating an application record.
+Interest Calculation then applies business rules to the principal amount, calculating the total
+interest using the standard 5% monthly rate over 4 months. Schedule Generation takes the
+total amount including principal, interest, and fees to calculate the 17-week payment schedule
+with weekly amounts. The Approval Process involves management review of the complete
+application, resulting in approval or rejection status with proper authorization checks. Upon
+approval, Disbursement releases funds to the client, creating a disbursement record and
+updating the cash blotter.
+
+6.2 Object Models
+Core System Objects
+The Client object contains ID, name, address, contact information, and status attributes,
+with methods to create, update, and validate client information. Clients have a one-to-many
+relationship with loans, allowing multiple loans per client over time.
+The Loan object includes ID, client_id, principal, interest, term, and status attributes,
+with methods to calculate payments, process approvals, and manage disbursements. Each loan
+belongs to one client and has many associated payments.
+The Payment object contains ID, loan_id, amount, date, and method attributes, with
+methods to record, validate, and process payment transactions. Each payment belongs to one
+specific loan.
+
+The CashBlotter object includes date, opening_balance, collections, and releases
+attributes, with methods to generate daily summaries, calculate balances, and close daily
+operations. Cash blotters contain multiple transaction references.
+The User object contains ID, username, role, and permissions attributes, with methods
+for authentication and authorization. Users perform multiple transactions, maintaining
+accountability through audit trails.
+The Transactions object contains ID, type, amount, and timestamp with many-to-one
+relationships to users, estimated at 100,000 records annually including all system activities.
+
+6.3 State Models
+Loan Status State Machine
+
+Loans progress through defined states based on specific events and validation criteria.
+The Application state transitions to Approved upon receiving management approval with
+proper authorization, triggering payment schedule generation. Approved loans move to Active
+status upon disbursement, requiring cash availability verification and cash blotter updates.
+Active loans remain active with each payment received, or transition to Completed upon final
+payment when balance reaches zero. Active loans may transition to Overdue status when
+payment deadlines pass, generating automatic alerts. Overdue loans return to Active status
+upon payment receipt and processing. All state transitions require proper validation and trigger
+appropriate system actions.
+
+7. System Evolution
+7.1 Fundamental Assumptions
+
+The system design assumes a business model based on standard 4-month loans at 5%
+monthly interest rates. Potential changes to variable terms and rates would require major
+system modifications to accommodate flexible business rules and calculation engines.
+User base assumptions include single branch operations with 10 concurrent users.
+Evolution to multiple branches with 50+ users would necessitate database scaling, performance
+optimization, and enhanced network infrastructure.
+Technology platform assumptions favor web-based systems with local database storage.
+Future evolution toward cloud-based systems with mobile access would require architectural
+redesign and enhanced security measures.
+Integration needs currently assume standalone system operation. Future banking and
+accounting system integration would require API development, enhanced security protocols,
+and data synchronization capabilities.
+Regulatory environment assumptions are based on current microfinance regulations.
+Enhanced compliance requirements would necessitate expanded audit and reporting modules
+with automated regulatory reporting capabilities.
+7.2 Anticipated Hardware Evolution
+Server capacity requirements currently specify single server operation with 8GB RAM.
+Three-year projections include dual server configuration with 16GB RAM for redundancy and
+performance. Five-year projections anticipate full cloud infrastructure migration with scalable
+resources.
+
+Storage requirements currently target 100GB local storage capacity. Future needs
+include 1TB distributed storage within three years and cloud-based storage solutions with
+automatic scaling within five years.
+Network infrastructure currently relies on local networks with basic internet
+connectivity. Evolution includes high-speed fiber with redundancy within three years and
+advanced 5G connectivity within five years.
+Client devices currently use desktop computers for system access. Short-term evolution
+includes tablet and laptop compatibility, with long-term vision supporting mobile-primary
+operations.
+7.3 User Need Evolution
+Mobility requirements currently support office-based operations. Short-term changes
+include field officer mobile access capabilities, evolving toward full mobile operations within 3-5
+years.
+Integration needs currently focus on standalone loan system operation. Short-term
+development includes banking system integration, progressing toward comprehensive financial
+ecosystem integration.
+Analytics capabilities currently provide basic reporting functionality. Evolution includes
+predictive analytics development within 1-2 years and AI-driven insights within 3-5 years.
+
+Self-service operations currently require staff-mediated processes. Development toward
+client self-service portals within 2 years and automated loan processing within 5 years
+represents significant evolution opportunities.
+Compliance tracking currently uses manual processes. Evolution toward automated
+regulatory reporting within 2 years and real-time compliance monitoring within 5 years
+addresses regulatory advancement.
+7.4 Design Decision Guidelines
+Modularity principles currently support monolithic application design with evolution
+toward microservices architecture and API-first design approaches to support future scalability
+and integration requirements.
+Data architecture currently emphasizes relational database design with future evolution
+toward hybrid SQL/NoSQL solutions supported by database abstraction layers for flexibility.
+User interface design currently targets web-based forms with evolution toward
+progressive web applications using component-based UI frameworks for enhanced user
+experience.
+Security implementation currently focuses on role-based access control with evolution
+toward multi-factor authentication and advanced security framework integration.
+Scalability approach currently supports vertical scaling with evolution toward horizontal
+scaling capabilities and cloud-native architecture for enhanced performance and reliability.
+
+8. Appendices
+Appendix A: Hardware Requirements
+Minimum System Requirements
+Server hardware requires dual-core 2.4GHz CPU capacity to handle 10 concurrent users
+effectively, directly impacting response time and transaction processing capabilities. Memory
+specification of 8GB RAM supports database operations and caching requirements, significantly
+affecting query performance and user experience quality. Storage requirements include 500GB
+SSD capacity for database storage, backups, and system logs, influencing data access speed and
+backup reliability. Network infrastructure requires 10Mbps broadband connectivity for real-time
+operations, affecting user interface responsiveness and system usability. Client workstation
+requirements include modern web browser compatibility and 4GB RAM minimum for effective
+application access and usability.
+Optimal System Configuration
+Enhanced server configuration includes quad-core 3.2GHz CPU providing superior
+performance and future growth support. Memory upgrade to 16GB RAM offers better
+concurrent user support with scalability buffer for expansion. Storage enhancement to 1TB
+NVMe SSD provides faster data access with extended capacity for growth. Network upgrade to
+50Mbps redundant connection ensures reliability and speed while supporting potential multiple
+
+branch operations. Backup system integration with cloud storage provides enhanced data
+security and disaster recovery capabilities.
+Appendix B: Database Requirements
+Logical Data Organization
+Clients entity contains ID, personal information, and contact details with one-to-many
+relationships to loans, estimated at 1,000 initial records growing with business expansion.
+Loans entity includes ID, amount, terms, and status information with many-to-one relationships
+to clients and one-to-many relationships to payments, estimated at 5,000 records annually
+based on current business volume.
+Payments entity contains ID, amount, date, and method with many-to-one relationships to
+loans, estimated at 85,000 records annually based on 17 payments per loan calculation.
+Users entity includes ID, credentials, and role information with one-to-many relationships to
+transactions, estimated at 10 initial users expanding with business growth.
+CashBlotter entity includes date, opening_balance, collections, and releases attributes, with
+one-to-many relationships to transaction.
+Transactions entity contains ID, type, amount, and timestamp with many-to-one relationships
+to users, estimated at 100,000 records annually including all system activities.
+Data Relationships
+
+Client-to-Loan relationships follow one-to-many patterns where one client can have multiple
+loans with sequential loan allowance according to business rules. Loan-to-Payment relationships
+maintain one-to-many structure with exactly 17 payments per loan following standard business
+practices. User-to-Transaction relationships support one-to-many patterns for audit trail
+requirements and accountability tracking. CashBlotter-to-Transaction relationships contain
+one-to-many structures supporting daily reconciliation and cash management processes.
+Appendix C: Security Specifications
+User Role Definitions
+Administrator role provides full system access including all functions and user management
+capabilities, restricted to system configuration activities only. Manager role offers
+management-level access including reports, approvals, and oversight functions without
+technical configuration capabilities. Cashier role supports operational-level access for
+transactions, payments, and daily operations without system settings access. Account Officer
+role provides field-level access to client data and collection entry, limited to assigned clients
+only.
+Data Encryption Requirements
+Client Personal Data requires AES-256 encryption with system-managed keys and role-based
+decryption access controls. Financial Transactions need database encryption with
+encrypted-at-rest storage and audit-logged access tracking. User Passwords utilize Bcrypt
+
+hashing with salt-based security managed through the authentication system. Backup Data
+requires full encryption with separate key storage accessible only to authorized personnel.
+
+9. Index
+Functional Index
+Alert and Notification System (Section 5.1, FR-012) represents medium-priority Phase 2
+functionality for overdue payment management.
+Cash Blotter Generation (Section 5.1, FR-006) represents a high-priority function scheduled for
+Phase 1 implementation, providing automated daily cash position reporting.
+Client Status Dashboard (Section 5.1, FR-011) offers medium-priority Phase 2 capabilities for
+comprehensive client status monitoring.
+Financial Reporting (Section 5.1, FR-013) provides high-priority Phase 2 functionality for
+comprehensive business reporting.
+Interest Calculation (Section 5.1, FR-002) constitutes a high-priority function for Phase 1
+implementation, ensuring accurate automated computation of loan interest.
+Loan Record Management (Section 5.1, FR-001) serves as a high-priority Phase 1 function,
+establishing comprehensive loan tracking capabilities.
+
+Payment Processing (Section 5.1, FR-004) functions as a high-priority Phase 1 implementation,
+enabling efficient payment recording and balance updates.
+Payment Schedule Generation (Section 5.1, FR-003) provides high-priority Phase 1 functionality
+for automated 17-week payment plan creation.
+Business Rule Index
+Interest Rate (Section 2, FR-002) specifies the critical 5% monthly rate applied to all loans
+without exception.
+Insurance Fee (Section 2, FR-009) defines the critical fixed ₱425 amount required for all loans
+regardless of principal.
+Loan Term (Section 2, FR-003) establishes the critical 4-month standard term for all loan
+products.
+Payment Schedule (Section 2, FR-003) mandates the critical 17 weekly payments structure for
+all loans.
+Requirements Traceability Index
+UR-001 Loan Management traces to system requirements FR-001, FR-002, and FR-003 with
+corresponding test cases TC-001 through TC-015 currently in planning status.
+UR-002 Payment Processing connects to FR-004, FR-005, and FR-010 with test cases TC-016
+through TC-030 in planned status.
+
+UR-003 Interest Calculation links to FR-002 and FR-009 with test cases TC-031 through TC-040
+in planning phase.
+UR-004 Cash Flow Management relates to FR-006, FR-007, and FR-008 with test cases TC-041
+through TC-055 currently planned for development.
+
+

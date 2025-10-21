@@ -1,0 +1,318 @@
+Loaning Management System Project
+Plan (Fanders Microfinance Inc.)
+This plan structures the development of the Loaning Management System (LMS) into three
+distinct phases, based on the requirements priority defined in the specification document.
+The technology stack is PHP/MySQL.
+
+Phase 1: Core Financial Automation (High Priority)
+Goal: Establish the foundational data structures and automate the most critical, error-prone
+processes (Loan Creation, Calculation, and Immediate Payment Processing) to replace manual
+Excel operations.
+Feature Group
+
+Functional
+Requirements (FR)
+
+Key
+Implementation
+Steps & Services
+
+Database Focus
+
+1. Authentication
+& Security
+
+Section 1, 7
+
+Implement User
+Login, Session
+Management, and
+Role-Based Access
+(Admin, Manager,
+Cashier). Use
+AuthService and
+PasswordHash.
+
+users table
+
+2. Client
+Management
+
+Section 4
+
+Implement Create,
+View, and Update
+Client accounts.
+
+clients table
+
+3. Loan Creation &
+Scheduling
+
+FR-001, FR-002,
+FR-003
+
+Build
+LoanCalculationS
+ervice: Implement
+the logic for
+Principal x 0.05 x 4
+interest calculation
+and the fixed ₱425
+insurance fee.
+Automatically
+generate the
+
+loans table
+
+17-week payment
+schedule upon
+approval.
+4. Payment
+Processing
+
+FR-004, FR-005
+
+Build
+PaymentService:
+Implement
+recording of weekly
+payments and
+real-time
+calculation of the
+Outstanding
+Balance. This is the
+core transactional
+function.
+
+payments table
+
+5. Initial
+Dashboard
+
+Section 2
+
+Build the basic
+dashboard view for
+Cashiers and
+Managers showing
+active loan counts
+and real-time
+balance updates.
+
+users, loans
+
+Phase 2: Cash Flow & Operational Oversight (Medium
+Priority)
+Goal: Integrate the Cash Flow Management features, formalize operational documentation
+(SLR/Collection Sheets), and implement management oversight tools.
+Feature Group
+
+Functional
+Requirements (FR)
+
+Key
+Implementation
+Steps & Services
+
+Database Focus
+
+1. Digital Cash
+Blotter
+
+FR-004, FR-006
+
+Build
+CashBlotterServic
+e: Implement the
+digital equivalent of
+the daily cash
+blotter,
+
+cash_blotter table
+
+summarizing all
+inflows (payments)
+and outflows (loan
+releases) daily.
+2. Loan Release
+Documentation
+
+FR-007
+
+Implement the SLR
+(Summary of Loan
+Release)
+Document
+process. Records
+the disbursement
+and updates the
+cash_blotter for
+outflow. Uses
+SlrDocumentServic
+e.
+
+slr_documents
+table (Assumed)
+
+3. Collection
+Sheet Integration
+
+FR-006
+
+Implement the
+Collection Sheet
+process for
+Account Officers to
+submit payments,
+which Cashiers
+then post
+(FR-004). Uses
+CollectionSheetSer
+vice.
+
+collection_sheets
+table (Assumed)
+
+4. Overdue Alerts
+
+FR-012
+
+Implement logic to
+automatically flag
+loans as Overdue
+and generate alerts
+for staff/managers.
+
+loans table
+
+5. Audit Trail
+
+FR-010
+
+Implement
+comprehensive
+logging of all
+critical actions
+(loan creation,
+payment entry, user
+changes) to the
+transactions table
+
+transactions table
+
+using
+TransactionService.
+
+Phase 3: Reporting, Administration, & Final Polish
+(High/Medium Priority)
+Goal: Deliver the final, polished system with essential financial reporting, full admin controls,
+and robust security features, making the system ready for deployment.
+Feature Group
+
+Functional
+Requirements (FR)
+
+Key
+Implementation
+Steps & Services
+
+Database Focus
+
+1. Comprehensive
+Reporting
+
+FR-005
+
+Build
+ReportService:
+Implement
+functionality to
+generate balanced
+financial
+statements and
+analytics. Include
+PDF/Excel export
+capabilities (using
+PDFGenerator).
+
+All tables (loans,
+payments,
+cash_blotter)
+
+2. Full Admin
+Management
+
+Section 6
+
+Implement the
+Administrator
+module
+(public/admins/) to
+manage Manager,
+Cashier, and
+Account Officer
+accounts, including
+password resets
+and deactivation.
+
+users table
+
+3. Security &
+Compliance
+
+UR-008, Section 7
+
+Implement the
+secure, Automated
+Backup strategy
+(cloud storage
+
+External backup
+storage
+
+solution). Finalize
+role-based access
+checks across all
+public endpoints.
+4. UX/UI Polish
+
+NFRs
+
+Apply consistent
+and responsive
+styling across all
+front-end pages
+(public/assets/css/)
+. Implement
+user-friendly
+navigation
+(templates/layout/n
+avbar.php).
+
+N/A
+
+Key Deliverables Summary
+Phase
+
+Core Functional Deliverables
+
+1
+
+User Authentication, Client CRUD, Loan
+Creation with Automated Calculations,
+Payment Recording, Basic Dashboards.
+
+2
+
+Digital Cash Blotter, Loan Release (SLR)
+System, Collection Sheet Processing,
+Overdue Alerts, Comprehensive Audit Trail.
+
+3
+
+Full Financial Reporting (PDF/Excel),
+Administrator User Management,
+Automated Backup, Final System Polish.
+
+

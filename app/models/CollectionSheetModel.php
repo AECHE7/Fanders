@@ -17,8 +17,9 @@ class CollectionSheetModel extends BaseModel {
         return $this->db->single($sql, [$officerId, $date]);
     }
 
-    public function updateStatus($id, $status) {
-        return parent::updateStatus($id, $status, 'status');
+    // Ensure signature matches BaseModel::updateStatus($id, $statusValue, $statusField = 'status')
+    public function updateStatus($id, $statusValue, $statusField = 'status') {
+        return parent::updateStatus($id, $statusValue, $statusField);
     }
 
     public function recalcTotal($sheetId) {
