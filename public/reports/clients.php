@@ -37,6 +37,12 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
     exit;
 }
 
+// Handle Excel export
+if (isset($_GET['export']) && $_GET['export'] === 'excel') {
+    $reportService->exportClientReportExcel($reportData, $filters);
+    exit;
+}
+
 $pageTitle = 'Client Reports';
 include '../../templates/layout/header.php';
 ?>
@@ -80,6 +86,10 @@ include '../../templates/layout/header.php';
                             <a href="?<?= http_build_query(array_merge($filters, ['export' => 'pdf'])) ?>"
                                class="btn btn-success">
                                 <i data-feather="download" class="me-1"></i>Export PDF
+                            </a>
+                            <a href="?<?= http_build_query(array_merge($filters, ['export' => 'excel'])) ?>"
+                               class="btn btn-outline-success">
+                                <i data-feather="file" class="me-1"></i>Export Excel
                             </a>
                         </div>
                     </form>
