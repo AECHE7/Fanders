@@ -12,6 +12,7 @@
 
 require_once BASE_PATH . '/app/core/BaseService.php';
 require_once BASE_PATH . '/app/utilities/PDFGenerator.php';
+require_once BASE_PATH . '/app/utilities/FormatUtility.php';
 
 class ReportService extends BaseService {
     private $loanModel;
@@ -411,10 +412,10 @@ class ReportService extends BaseService {
         $totalPaid = array_sum(array_column($data, 'total_paid'));
         $totalBalance = array_sum(array_column($data, 'remaining_balance'));
 
-        $pdf->addLine("Total Loans: $totalLoans");
-        $pdf->addLine("Total Principal: ₱" . number_format($totalPrincipal, 2));
-        $pdf->addLine("Total Paid: ₱" . number_format($totalPaid, 2));
-        $pdf->addLine("Total Outstanding: ₱" . number_format($totalBalance, 2));
+    $pdf->addLine("Total Loans: $totalLoans");
+    $pdf->addLine('Total Principal: ' . FormatUtility::peso($totalPrincipal));
+    $pdf->addLine('Total Paid: ' . FormatUtility::peso($totalPaid));
+    $pdf->addLine('Total Outstanding: ' . FormatUtility::peso($totalBalance));
 
         return $pdf->output('D', 'loan_report_' . date('Y-m-d') . '.pdf');
     }
@@ -464,8 +465,8 @@ class ReportService extends BaseService {
         $totalPayments = count($data);
         $totalAmount = array_sum(array_column($data, 'amount'));
 
-        $pdf->addLine("Total Payments: $totalPayments");
-        $pdf->addLine("Total Amount: ₱" . number_format($totalAmount, 2));
+    $pdf->addLine("Total Payments: $totalPayments");
+    $pdf->addLine('Total Amount: ' . FormatUtility::peso($totalAmount));
 
         return $pdf->output('D', 'payment_report_' . date('Y-m-d') . '.pdf');
     }
@@ -520,7 +521,7 @@ class ReportService extends BaseService {
 
         $pdf->addLine("Total Clients: $totalClients");
         $pdf->addLine("Total Loans: $totalLoans");
-        $pdf->addLine("Total Outstanding: ₱" . number_format($totalOutstanding, 2));
+    $pdf->addLine('Total Outstanding: ' . FormatUtility::peso($totalOutstanding));
 
         return $pdf->output('D', 'client_report_' . date('Y-m-d') . '.pdf');
     }
@@ -770,10 +771,10 @@ class ReportService extends BaseService {
         // Summary
         $pdf->addSpace();
         $pdf->addSubHeader('Summary');
-        $totalOverdue = array_sum(array_column($data, 'remaining_balance'));
+    $totalOverdue = array_sum(array_column($data, 'remaining_balance'));
         $avgDays = count($data) > 0 ? array_sum(array_column($data, 'days_overdue')) / count($data) : 0;
         $pdf->addLine('Total Overdue Loans: ' . count($data));
-        $pdf->addLine('Total Overdue Amount: ₱' . number_format($totalOverdue, 2));
+    $pdf->addLine('Total Overdue Amount: ' . FormatUtility::peso($totalOverdue));
         $pdf->addLine('Average Days Overdue: ' . number_format($avgDays, 1));
 
         return $pdf->output('D', 'overdue_loans_' . date('Y-m-d') . '.pdf');
