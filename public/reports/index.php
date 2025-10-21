@@ -574,7 +574,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                         <div class="d-flex align-items-center">
                                                             <div>
                                                                 <div class="fw-bold"><?= htmlspecialchars($row['client_name']) ?></div>
-                                                                <small class="text-muted"><?= htmlspecialchars($row['client_email']) ?></small>
+                                                                <small class="text-muted"><?= htmlspecialchars($row['client_email'] ?? '') ?></small>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -592,7 +592,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                         <div class="d-flex align-items-center">
                                                             <div>
                                                                 <div class="fw-bold"><?= htmlspecialchars($row['client_name']) ?></div>
-                                                                <small class="text-muted"><?= htmlspecialchars($row['client_email']) ?></small>
+                                                                <small class="text-muted"><?= htmlspecialchars($row['client_email'] ?? '') ?></small>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -606,7 +606,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                         <div class="d-flex align-items-center">
                                                             <div>
                                                                 <div class="fw-bold"><?= htmlspecialchars($row['client_name']) ?></div>
-                                                                <small class="text-muted">ID: <?= $row['client_id'] ?></small>
+                                                                <small class="text-muted">ID: <?= htmlspecialchars($row['client_id'] ?? ($row['id'] ?? '')) ?></small>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -622,7 +622,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                         <div class="d-flex align-items-center">
                                                             <div>
                                                                 <div class="fw-bold"><?= htmlspecialchars($row['username']) ?></div>
-                                                                <small class="text-muted">ID: <?= $row['user_id'] ?></small>
+                                                                <small class="text-muted">ID: <?= htmlspecialchars($row['user_id'] ?? ($row['id'] ?? '')) ?></small>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -638,7 +638,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                                         <div class="d-flex align-items-center">
                                                             <div>
                                                                 <div class="fw-bold"><?= htmlspecialchars($row['client_name']) ?></div>
-                                                                <small class="text-muted"><?= htmlspecialchars($row['client_email']) ?></small>
+                                                                <small class="text-muted"><?= htmlspecialchars($row['client_email'] ?? '') ?></small>
                                                             </div>
                                                         </div>
                                                     </td>

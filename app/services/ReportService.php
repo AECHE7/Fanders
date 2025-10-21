@@ -39,6 +39,7 @@ class ReportService extends BaseService {
             l.id,
             l.id as loan_number,
             c.name as client_name,
+            c.email as client_email,
             l.principal as principal_amount,
             l.interest_rate,
             l.term_weeks as term_months,
@@ -88,13 +89,14 @@ class ReportService extends BaseService {
     /**
      * Generate payment report with filtering options
      */
-    public function generatePaymentReport($filters = []) {
-        $query = "SELECT
+    publ$query = "SELECT
             p.id,
             p.id as payment_number,
             c.name as client_name,
+            c.email as client_email,
             l.id as loan_number,
             l.id as loan_id,
+            p.amount,oan_id,
             p.amount,
             p.payment_date,
             p.created_at
@@ -129,9 +131,10 @@ class ReportService extends BaseService {
 
     /**
      * Generate client report with filtering options
-     */
-    public function generateClientReport($filters = []) {
-        $query = "SELECT
+     */$query = "SELECT
+            c.id,
+            c.id as client_id,
+            c.name as client_name,
             c.id,
             c.name as client_name,
             c.email,
@@ -174,9 +177,10 @@ class ReportService extends BaseService {
     }
 
     /**
-     * Generate user report with filtering options
-     */
-    public function generateUserReport($filters = []) {
+     * G$query = "SELECT
+            u.id,
+            u.id as user_id,
+            u.email as username,Report($filters = []) {
         $query = "SELECT
             u.id,
             u.email as username,
@@ -276,11 +280,12 @@ class ReportService extends BaseService {
         ];
     }
 
-    /**
-     * Generate overdue loans report
-     */
-    public function generateOverdueReport($filters = []) {
-        $query = "SELECT
+    /**$query = "SELECT
+            l.id,
+            l.id as loan_number,
+            c.name as client_name,
+            c.email as client_email,
+            c.phone_number as phone,
             l.id,
             l.id as loan_number,
             c.name as client_name,
