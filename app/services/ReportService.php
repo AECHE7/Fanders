@@ -35,6 +35,7 @@ class ReportService extends BaseService {
      * Generate loan report with filtering options
      */
     public function generateLoanReport($filters = []) {
+        // Use a pre-aggregated payments subquery to avoid GROUP BY conflicts in PostgreSQL
         $query = "SELECT
             l.id,
             l.id as loan_number,
@@ -48,11 +49,15 @@ class ReportService extends BaseService {
             l.created_at,
             l.disbursement_date,
             l.completion_date as maturity_date,
-            COALESCE(SUM(p.amount), 0) as total_paid,
-            (l.total_loan_amount - COALESCE(SUM(p.amount), 0)) as remaining_balance
+            COALESCE(p.total_paid, 0) as total_paid,
+            (l.total_loan_amount - COALESCE(p.total_paid, 0)) as remaining_balance
         FROM loans l
         LEFT JOIN clients c ON l.client_id = c.id
-        LEFT JOIN payments p ON l.id = p.loan_id
+        LEFT JOIN (
+            SELECT loan_id, SUM(amount) AS total_paid
+            FROM payments
+            GROUP BY loan_id
+        ) p ON l.id = p.loan_id
         WHERE 1=1";
 
         $params = [];
@@ -80,7 +85,7 @@ class ReportService extends BaseService {
             $params[] = $filters['client_id'];
         }
 
-        $query .= " GROUP BY l.id ORDER BY l.created_at DESC";
+    $query .= " ORDER BY l.created_at DESC";
 
         $result = $this->db->resultSet($query, $params);
         return $result ?: [];
