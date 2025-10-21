@@ -289,6 +289,7 @@ class ReportService extends BaseService {
      * Generate overdue loans report
      */
     public function generateOverdueReport($filters = []) {
+        // Pre-aggregate payments to satisfy PostgreSQL grouping rules and filter on remaining balance
         $query = "SELECT
             l.id,
             l.id as loan_number,
@@ -297,18 +298,21 @@ class ReportService extends BaseService {
             c.phone_number as phone,
             l.principal as principal_amount,
             l.total_loan_amount as total_amount,
-            COALESCE(SUM(p.amount), 0) as total_paid,
-            (l.total_loan_amount - COALESCE(SUM(p.amount), 0)) as remaining_balance,
+            COALESCE(p.total_paid, 0) as total_paid,
+            (l.total_loan_amount - COALESCE(p.total_paid, 0)) as remaining_balance,
             l.completion_date as maturity_date,
             (CURRENT_DATE - l.completion_date::date) as days_overdue,
             l.status
         FROM loans l
         LEFT JOIN clients c ON l.client_id = c.id
-        LEFT JOIN payments p ON l.id = p.loan_id
-        WHERE l.status = 'active'
-        AND l.completion_date < CURRENT_DATE
-        GROUP BY l.id, c.id
-        HAVING remaining_balance > 0";
+        LEFT JOIN (
+            SELECT loan_id, SUM(amount) AS total_paid
+            FROM payments
+            GROUP BY loan_id
+        ) p ON l.id = p.loan_id
+        WHERE LOWER(l.status) = 'active'
+          AND l.completion_date < CURRENT_DATE
+          AND (l.total_loan_amount - COALESCE(p.total_paid, 0)) > 0";
 
         $params = [];
 
@@ -686,5 +690,58 @@ class ReportService extends BaseService {
         $pdf->addLine('Total Outstanding: ₱' . number_format($data['outstanding']['total_outstanding'], 2));
 
         return $pdf->output('D', 'financial_summary_' . date('Y-m-d') . '.pdf');
+    }
+
+    /**
+     * Export overdue loans report to PDF
+     */
+    public function exportOverdueReportPDF($data, $filters = []) {
+        $pdf = new PDFGenerator();
+        $pdf->setTitle('Overdue Loans Report');
+
+        $title = 'Overdue Loans Report';
+        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+            $title .= ' (' . $filters['date_from'] . ' to ' . $filters['date_to'] . ')';
+        }
+
+        $pdf->addHeader($title);
+        $pdf->addLine('Generated on: ' . date('Y-m-d H:i:s'));
+        $pdf->addSpace();
+
+        // Define columns
+        $columns = [
+            ['header' => 'Loan #', 'width' => 20],
+            ['header' => 'Client', 'width' => 45],
+            ['header' => 'Phone', 'width' => 30],
+            ['header' => 'Principal', 'width' => 25],
+            ['header' => 'Balance', 'width' => 25],
+            ['header' => 'Days Overdue', 'width' => 25]
+        ];
+
+        // Prepare data
+        $tableData = [];
+        foreach ($data as $row) {
+            $tableData[] = [
+                $row['loan_number'],
+                $row['client_name'],
+                $row['phone'] ?? '',
+                number_format($row['principal_amount'], 2),
+                number_format($row['remaining_balance'], 2),
+                (string)$row['days_overdue']
+            ];
+        }
+
+        $pdf->addTable($columns, $tableData);
+
+        // Summary
+        $pdf->addSpace();
+        $pdf->addSubHeader('Summary');
+        $totalOverdue = array_sum(array_column($data, 'remaining_balance'));
+        $avgDays = count($data) > 0 ? array_sum(array_column($data, 'days_overdue')) / count($data) : 0;
+        $pdf->addLine('Total Overdue Loans: ' . count($data));
+        $pdf->addLine('Total Overdue Amount: ₱' . number_format($totalOverdue, 2));
+        $pdf->addLine('Average Days Overdue: ' . number_format($avgDays, 1));
+
+        return $pdf->output('D', 'overdue_loans_' . date('Y-m-d') . '.pdf');
     }
 }

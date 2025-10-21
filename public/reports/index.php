@@ -129,6 +129,9 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
             case 'financial':
                 $reportService->exportFinancialSummaryPDF($reportData);
                 break;
+            case 'overdue':
+                $reportService->exportOverdueReportPDF($reportData, $filters);
+                break;
         }
     } catch (Exception $e) {
         $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
@@ -655,6 +658,63 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         <?php endif; ?>
                     </div>
                 </div>
+            <?php else: ?>
+                <!-- Financial Summary Rendering -->
+                <?php if (!empty($reportData) && isset($reportData['loans'], $reportData['payments'], $reportData['outstanding'])): ?>
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card text-white bg-primary shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title text-uppercase small">Loans Disbursed</h6>
+                                <div class="mt-2">
+                                    <div class="d-flex justify-content-between"><span>Total Loans</span><strong><?= number_format($reportData['loans']['total_loans']) ?></strong></div>
+                                    <div class="d-flex justify-content-between"><span>Total Principal</span><strong>₱<?= number_format($reportData['loans']['total_principal'], 2) ?></strong></div>
+                                    <div class="d-flex justify-content-between"><span>Total (with interest)</span><strong>₱<?= number_format($reportData['loans']['total_amount_with_interest'], 2) ?></strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-success shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title text-uppercase small">Payments Received</h6>
+                                <div class="mt-2">
+                                    <div class="d-flex justify-content-between"><span>Total Payments</span><strong><?= number_format($reportData['payments']['total_payments']) ?></strong></div>
+                                    <div class="d-flex justify-content-between"><span>Total Amount</span><strong>₱<?= number_format($reportData['payments']['total_payments_received'], 2) ?></strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-white bg-warning shadow-sm">
+                            <div class="card-body">
+                                <h6 class="card-title text-uppercase small">Outstanding</h6>
+                                <div class="mt-2">
+                                    <div class="d-flex justify-content-between"><span>Total Outstanding Balance</span><strong>₱<?= number_format($reportData['outstanding']['total_outstanding'], 2) ?></strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-1">Financial Summary</h5>
+                                <small class="text-muted">Period: <?= htmlspecialchars($reportData['period']['from']) ?> to <?= htmlspecialchars($reportData['period']['to']) ?></small>
+                            </div>
+                            <a href="?<?= http_build_query(array_merge($filters, ['export' => 'pdf'])) ?>" class="btn btn-success">
+                                <i data-feather="download" class="me-1"></i>Export PDF
+                            </a>
+                        </div>
+                        <hr/>
+                        <p class="text-muted mb-0">Generated at: <?= htmlspecialchars($reportData['generated_at']) ?></p>
+                    </div>
+                </div>
+                <?php else: ?>
+                    <div class="card shadow-sm"><div class="card-body"><p class="mb-0 text-muted">No summary data available for the selected period.</p></div></div>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>
