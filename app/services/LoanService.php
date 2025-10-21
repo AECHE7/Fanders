@@ -172,15 +172,6 @@ class LoanService extends BaseService {
     }
 
     /**
-     * Get total loans count matching filters
-     * @param array $filters
-     * @return int
-     */
-    public function getTotalLoansCount($filters = []) {
-        return $this->loanModel->getTotalLoansCount($filters);
-    }
-
-    /**
      * Invalidate loan-related cache entries
      */
     protected function invalidateCache() {
@@ -192,6 +183,7 @@ class LoanService extends BaseService {
         // Clean expired entries
         CacheUtility::cleanExpired();
     }
+    
 
     /**
      * Checks if a client is eligible to apply for a new loan.

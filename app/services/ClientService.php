@@ -106,19 +106,6 @@ class ClientService extends BaseService {
      * Invalidate client-related caches
      */
     public function invalidateCache() {
-    /**
-     * Get total clients count matching filters
-     * @param array $filters
-     * @return int
-     */
-    public function getTotalClientsCount($filters = []) {
-        return $this->clientModel->getTotalClientsCount($filters);
-    }
-
-    /**
-     * Invalidate client-related caches
-     */
-    public function invalidateCache() {
         // Invalidate client statistics cache
         CacheUtility::forget(CacheUtility::generateKey('client_stats'));
         
