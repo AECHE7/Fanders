@@ -150,10 +150,11 @@
                             ?>
                             <tr>
                                 <td class="ps-4">#<?= htmlspecialchars($loan['id']) ?></td>
-                                <td>₱<?= number_format($loan['loan_amount'], 2) ?></td>
-                                <td>₱<?= number_format($loan['weekly_payment'], 2) ?></td>
-                                <td><span class="badge bg-<?= $statusClass ?>"><?= $statusText ?></span></td>
-                                <td>Week <?= $nextWeek ?></td>
+                                <td>₱<?= number_format((float)($loan['total_loan_amount'] ?? 0), 2) ?></td>
+                                <?php $weeks = (int)($loan['term_weeks'] ?? 17); $weeks = $weeks > 0 ? $weeks : 17; $weekly = ($loan['total_loan_amount'] ?? 0) / $weeks; ?>
+                                <td>₱<?= number_format((float)$weekly, 2) ?></td>
+                                <td><span class="badge bg-<?= $statusClass ?>"><?= htmlspecialchars($statusText) ?></span></td>
+                                <td>Week <?= (int)$nextWeek ?></td>
                                 <td>
                                     <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="btn btn-sm btn-outline-primary">View</a>
                                 </td>
@@ -202,9 +203,10 @@
                         <?php foreach ($loanHistory as $loan): ?>
                             <?php
                                 $statusClass = 'secondary';
-                                $statusText = ucfirst($loan['status']);
+                                $statusRaw = strtolower($loan['status'] ?? '');
+                                $statusText = ucfirst($statusRaw);
 
-                                switch ($loan['status']) {
+                                switch ($statusRaw) {
                                     case 'active':
                                         $statusClass = 'success';
                                         break;
@@ -214,17 +216,20 @@
                                     case 'application':
                                         $statusClass = 'warning';
                                         break;
-                                    case 'rejected':
+                                    case 'approved':
+                                        $statusClass = 'primary';
+                                        break;
+                                    case 'defaulted':
                                         $statusClass = 'danger';
                                         break;
                                 }
                             ?>
                             <tr>
                                 <td class="ps-4">#<?= htmlspecialchars($loan['id']) ?></td>
-                                <td>₱<?= number_format($loan['loan_amount'], 2) ?></td>
-                                <td><?= date('M d, Y', strtotime($loan['application_date'])) ?></td>
-                                <td><span class="badge bg-<?= $statusClass ?>"><?= $statusText ?></span></td>
-                                <td><?= $loan['completion_date'] ? date('M d, Y', strtotime($loan['completion_date'])) : '-' ?></td>
+                                <td>₱<?= number_format((float)($loan['total_loan_amount'] ?? 0), 2) ?></td>
+                                <td><?= !empty($loan['application_date']) ? date('M d, Y', strtotime($loan['application_date'])) : '-' ?></td>
+                                <td><span class="badge bg-<?= $statusClass ?>"><?= htmlspecialchars($statusText) ?></span></td>
+                                <td><?= !empty($loan['completion_date']) ? date('M d, Y', strtotime($loan['completion_date'])) : '-' ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

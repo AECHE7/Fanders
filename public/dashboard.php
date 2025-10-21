@@ -78,7 +78,7 @@ $userService = new UserService();
         $clientLoans = is_array($clientLoans) ? $clientLoans : [];
         
         $activeLoans = array_filter($clientLoans, function($loan) {
-            return $loan['status'] === 'active';
+            return isset($loan['status']) && strtolower($loan['status']) === 'active';
         });
         $loanHistory = $clientLoans;
 
@@ -90,10 +90,11 @@ $userService = new UserService();
         $stats['overdue_count'] = is_array($overduePayments) ? count($overduePayments) : 0;
 
         // Get total borrowed (loan amounts)
+        // Sum by schema-accurate field total_loan_amount
         $stats['total_borrowed'] = is_array($clientLoans) && !empty($clientLoans) ? 
-            array_sum(array_column($clientLoans, 'loan_amount')) : 0;
+            array_sum(array_column($clientLoans, 'total_loan_amount')) : 0;
         $stats['current_borrowed'] = is_array($activeLoans) && !empty($activeLoans) ? 
-            array_sum(array_column($activeLoans, 'loan_amount')) : 0;
+            array_sum(array_column($activeLoans, 'total_loan_amount')) : 0;
 
         $dashboardTemplate = BASE_PATH . '/templates/dashboard/client.php';
         } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_SUPER_ADMIN, UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER])) {

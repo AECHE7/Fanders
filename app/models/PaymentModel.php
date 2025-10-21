@@ -243,9 +243,8 @@ class PaymentModel extends BaseModel {
      * @return array
      */
     public function getOverduePayments($filters = []) {
-        // This is a simplified version. In a real system, you'd need more complex logic
-        // to determine overdue payments based on payment schedules
-        $baseSql = "SELECT p.*,
+        // Simplified overdue logic: last payment older than 30 days for active loans
+        $sql = "SELECT p.*,
                           l.principal, 
                           l.total_loan_amount,
                           l.status as loan_status,
@@ -259,14 +258,23 @@ class PaymentModel extends BaseModel {
                     JOIN clients c ON l.client_id = c.id
                     JOIN users u ON p.user_id = u.id
                     WHERE l.status = 'Active'
-                    AND p.payment_date = (
-                        SELECT MAX(payment_date) 
-                        FROM payments 
-                        WHERE loan_id = p.loan_id
-                    )
-                    AND (CURRENT_DATE - p.payment_date::date) > 30
-                    ORDER BY days_since_last_payment DESC";
+                      AND p.payment_date = (
+                          SELECT MAX(payment_date) 
+                          FROM payments 
+                          WHERE loan_id = p.loan_id
+                      )
+                      AND (CURRENT_DATE - p.payment_date::date) > 30";
 
-        return $this->db->resultSet($baseSql);
+        $params = [];
+
+        // Optional filter by client
+        if (!empty($filters['client_id'])) {
+            $sql .= " AND l.client_id = ?";
+            $params[] = $filters['client_id'];
+        }
+
+        $sql .= " ORDER BY days_since_last_payment DESC";
+
+        return $this->db->resultSet($sql, $params);
     }
 }
