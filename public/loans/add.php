@@ -284,9 +284,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 </div>
             </div>
 
-            <!-- Submit Button: placed in preview for clearer UX; uses main form via form="loanForm" -->
+            <!-- Submit Button: placed in preview for clearer UX; triggers confirmation modal -->
             <div class="d-flex justify-content-end">
-                <button type="submit" form="loanForm" name="submit_loan" value="1" class="btn btn-success btn-lg">
+                <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
                     <i data-feather="check-circle" class="me-1"></i> Submit Loan Application
                 </button>
             </div>
@@ -296,6 +296,63 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php endif; ?>
     </div>
 </main>
+
+<!-- Confirmation Modal for Loan Submission -->
+<?php if ($loanCalculation && empty($error)): ?>
+<div class="modal fade" id="confirmSubmitModal" tabindex="-1" aria-labelledby="confirmSubmitModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmSubmitModalLabel">
+                    <i data-feather="alert-circle" class="me-2" style="width:20px;height:20px;"></i>
+                    Confirm Loan Application Submission
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">You are about to submit a loan application with the following details:</p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Client:</dt>
+                            <dd class="col-sm-7">
+                                <?php 
+                                $selectedClient = array_filter($clients, function($c) use ($loan) { 
+                                    return $c['id'] == $loan['client_id']; 
+                                });
+                                echo !empty($selectedClient) ? htmlspecialchars(reset($selectedClient)['name']) : 'Client ID: ' . $loan['client_id'];
+                                ?>
+                            </dd>
+                            <dt class="col-sm-5">Principal Amount:</dt>
+                            <dd class="col-sm-7 fw-bold">₱<?= number_format($loan['loan_amount'], 2) ?></dd>
+                            <dt class="col-sm-5">Loan Term:</dt>
+                            <dd class="col-sm-7"><?= $loan['loan_term'] ?> weeks</dd>
+                            <dt class="col-sm-5">Total Repayment:</dt>
+                            <dd class="col-sm-7 text-danger fw-bold">₱<?= number_format($loanCalculation['total_loan_amount'], 2) ?></dd>
+                            <dt class="col-sm-5">Weekly Payment:</dt>
+                            <dd class="col-sm-7 text-success fw-bold">₱<?= number_format($loanCalculation['weekly_payment_base'], 2) ?></dd>
+                        </dl>
+                    </div>
+                </div>
+                <p class="mt-3 mb-0 text-muted small">
+                    <i data-feather="info" class="me-1" style="width:14px;height:14px;"></i>
+                    Once submitted, this loan will be marked as "Application" and will require manager approval before disbursement.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
+                    Cancel
+                </button>
+                <button type="submit" form="loanForm" name="submit_loan" value="1" class="btn btn-success">
+                    <i data-feather="check" class="me-1" style="width:16px;height:16px;"></i>
+                    Confirm & Submit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php
 include_once BASE_PATH . '/templates/layout/footer.php';
