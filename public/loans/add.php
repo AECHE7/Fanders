@@ -106,13 +106,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Failure: Get the error message from the service
                 $submissionError = $loanService->getErrorMessage();
-                $debugLog .= "Service Error: " . ($submissionError ?: 'NO ERROR MESSAGE FROM SERVICE') . "\n";
+                
+                // Better error message handling - check for truly empty, not just falsy
+                if (!$submissionError || trim($submissionError) === '') {
+                    $error = "Failed to submit loan application. Please check the form and try again.";
+                    error_log("CRITICAL: Loan submission failed for client_id=" . $loan['client_id'] . " but no error message provided");
+                } else {
+                    $error = $submissionError;
+                }
+                
+                $debugLog .= "Service Error: " . $error . "\n";
                 $debugLog .= "RESULT: FAILURE\n";
                 
                 error_log($debugLog);
                 file_put_contents($debugFile, $debugLog, FILE_APPEND);
                 
-                $error = $submissionError ?: "Failed to submit loan application.";
                 $session->setFlash('error', $error);
             }
         }

@@ -286,7 +286,7 @@ class LoanModel extends BaseModel {
      */
     public function getClientActiveLoan($clientId) {
         $sql = "SELECT * FROM {$this->table}
-                WHERE client_id = ? AND status = ?
+                WHERE client_id = ? AND LOWER(status) = LOWER(?)
                 ORDER BY created_at DESC LIMIT 1";
 
         return $this->db->single($sql, [$clientId, self::STATUS_ACTIVE]);
@@ -299,7 +299,7 @@ class LoanModel extends BaseModel {
      */
     public function hasClientDefaultedLoan($clientId) {
          $sql = "SELECT COUNT(*) as count FROM {$this->table}
-                WHERE client_id = ? AND status = ?";
+                WHERE client_id = ? AND LOWER(status) = LOWER(?)";
         $result = $this->db->single($sql, [$clientId, self::STATUS_DEFAULTED]);
         return $result && $result['count'] > 0;
     }

@@ -67,6 +67,14 @@ class LoanCalculationService extends BaseService {
      * @return bool True if valid, false otherwise
      */
     public function validateLoanAmount($principal) {
+        // Ensure it's a number
+        if (!is_numeric($principal)) {
+            $this->setErrorMessage('Loan amount must be a valid number.');
+            return false;
+        }
+        
+        $principal = (float)$principal;
+        
         if ($principal < 1000) {
             $this->setErrorMessage('Loan amount must be at least ₱1,000.');
             return false;

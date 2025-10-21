@@ -182,8 +182,15 @@ class LoanService extends BaseService {
      */
     public function canClientApplyForLoan($clientId) {
         // Check if client exists
-        if (!$this->clientModel->findById($clientId)) {
+        $client = $this->clientModel->findById($clientId);
+        if (!$client) {
             $this->setErrorMessage('Selected client does not exist.');
+            return false;
+        }
+        
+        // Check if client is active
+        if ($client['status'] !== 'active') {
+            $this->setErrorMessage('Client must have active status to apply for loans. Current status: ' . ucfirst($client['status']));
             return false;
         }
 
@@ -215,6 +222,7 @@ class LoanService extends BaseService {
 
         // 1. Validate required fields and unique loan status
         if (!$this->validateLoanData(['client_id' => $clientId, 'principal' => $principal])) {
+            error_log("Loan validation failed for client_id=$clientId, principal=$principal");
             return false;
         }
 
@@ -245,7 +253,9 @@ class LoanService extends BaseService {
         $newId = $this->loanModel->create($dataToCreate);
 
         if (!$newId) {
-             $this->setErrorMessage($this->loanModel->getLastError() ?: 'Failed to save loan application.');
+             $lastError = $this->loanModel->getLastError() ?: 'Unknown error during loan creation';
+             $this->setErrorMessage('Failed to save loan application: ' . $lastError);
+             error_log("Loan creation failed: " . $lastError . " Data: " . json_encode($dataToCreate));
              return false;
         }
 
