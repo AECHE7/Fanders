@@ -208,8 +208,8 @@ if (!function_exists('getLoanStatusBadgeClass')) {
     </div>
 </div>
 
-<!-- SLR Documents Section (for eligible loans) -->
-<?php if (in_array(strtolower($loanData['status']), ['approved', 'active', 'completed'])): ?>
+<!-- SLR Documents Section (for eligible loans and authorized roles) -->
+<?php if (in_array(strtolower($loanData['status']), ['approved', 'active', 'completed']) && in_array($userRole, ['super-admin', 'admin', 'manager', 'cashier'])): ?>
 <div class="card shadow-sm mt-4">
     <div class="card-header bg-success text-white">
         <div class="d-flex justify-content-between align-items-center">
@@ -271,6 +271,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                     <small class="text-muted mt-1">Process payment immediately</small>
                 </div>
             </div>
+            <?php if (in_array($userRole, ['super-admin', 'admin', 'manager', 'account_officer'])): ?>
             <div class="col-md-6">
                 <div class="d-grid">
                     <a href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loanData['id'] ?>" 
@@ -281,6 +282,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                     <small class="text-muted mt-1">Add to field collection batch</small>
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>

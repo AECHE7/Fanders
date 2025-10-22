@@ -94,16 +94,18 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
+                                            <?php if (in_array($userRole, ['super-admin', 'admin', 'manager', 'account_officer'])): ?>
                                             <li>
                                                 <a class="dropdown-item" href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>">
                                                     <i data-feather="file-plus" style="width: 14px; height: 14px;"></i> Add to Collection Sheet
                                                 </a>
                                             </li>
+                                            <?php endif; ?>
                                         </ul>
                                     </div>
                                 <?php endif; ?>
                                 
-                                <?php if (in_array($status, ['approved', 'active', 'completed'])): ?>
+                                <?php if (in_array($status, ['approved', 'active', 'completed']) && in_array($userRole, ['super-admin', 'admin', 'manager', 'cashier'])): ?>
                                     <!-- SLR Generation for eligible loans -->
                                     <a href="<?= APP_URL ?>/public/slr/generate.php?loan_id=<?= $loan['id'] ?>" 
                                        class="btn btn-outline-secondary btn-sm" title="Generate SLR Document">

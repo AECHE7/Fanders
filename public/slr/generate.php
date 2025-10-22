@@ -36,7 +36,8 @@ if ($filePath) {
     header('Pragma: no-cache');
 
     // Output file and clean up
-    readfile($filePath); else {
+    readfile($filePath);
+} else {
     $_SESSION['error'] = 'Failed to generate SLR: ' . $loanReleaseService->getErrorMessage();
     header('Location: index.php');
     exit;

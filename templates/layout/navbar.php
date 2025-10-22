@@ -165,7 +165,7 @@ $navItems = [
                             </a>
                         <?php endif; ?>
                         
-                        <?php if ($userRole === 'account-officer'): ?>
+                        <?php if (in_array($userRole, ['super-admin', 'account-officer'])): ?>
                             <a href="<?= APP_URL ?>/public/collection-sheets/add.php" class="btn btn-sm btn-success d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="Collection Sheet">
                                 <i data-feather="clipboard" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
                                 <span class="quick-action-text">Collection Sheet</span>
