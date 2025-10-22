@@ -131,21 +131,6 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                   </td>
                 </tr>
               <?php endforeach; endif; ?>
-                  <td><?= htmlspecialchars($s['sheet_date']) ?></td>
-                  <td><?= htmlspecialchars($s['officer_name']) ?></td>
-                  <td><span class="badge bg-secondary"><?= htmlspecialchars($s['status']) ?></span></td>
-                  <td class="text-end">₱<?= number_format((float)$s['total_amount'], 2) ?></td>
-                  <td>
-                    <?php if ($userRole === 'account_officer' && $s['status'] === 'draft'): ?>
-                      <a class="btn btn-sm btn-outline-primary" href="<?= APP_URL ?>/public/collection-sheets/add.php?id=<?= (int)$s['id'] ?>">Edit</a>
-                    <?php endif; ?>
-                    <?php if (in_array($userRole, ['super-admin','admin','manager','cashier']) && $s['status'] === 'submitted'): ?>
-                      <a class="btn btn-sm btn-success" href="<?= APP_URL ?>/public/collection-sheets/review.php?id=<?= (int)$s['id'] ?>">Review/Post</a>
-                    <?php endif; ?>
-                    <a class="btn btn-sm btn-light" href="<?= APP_URL ?>/public/collection-sheets/view.php?id=<?= (int)$s['id'] ?>">View</a>
-                  </td>
-                </tr>
-              <?php endforeach; endif; ?>
             </tbody>
           </table>
         </div>

@@ -39,7 +39,9 @@ $pageTitle = 'Summary of Loan Release (SLR)';
 include_once BASE_PATH . '/templates/layout/header.php';
 ?>
 
-<div class="container-fluid mt-4">
+<main class="main-content">
+  <div class="content-wrapper">
+    <div class="container-fluid mt-4">
     <div class="row">
         <div class="col-md-12">
             <div class="card">
@@ -196,5 +198,7 @@ include_once BASE_PATH . '/templates/layout/header.php';
         </div>
     </div>
 </div>
+  </div>
+</main>
 
 <?php include_once BASE_PATH . '/templates/layout/footer.php'; ?>
