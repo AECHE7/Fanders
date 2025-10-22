@@ -169,7 +169,7 @@
                                     </a>
                                 </div>
                                 <div class="col-md-3 mb-3">
-                                    <a href="<?= APP_URL ?>/public/cash_blotter/index.php" class="btn btn-outline-success w-100">
+                                    <a href="<?= APP_URL ?>/public/cash-blotter/index.php" class="btn btn-outline-success w-100">
                                         <i data-feather="dollar-sign" class="me-2" style="width: 16px; height: 16px;"></i>
                                         Cash Blotter
                                     </a>

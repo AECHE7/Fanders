@@ -64,7 +64,7 @@ if (!isset($skip_auth_check) || $skip_auth_check !== true) {
     if (!$auth->isLoggedIn()) {
         // Redirect to login page
         $session->setFlash('error', 'Please login to access this page.');
-        header('Location: ' . APP_URL . '/public/login.php');
+        header('Location: ' . APP_URL . '/public/auth/login.php');
         exit;
     }
 

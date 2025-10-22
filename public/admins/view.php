@@ -45,7 +45,7 @@ $csrf = new CSRF();
 if (!$auth->isLoggedIn()) {
     // Redirect to login page
     $session->setFlash('error', 'Please login to access this page.');
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 
@@ -53,7 +53,7 @@ if (!$auth->isLoggedIn()) {
 if ($auth->checkSessionTimeout()) {
     // Session has timed out, redirect to login page with message
     $session->setFlash('error', 'Your session has expired. Please login again.');
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 
@@ -96,7 +96,7 @@ if (in_array($viewUser['role'], ['super-admin','student', 'staff', 'other'])) {
 if ($userRole == 'admin' && !in_array($viewUser['role'], ['account_officer', 'cashier'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to view this staff user.');
-    header('Location: ' . APP_URL . '/public/dashboard.php');
+    header('Location: ' . APP_URL . '/public/dashboard/index.php');
     exit;
 }
 

@@ -43,7 +43,7 @@ $auth = new AuthService();
 if (!$auth->isLoggedIn()) {
     // Redirect to login page
     $session->setFlash('error', 'Please login to access the dashboard.');
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 
@@ -51,7 +51,7 @@ if (!$auth->isLoggedIn()) {
 if ($auth->checkSessionTimeout()) {
     // Session has timed out, redirect to login page with message
     $session->setFlash('error', 'Your session has expired. Please login again.');
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 
@@ -162,7 +162,7 @@ $userService = new UserService();
     } else {
     // Unknown role
     $session->setFlash('error', 'Invalid user role.');
-    header('Location: ' . APP_URL . '/public/logout.php');
+    header('Location: ' . APP_URL . '/public/auth/logout.php');
     exit;
 }
 

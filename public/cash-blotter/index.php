@@ -51,7 +51,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
         // Restart output buffering for error handling
         ob_start();
         $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
-        header('Location: ' . APP_URL . '/public/cash_blotter/index.php?' . http_build_query($filters));
+        header('Location: ' . APP_URL . '/public/cash-blotter/index.php?' . http_build_query($filters));
         exit;
     }
     exit;
@@ -75,7 +75,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
         // Restart output buffering for error handling
         ob_start();
         $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
-        header('Location: ' . APP_URL . '/public/cash_blotter/index.php?' . http_build_query($filters));
+        header('Location: ' . APP_URL . '/public/cash-blotter/index.php?' . http_build_query($filters));
         exit;
     }
     exit;
@@ -203,7 +203,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <!-- Filters Card -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
-            <form method="GET" action="<?= APP_URL ?>/public/cash_blotter/index.php" class="row g-3">
+            <form method="GET" action="<?= APP_URL ?>/public/cash-blotter/index.php" class="row g-3">
                 <div class="col-md-3">
                     <label for="date_from" class="form-label">From Date</label>
                     <input type="date" class="form-control" id="date_from" name="date_from"
@@ -216,7 +216,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">Filter</button>
-                    <a href="<?= APP_URL ?>/public/cash_blotter/index.php" class="btn btn-outline-secondary">Clear</a>
+                    <a href="<?= APP_URL ?>/public/cash-blotter/index.php" class="btn btn-outline-secondary">Clear</a>
                 </div>
             </form>
         </div>

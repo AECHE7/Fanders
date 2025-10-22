@@ -40,7 +40,7 @@ $auth = new AuthService();
 // Check if user is logged in
 if (!$auth->isLoggedIn()) {
     $session->setFlash('error', 'Please login to access this page.');
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 

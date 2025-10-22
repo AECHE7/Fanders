@@ -132,7 +132,7 @@ class AuthService extends BaseService {
     public function checkRoleAccess($allowedRoles) {
         if (!$this->hasRole($allowedRoles)) {
             $this->session->setFlash('error', 'Access denied. You do not have permission to view this page.');
-            header('Location: ' . APP_URL . '/public/dashboard.php');
+            header('Location: ' . APP_URL . '/public/dashboard/index.php');
             exit;
         }
     }

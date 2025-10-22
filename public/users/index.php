@@ -43,7 +43,7 @@ $auth = new AuthService();
 if (!$auth->isLoggedIn()) {
     // Redirect to login page
     $session->setFlash('error', 'Please login to access this page.');
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 
@@ -51,7 +51,7 @@ if (!$auth->isLoggedIn()) {
 if ($auth->checkSessionTimeout()) {
     // Session has timed out, redirect to login page with message
     $session->setFlash('error', 'Your session has expired. Please login again.');
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 
@@ -63,7 +63,7 @@ $userRole = $user['role'];
 if (!$auth->hasRole(['super-admin', 'admin'])) {
     // Redirect to dashboard with error message
     $session->setFlash('error', 'You do not have permission to access this page.');
-    header('Location: ' . APP_URL . '/public/dashboard.php');
+    header('Location: ' . APP_URL . '/public/dashboard/index.php');
     exit;
 }
 
@@ -290,8 +290,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-secondary w-100 mb-2">
-                                <i data-feather="arrow-left" class="me-2"></i>Back to Dashboard
+                                                        <a href="<?= APP_URL ?>/public/dashboard/index.php" class="btn btn-secondary w-100 mb-2">
+                                <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Dashboard
                             </a>
                         </div>
                     </div>

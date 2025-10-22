@@ -40,7 +40,7 @@ $navItems = [
     'dashboard' => [
         'icon' => 'grid',
         'title' => 'Dashboard',
-        'url' => APP_URL . '/public/dashboard.php',
+        'url' => APP_URL . '/public/dashboard/index.php',
         'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier', 'client'],
         'active_pages' => ['dashboard', 'index', 'view', 'edit', 'add', 'list']
     ],
@@ -76,7 +76,7 @@ $navItems = [
     'cash-blotter' => [
         'icon' => 'book-open',
         'title' => 'Cash Blotter',
-        'url' => APP_URL . '/public/cash_blotter/index.php',
+        'url' => APP_URL . '/public/cash-blotter/index.php',
         'roles' => ['super-admin', 'admin', 'manager', 'cashier'],
         'active_pages' => ['cash_blotter', 'cash-blotter']
     ],

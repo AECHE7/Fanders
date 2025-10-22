@@ -30,7 +30,7 @@ $auth = new AuthService();
 
 if (!$auth->isLoggedIn() || !$auth->hasRole(['super-admin', 'admin'])) {
     $session->setFlash('error', 'You must be logged in as an admin to access this page.');
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 

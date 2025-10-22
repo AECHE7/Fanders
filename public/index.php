@@ -43,7 +43,7 @@ $auth = new AuthService();
 if ($auth->checkSessionTimeout()) {
     // Session has timed out, redirect to login page with message
     $session->setFlash('error', 'Your session has expired. Please login again.');
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 
@@ -98,9 +98,7 @@ $usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <?php if ($auth->isLoggedIn()): ?>
-                    <!-- <li class="nav-item">
-                        <a class="nav-link" href="<?= APP_URL ?>/public/dashboard.php">Dashboard</a>
-                    </li> -->
+                    <!-- User is logged in -->
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle px-3 d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="d-flex align-items-center">
@@ -121,13 +119,13 @@ $usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
                                 <i data-feather="settings" class="me-2" style="width: 16px; height: 16px;"></i> Settings
                             </a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="<?= APP_URL ?>/public/logout.php">
+                            <li><a class="dropdown-item" href="<?= APP_URL ?>/public/auth/logout.php">
                             <i data-feather="log-out" class="me-2" style="width: 16px; height: 16px;"></i>Sign out</a></li>
                         </ul>
                     </li>
                     <?php else: ?>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?= APP_URL ?>/public/login.php">Sign in</a>
+                        <a class="nav-link" href="<?= APP_URL ?>/public/auth/login.php">Sign in</a>
                     </li>
                     <?php endif; ?>
                 </ul>
@@ -156,12 +154,12 @@ $usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
                     <!-- User is logged in, show welcome message -->
                     <div class="notion-page-title"><h1>Welcome back!</h1></div>
                     <p class="lead mb-4">Continue managing loans.</p>
-                    <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-primary btn-lg px-4 me-2">Go to Dashboard</a>
+                    <a href="<?= APP_URL ?>/public/dashboard/index.php" class="btn btn-primary btn-lg px-4 me-2">Go to Dashboard</a>
                     <?php else: ?>
                     <!-- User is not logged in, show hero content -->
                     <div class="notion-page-title"><h1>Loan Management System</h1></div>
                     <p class="lead mb-4">A comprehensive solution for managing loans, borrowers, and transactions with a clean, intuitive interface.</p>
-                    <a href="<?= APP_URL ?>/public/login.php" class="btn btn-primary btn-lg px-4">Sign In</a>
+                    <a href="<?= APP_URL ?>/public/auth/login.php" class="btn btn-primary btn-lg px-4">Sign In</a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -227,7 +225,7 @@ $usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? '');
                         </div>
                     </div>
                     <div class="d-flex gap-2">
-                        <a href="<?= APP_URL ?>/public/login.php" class="btn btn-primary">Try It Out</a>
+                        <a href="<?= APP_URL ?>/public/auth/login.php" class="btn btn-primary">Try It Out</a>
                     </div>
                 </div>
                 <div class="col-lg-6">

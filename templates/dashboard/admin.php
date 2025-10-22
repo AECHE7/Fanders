@@ -471,7 +471,7 @@
             </a>
         </div>
         <div class="col-md-3">
-            <a href="<?= APP_URL ?>/public/cash_blotter/index.php" class="text-decoration-none">
+            <a href="<?= APP_URL ?>/public/cash-blotter/index.php" class="text-decoration-none">
                 <div class="card border-0 h-100" style="background-color: #fee2e2;">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center">

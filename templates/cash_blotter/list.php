@@ -244,7 +244,7 @@ function resetFilter() {
 function recalculateBlotter() {
     if (confirm('This will recalculate all cash blotter entries. Continue?')) {
         // AJAX call to recalculate blotter
-        fetch('<?= APP_URL ?>/public/cash_blotter/recalculate.php', {
+        fetch('<?= APP_URL ?>/public/cash-blotter/recalculate.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -270,7 +270,7 @@ function exportBlotter() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
 
-    window.location.href = `<?= APP_URL ?>/public/cash_blotter/export.php?start_date=${startDate}&end_date=${endDate}`;
+    window.location.href = `<?= APP_URL ?>/public/cash-blotter/export.php?start_date=${startDate}&end_date=${endDate}`;
 }
 
 // Auto-update functionality

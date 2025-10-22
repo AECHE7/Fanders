@@ -45,7 +45,7 @@ $auth = new AuthService();
 // Check if user is already logged in
 if ($auth->isLoggedIn()) {
     // Redirect to dashboard
-    header('Location: ' . APP_URL . '/public/dashboard.php');
+    header('Location: ' . APP_URL . '/public/dashboard/index.php');
     exit;
 }
 
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // 3. Attempt login via service
             if ($auth->login($email, $password)) {
                 // Success: Redirect to dashboard
-                header('Location: ' . APP_URL . '/public/dashboard.php');
+                header('Location: ' . APP_URL . '/public/dashboard/index.php');
                 exit;
             } else {
                 // Failure: Get specific error message from AuthService

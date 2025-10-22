@@ -43,5 +43,5 @@ $auth->logout();
 $session->setFlash('success', 'You have been logged out successfully.');
 
 // Redirect to login page
-header('Location: ' . APP_URL . '/public/login.php');
+header('Location: ' . APP_URL . '/public/auth/login.php');
 exit;

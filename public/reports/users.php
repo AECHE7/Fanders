@@ -3,14 +3,14 @@ require_once '../init.php';
 
 // Check authentication
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ' . APP_URL . '/public/login.php');
+    header('Location: ' . APP_URL . '/public/auth/login.php');
     exit;
 }
 
 // Check permissions - only super-admin and admin can view user reports
 $allowedRoles = ['super-admin', 'admin'];
 if (!in_array($_SESSION['role'], $allowedRoles)) {
-    header('Location: ' . APP_URL . '/public/dashboard.php');
+    header('Location: ' . APP_URL . '/public/dashboard/index.php');
     exit;
 }
 
