@@ -3,6 +3,9 @@
  * Sidebar template for the Fanders Microfinance Loan Management System
  */
 
+// Centralized permissions
+require_once BASE_PATH . '/app/utilities/Permissions.php';
+
 // Determine active page for navigation highlighting
 $requestUri = $_SERVER['REQUEST_URI'];
 $currentPage = 'dashboard'; // default
@@ -32,7 +35,7 @@ if (isset($pageMappings[$currentPage])) {
     $currentPage = $pageMappings[$currentPage];
 }
 
-// Define navigation items based on role for microfinance system
+// Define navigation items (visibility is determined via Permissions)
 $navItems = [
     'dashboard' => [
         'icon' => 'grid',
@@ -114,7 +117,7 @@ $navItems = [
         <nav class="position-sticky pt-3" style="height: calc(100vh - 56px); overflow-y: auto;">
             <ul class="nav flex-column px-2">
                 <?php foreach ($navItems as $id => $item): ?>
-                        <?php if (in_array($userRole, $item['roles'])): ?>
+                        <?php if (Permissions::isAllowed($userRole, $item['roles'])): ?>
                             <?php
                             $isActive = isset($item['active_pages']) && in_array($currentPage, $item['active_pages']);
                             ?>
@@ -126,7 +129,7 @@ $navItems = [
                             </li>
                         <?php endif; ?>
                     <?php endforeach; ?>
-                    <?php if (in_array($userRole, ['super-admin', 'admin', 'manager'])): ?>
+                    <?php if (Permissions::canViewLoanApprovals($userRole)): ?>
                         <?php
                             // Load LoanService to get pending approvals count
                             $loanService = new \LoanService();
@@ -155,12 +158,12 @@ $navItems = [
                         <span class="fw-semibold quick-actions-title">Quick Actions</span>
                     </h6>
                     <div class="d-grid gap-2">
-                        <?php if (in_array($userRole, ['super-admin', 'admin', 'manager', 'account_officer'])): ?>
+                        <?php if (Permissions::canCreateLoan($userRole)): ?>
                             <a href="<?= APP_URL ?>/public/loans/add.php" class="btn btn-sm btn-primary d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="New Loan">
                                 <i data-feather="plus-circle" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
                                 <span class="quick-action-text">New Loan</span>
                             </a>
-                        <?php elseif ($userRole === 'cashier'): ?>
+                        <?php elseif (Permissions::canRecordPayment($userRole)): ?>
                             <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-sm btn-primary d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="Record Payment">
                                 <i data-feather="dollar-sign" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
                                 <span class="quick-action-text">Record Payment</span>

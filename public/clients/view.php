@@ -6,6 +6,7 @@
 
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
 require_once '../../public/init.php';
+require_once BASE_PATH . '/app/utilities/Permissions.php';
 
 // Enforce role-based access control (Staff roles: Admin, Manager, Cashier, AO)
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier', 'account-officer']);
@@ -23,6 +24,8 @@ if ($clientId <= 0) {
 $clientService = new ClientService();
 $loanService = new LoanService();
 $csrfToken = $csrf->generateToken(); // Pass token to template for status forms
+$currentUser = $auth->getCurrentUser() ?: [];
+$currentRole = $currentUser['role'] ?? '';
 
 // Fetch client profile
 $clientData = $clientService->getById($clientId);
@@ -125,12 +128,16 @@ function getClientStatusBadgeClass($status) {
                     <h1 class="notion-page-title mb-0">Client Profile: <?= htmlspecialchars($clientData['name'] ?? 'N/A') ?></h1>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <a href="<?= APP_URL ?>/public/loans/add.php?client_id=<?= $clientId ?>" class="btn btn-sm btn-success <?= $hasActiveLoan ? 'disabled' : '' ?>" title="<?= $hasActiveLoan ? 'Client has an active loan' : 'Create New Loan' ?>">
-                        <i data-feather="plus-circle" class="me-1" style="width: 14px; height: 14px;"></i> Apply New Loan
-                    </a>
-                    <a href="<?= APP_URL ?>/public/clients/edit.php?id=<?= $clientId ?>" class="btn btn-sm btn-outline-secondary">
-                        <i data-feather="edit" class="me-1" style="width: 14px; height: 14px;"></i> Edit Profile
-                    </a>
+                    <?php if (Permissions::canCreateLoan($currentRole)): ?>
+                        <a href="<?= APP_URL ?>/public/loans/add.php?client_id=<?= $clientId ?>" class="btn btn-sm btn-success <?= $hasActiveLoan ? 'disabled' : '' ?>" title="<?= $hasActiveLoan ? 'Client has an active loan' : 'Create New Loan' ?>">
+                            <i data-feather="plus-circle" class="me-1" style="width: 14px; height: 14px;"></i> Apply New Loan
+                        </a>
+                    <?php endif; ?>
+                    <?php if (Permissions::canManageClients($currentRole)): ?>
+                        <a href="<?= APP_URL ?>/public/clients/edit.php?id=<?= $clientId ?>" class="btn btn-sm btn-outline-secondary">
+                            <i data-feather="edit" class="me-1" style="width: 14px; height: 14px;"></i> Edit Profile
+                        </a>
+                    <?php endif; ?>
                     <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-sm btn-outline-secondary">
                         <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Clients
                     </a>
@@ -188,6 +195,7 @@ function getClientStatusBadgeClass($status) {
         </div>
 
         <!-- Status Management Card (Right Column) -->
+        <?php if (Permissions::canManageClients($currentRole)): ?>
         <div class="col-md-7">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-warning text-white">
@@ -215,7 +223,7 @@ function getClientStatusBadgeClass($status) {
                             </button>
                         <?php endif; ?>
 
-                        <?php if (!$hasActiveLoan && $auth->hasRole(['super-admin', 'admin'])): ?>
+                        <?php if (!$hasActiveLoan && Permissions::isAllowed($currentRole, ['super-admin', 'admin'])): ?>
                             <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteClientModal">
                                 <i data-feather="trash-2"></i> Delete Record
                             </button>
@@ -230,7 +238,8 @@ function getClientStatusBadgeClass($status) {
 
                 </div>
             </div>
-        </div>
+    </div>
+    <?php endif; ?>
     </div>
 
     <!-- Loan History Card (Bottom Section) -->

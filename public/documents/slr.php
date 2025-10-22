@@ -6,9 +6,13 @@
 
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
 require_once '../init.php';
+require_once BASE_PATH . '/app/utilities/Permissions.php';
 
 // Enforce role-based access control (Staff roles can generate SLR documents)
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier', 'account-officer']);
+
+$currentUser = $auth->getCurrentUser() ?: [];
+$currentRole = $currentUser['role'] ?? '';
 
 // Initialize services
 $slrService = new SLRDocumentService();
@@ -68,9 +72,11 @@ function showSLRInterface() {
                         </h1>
                     </div>
                     <div class="d-flex gap-2 align-items-center">
-                        <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-sm btn-outline-secondary">
-                            <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Dashboard
-                        </a>
+                        <?php if (Permissions::canAccessSLRDocuments($currentRole)): ?>
+                            <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-sm btn-outline-secondary">
+                                <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Dashboard
+                            </a>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

@@ -7,9 +7,13 @@
 
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
 require_once '../../public/init.php';
+require_once BASE_PATH . '/app/utilities/Permissions.php';
 
 // Enforce role-based access control (Only Staff roles responsible for handling cash/payments)
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier', 'account-officer']);
+
+$currentUser = $auth->getCurrentUser() ?: [];
+$currentRole = $currentUser['role'] ?? '';
 
 // Initialize services
 $loanService = new LoanService();
@@ -105,9 +109,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <h1 class="notion-page-title mb-0">Record Payment</h1>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
-                    <a href="<?= APP_URL ?>/public/payments/index.php" class="btn btn-sm btn-outline-secondary">
-                        <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Payments
-                    </a>
+                    <?php if (Permissions::canAccessPayments($currentRole)): ?>
+                        <a href="<?= APP_URL ?>/public/payments/index.php" class="btn btn-sm btn-outline-secondary">
+                            <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Payments
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
