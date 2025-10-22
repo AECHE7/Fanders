@@ -52,17 +52,28 @@ function showSLRInterface() {
     include_once BASE_PATH . '/templates/layout/navbar.php';
     ?>
 
-    <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-            <h1 class="h2">
-                <i class="fas fa-file-pdf"></i> SLR Document Generation
-            </h1>
-            <div class="btn-toolbar mb-2 mb-md-0">
-                <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
-                </a>
+    <main class="main-content">
+        <div class="content-wrapper">
+            <!-- Page Header with Icon -->
+            <div class="notion-page-header mb-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #fff0f0;">
+                                <i data-feather="file-text" style="width: 24px; height: 24px; color: rgb(220, 53, 69);"></i>
+                            </div>
+                        </div>
+                        <h1 class="notion-page-title mb-0">
+                            <i class="fas fa-file-pdf"></i> SLR Document Generation
+                        </h1>
+                    </div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <a href="<?= APP_URL ?>/public/dashboard.php" class="btn btn-sm btn-outline-secondary">
+                            <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </div>
             </div>
-        </div>
 
         <!-- Flash Messages -->
         <?php if ($session->hasFlash('success')): ?>
@@ -80,6 +91,7 @@ function showSLRInterface() {
         <?php endif; ?>
 
         <?php include_once BASE_PATH . '/templates/documents/slr_interface.php'; ?>
+        </div>
     </main>
 
     <?php

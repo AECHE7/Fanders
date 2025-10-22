@@ -111,23 +111,32 @@ function getClientStatusBadgeClass($status) {
 }
 ?>
 
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Client Profile: <?= htmlspecialchars($clientData['name'] ?? 'N/A') ?></h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-                <a href="<?= APP_URL ?>/public/loans/add.php?client_id=<?= $clientId ?>" class="btn btn-sm btn-success <?= $hasActiveLoan ? 'disabled' : '' ?>" title="<?= $hasActiveLoan ? 'Client has an active loan' : 'Create New Loan' ?>">
-                    <i data-feather="plus-circle"></i> Apply New Loan
-                </a>
+<main class="main-content">
+    <div class="content-wrapper">
+        <!-- Page Header with Icon -->
+        <div class="notion-page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f3e5f5;">
+                            <i data-feather="user" style="width: 24px; height: 24px; color: rgb(156, 39, 176);"></i>
+                        </div>
+                    </div>
+                    <h1 class="notion-page-title mb-0">Client Profile: <?= htmlspecialchars($clientData['name'] ?? 'N/A') ?></h1>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <a href="<?= APP_URL ?>/public/loans/add.php?client_id=<?= $clientId ?>" class="btn btn-sm btn-success <?= $hasActiveLoan ? 'disabled' : '' ?>" title="<?= $hasActiveLoan ? 'Client has an active loan' : 'Create New Loan' ?>">
+                        <i data-feather="plus-circle" class="me-1" style="width: 14px; height: 14px;"></i> Apply New Loan
+                    </a>
+                    <a href="<?= APP_URL ?>/public/clients/edit.php?id=<?= $clientId ?>" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="edit" class="me-1" style="width: 14px; height: 14px;"></i> Edit Profile
+                    </a>
+                    <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Clients
+                    </a>
+                </div>
             </div>
-            <a href="<?= APP_URL ?>/public/clients/edit.php?id=<?= $clientId ?>" class="btn btn-sm btn-outline-primary me-2">
-                <i data-feather="edit"></i> Edit Profile
-            </a>
-            <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-sm btn-outline-secondary">
-                <i data-feather="arrow-left"></i> Back to Clients List
-            </a>
         </div>
-    </div>
     
     <!-- Flash Messages -->
     <?php if ($session->hasFlash('success')): ?>
@@ -422,6 +431,8 @@ function getClientStatusBadgeClass($status) {
         </div>
     </div>
 </div>
+    </div>
+</main>
 
 <?php
 include_once BASE_PATH . '/templates/layout/footer.php';

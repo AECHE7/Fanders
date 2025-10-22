@@ -141,20 +141,29 @@ include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
-<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Edit Staff User</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <div class="btn-group me-2">
-                <a href="<?= APP_URL ?>/public/admins/view.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="eye"></i> View Staff User Profile
-                </a>
-                <a href="<?= APP_URL ?>/public/admins/index.php" class="btn btn-sm btn-outline-secondary">
-                    <i data-feather="arrow-left"></i> Back to Staff Users
-                </a>
+<main class="main-content">
+    <div class="content-wrapper">
+        <!-- Page Header with Icon -->
+        <div class="notion-page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #fff3e0;">
+                            <i data-feather="edit-2" style="width: 24px; height: 24px; color: rgb(255, 152, 0);"></i>
+                        </div>
+                    </div>
+                    <h1 class="notion-page-title mb-0">Edit Staff User</h1>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <a href="<?= APP_URL ?>/public/admins/view.php?id=<?= $userId ?>" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="eye" class="me-1" style="width: 14px; height: 14px;"></i> View Profile
+                    </a>
+                    <a href="<?= APP_URL ?>/public/admins/index.php" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Staff Users
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
     
     <?php if ($error): ?>
         <div class="alert alert-danger">
@@ -167,6 +176,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <div class="card-body">
             <?php include_once BASE_PATH . '/templates/admins/form.php'; ?>
         </div>
+        </div>
+    </div>
     </div>
 </main>
 
