@@ -3,13 +3,14 @@
 # This script performs daily backups of the PostgreSQL database
 
 # Configuration - These will be set via Railway environment variables
-DB_HOST="${DATABASE_HOST:-localhost}"
-DB_PORT="${DATABASE_PORT:-5432}"
-DB_NAME="${DATABASE_NAME:-railway}"
-DB_USER="${DATABASE_USER:-postgres}"
-DB_PASSWORD="${DATABASE_PASSWORD}"
+# Railway provides these variables when you attach a PostgreSQL database
+DB_HOST="${PGHOST:-localhost}"
+DB_PORT="${PGPORT:-5432}"
+DB_NAME="${PGDATABASE:-railway}"
+DB_USER="${PGUSER:-postgres}"
+DB_PASSWORD="${PGPASSWORD}"
 BACKUP_DIR="/app/backups"
-RETENTION_DAYS=30
+RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 
 # Create backup directory if it doesn't exist
 mkdir -p "$BACKUP_DIR"
@@ -29,7 +30,19 @@ log_message() {
 
 log_message "=== Starting backup process ==="
 log_message "Database: $DB_NAME on $DB_HOST:$DB_PORT"
+log_message "User: $DB_USER"
+log_message "Backup directory: $BACKUP_DIR"
 log_message "Backup file: $BACKUP_FILE_GZ"
+
+# Check if required environment variables are set
+if [ -z "$DB_PASSWORD" ]; then
+    log_message "✗ ERROR: Database password not set (PGPASSWORD)"
+    exit 1
+fi
+
+if [ -z "$DB_HOST" ] || [ "$DB_HOST" = "localhost" ]; then
+    log_message "⚠ WARNING: DB_HOST is localhost - this may be incorrect for Railway"
+fi
 
 # Perform backup using pg_dump
 export PGPASSWORD="$DB_PASSWORD"
