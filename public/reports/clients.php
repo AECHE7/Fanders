@@ -33,13 +33,44 @@ if (!is_array($reportData)) {
 
 // Handle PDF export
 if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
-    $reportService->exportClientReportPDF($reportData, $filters);
+    try {
+        // Validate report data
+        if (empty($reportData) || !is_array($reportData)) {
+            throw new Exception('No client data available for export. Please generate a report first.');
+        }
+        
+        $reportService->exportClientReportPDF($reportData, $filters);
+    } catch (Exception $e) {
+        error_log("Client PDF export error: " . $e->getMessage());
+        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/reports/clients.php?' . http_build_query($filters));
+        exit;
+    }
     exit;
 }
 
 // Handle Excel export
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
-    $reportService->exportClientReportExcel($reportData, $filters);
+    // Clear output buffers to prevent contamination
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    try {
+        // Validate report data
+        if (empty($reportData) || !is_array($reportData)) {
+            throw new Exception('No client data available for export. Please generate a report first.');
+        }
+        
+        $reportService->exportClientReportExcel($reportData, $filters);
+    } catch (Exception $e) {
+        // Restart output buffering for error display
+        ob_start();
+        error_log("Client Excel export error: " . $e->getMessage());
+        $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/reports/clients.php?' . http_build_query($filters));
+        exit;
+    }
     exit;
 }
 

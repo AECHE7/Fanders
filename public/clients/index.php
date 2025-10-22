@@ -23,13 +23,20 @@ $filterOptions = [
 $filters = FilterUtility::sanitizeFilters($_GET, $filterOptions);
 $filters = FilterUtility::validateDateRange($filters);
 
-// --- 2. Handle PDF Export ---
+// --- 2a. Handle PDF Export ---
 if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
     try {
         $reportService = new ReportService();
         $exportData = $clientService->getAllClients(1, 10000, $filters); // Get all data without pagination
+        
+        // Validate export data
+        if (empty($exportData) || !is_array($exportData)) {
+            throw new Exception('No client data available for export.');
+        }
+        
         $reportService->exportClientReportPDF($exportData, $filters);
     } catch (Exception $e) {
+        error_log("Client PDF export error: " . $e->getMessage());
         $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
         header('Location: ' . APP_URL . '/public/clients/index.php?' . http_build_query($filters));
         exit;
@@ -39,11 +46,25 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 
 // --- 2b. Handle Excel Export ---
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
+    // Clear output buffers to prevent contamination
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     try {
         $reportService = new ReportService();
         $exportData = $clientService->getAllClients(1, 10000, $filters); // Get all data without pagination
+        
+        // Validate export data
+        if (empty($exportData) || !is_array($exportData)) {
+            throw new Exception('No client data available for export.');
+        }
+        
         $reportService->exportClientReportExcel($exportData, $filters);
     } catch (Exception $e) {
+        // Restart output buffering for error display
+        ob_start();
+        error_log("Client Excel export error: " . $e->getMessage());
         $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
         header('Location: ' . APP_URL . '/public/clients/index.php?' . http_build_query($filters));
         exit;

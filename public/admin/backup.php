@@ -4,16 +4,14 @@
  * Allows admin to download database backup as Excel/CSV files
  */
 
-session_start();
-require_once __DIR__ . '/../../includes/config.php';
-require_once __DIR__ . '/../../includes/db.php';
-require_once __DIR__ . '/../../includes/functions.php';
+// Centralized initialization
+require_once '../../public/init.php';
 
-// Check if user is logged in and is admin
-if (!isLoggedIn() || !isAdmin()) {
-    header('Location: /public/auth/login.php');
-    exit;
-}
+// Enforce role-based access control
+$auth->checkRoleAccess(['super-admin', 'admin']);
+
+// Get database connection
+$db = Database::getInstance()->getConnection();
 
 // Get action
 $action = $_GET['action'] ?? '';
@@ -23,7 +21,7 @@ if ($action === 'download') {
     $format = $_GET['format'] ?? 'excel';
     
     try {
-        $db = getDB();
+        $db = Database::getInstance()->getConnection();
         
         // Get all tables
         $stmt = $db->query("
@@ -82,12 +80,19 @@ if ($action === 'download') {
             exit;
             
         } else {
+            // Clear output buffers before generating Excel output
+            while (ob_get_level()) {
+                ob_end_clean();
+            }
+            
             // Generate HTML table that can be opened in Excel
             $timestamp = date('Y-m-d_His');
             $filename = "fanders_backup_$timestamp.xls";
             
             header('Content-Type: application/vnd.ms-excel');
             header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Cache-Control: no-cache, must-revalidate');
+            header('Pragma: no-cache');
             
             echo '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
             echo '<head><meta charset="UTF-8"></head>';
@@ -125,6 +130,9 @@ if ($action === 'download') {
         }
         
     } catch (Exception $e) {
+        // Restart output buffering for error display
+        ob_start();
+        error_log("Backup export error: " . $e->getMessage());
         $_SESSION['error'] = 'Backup failed: ' . $e->getMessage();
         header('Location: /public/admin/backup.php');
         exit;
@@ -133,7 +141,7 @@ if ($action === 'download') {
 
 // Get database statistics
 try {
-    $db = getDB();
+    $db = Database::getInstance()->getConnection();
     
     $stmt = $db->query("
         SELECT 

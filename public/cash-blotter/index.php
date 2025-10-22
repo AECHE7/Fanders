@@ -121,7 +121,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
                     <?= date('l, F j, Y') ?>
                 </div>
-                <a href="<?= APP_URL ?>/public/reports/cash_blotter.php" class="btn btn-sm btn-outline-secondary px-3">
+                <a href="<?= APP_URL ?>/public/cash-blotter/index.php" class="btn btn-sm btn-outline-secondary px-3">
                     <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> Cash Blotter Report
                 </a>
                 <button type="button" class="btn btn-sm btn-primary" onclick="recalculateBlotter()">

@@ -114,6 +114,11 @@ try {
 // --- 3. Handle PDF Export ---
 if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
     try {
+        // Validate that we have report data before attempting export
+        if (empty($reportData) || !is_array($reportData)) {
+            throw new Exception('No data available for export. Please generate a report first.');
+        }
+        
         switch ($filters['type']) {
             case 'loans':
                 $reportService->exportLoanReportPDF($reportData, $filters);
@@ -133,8 +138,11 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
             case 'overdue':
                 $reportService->exportOverdueReportPDF($reportData, $filters);
                 break;
+            default:
+                throw new Exception('Invalid export type specified');
         }
     } catch (Exception $e) {
+        error_log("PDF export error: " . $e->getMessage());
         $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
         header('Location: ' . APP_URL . '/public/reports/index.php?' . http_build_query($filters));
         exit;
@@ -144,7 +152,17 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 
 // --- 3b. Handle Excel Export ---
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
+    // Clear output buffers early to prevent contamination
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     try {
+        // Validate that we have report data before attempting export
+        if (empty($reportData) || !is_array($reportData)) {
+            throw new Exception('No data available for export. Please generate a report first.');
+        }
+        
         switch ($filters['type']) {
             case 'loans':
                 $reportService->exportLoanReportExcel($reportData, $filters);
@@ -164,8 +182,13 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
             case 'overdue':
                 $reportService->exportOverdueReportExcel($reportData, $filters);
                 break;
+            default:
+                throw new Exception('Invalid export type specified');
         }
     } catch (Exception $e) {
+        // Restart output buffering for error display
+        ob_start();
+        error_log("Excel export error: " . $e->getMessage());
         $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
         header('Location: ' . APP_URL . '/public/reports/index.php?' . http_build_query($filters));
         exit;

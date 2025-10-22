@@ -785,98 +785,191 @@ class ReportService extends BaseService {
      * Excel Exports - Excel 2003 XML (SpreadsheetML)
      */
     public function exportLoanReportExcel($data, $filters = []) {
+        // Validate data before export
+        if (empty($data) || !is_array($data)) {
+            throw new InvalidArgumentException('No loan data available for export');
+        }
+        
         $headers = ['Loan #', 'Client', 'Principal', 'Total', 'Paid', 'Balance', 'Status'];
         $rows = [];
         foreach ($data as $loan) {
+            // Validate each loan record has required fields
+            if (!isset($loan['loan_number']) || !isset($loan['client_name'])) {
+                continue; // Skip malformed records
+            }
+            
             $rows[] = [
                 $loan['loan_number'],
                 $loan['client_name'],
-                (float)$loan['principal_amount'],
-                (float)$loan['total_amount'],
-                (float)$loan['total_paid'],
-                (float)$loan['remaining_balance'],
-                ucfirst((string)$loan['status'])
+                (float)($loan['principal_amount'] ?? 0),
+                (float)($loan['total_amount'] ?? 0),
+                (float)($loan['total_paid'] ?? 0),
+                (float)($loan['remaining_balance'] ?? 0),
+                ucfirst((string)($loan['status'] ?? 'unknown'))
             ];
         }
+        
+        // Ensure we have data to export after validation
+        if (empty($rows)) {
+            throw new InvalidArgumentException('No valid loan records found for export');
+        }
+        
         $title = 'loans_' . date('Y-m-d') . '.xls';
         ExcelExportUtility::outputSingleSheet('Loans', $headers, $rows, $title);
     }
 
     public function exportPaymentReportExcel($data, $filters = []) {
+        // Validate data before export
+        if (empty($data) || !is_array($data)) {
+            throw new InvalidArgumentException('No payment data available for export');
+        }
+        
         $headers = ['Payment #', 'Client', 'Loan #', 'Amount', 'Date'];
         $rows = [];
         foreach ($data as $p) {
+            // Validate each payment record has required fields
+            if (!isset($p['payment_number']) || !isset($p['client_name'])) {
+                continue; // Skip malformed records
+            }
+            
             $rows[] = [
                 $p['payment_number'],
                 $p['client_name'],
-                $p['loan_number'],
-                (float)$p['amount'],
-                date('Y-m-d', strtotime($p['payment_date']))
+                $p['loan_number'] ?? '',
+                (float)($p['amount'] ?? 0),
+                isset($p['payment_date']) ? date('Y-m-d', strtotime($p['payment_date'])) : ''
             ];
         }
+        
+        // Ensure we have data to export after validation
+        if (empty($rows)) {
+            throw new InvalidArgumentException('No valid payment records found for export');
+        }
+        
         $title = 'payments_' . date('Y-m-d') . '.xls';
         ExcelExportUtility::outputSingleSheet('Payments', $headers, $rows, $title);
     }
 
     public function exportClientReportExcel($data, $filters = []) {
+        // Validate data before export
+        if (empty($data) || !is_array($data)) {
+            throw new InvalidArgumentException('No client data available for export');
+        }
+        
         $headers = ['Client Name', 'Email', 'Phone', 'Loans', 'Outstanding', 'Status'];
         $rows = [];
         foreach ($data as $c) {
+            // Validate each client record has required fields
+            if (!isset($c['client_name'])) {
+                continue; // Skip malformed records
+            }
+            
             $rows[] = [
                 $c['client_name'],
                 $c['email'] ?? '',
                 $c['phone'] ?? '',
-                (int)$c['total_loans'],
-                (float)$c['outstanding_balance'],
-                ucfirst((string)$c['status'])
+                (int)($c['total_loans'] ?? 0),
+                (float)($c['outstanding_balance'] ?? 0),
+                ucfirst((string)($c['status'] ?? 'unknown'))
             ];
         }
+        
+        // Ensure we have data to export after validation
+        if (empty($rows)) {
+            throw new InvalidArgumentException('No valid client records found for export');
+        }
+        
         $title = 'clients_' . date('Y-m-d') . '.xls';
         ExcelExportUtility::outputSingleSheet('Clients', $headers, $rows, $title);
     }
 
     public function exportUserReportExcel($data, $filters = []) {
+        // Validate data before export
+        if (empty($data) || !is_array($data)) {
+            throw new InvalidArgumentException('No user data available for export');
+        }
+        
         $headers = ['Username', 'Full Name', 'Email', 'Role', 'Status'];
         $rows = [];
         foreach ($data as $u) {
+            // Validate each user record has required fields
+            if (!isset($u['username'])) {
+                continue; // Skip malformed records
+            }
+            
             $rows[] = [
                 $u['username'],
                 $u['full_name'] ?? '',
                 $u['email'] ?? '',
-                ucfirst((string)$u['role']),
+                ucfirst((string)($u['role'] ?? 'unknown')),
                 !empty($u['is_active']) ? 'Active' : 'Inactive'
             ];
         }
+        
+        // Ensure we have data to export after validation
+        if (empty($rows)) {
+            throw new InvalidArgumentException('No valid user records found for export');
+        }
+        
         $title = 'users_' . date('Y-m-d') . '.xls';
         ExcelExportUtility::outputSingleSheet('Users', $headers, $rows, $title);
     }
 
     public function exportOverdueReportExcel($data, $filters = []) {
+        // Validate data before export
+        if (empty($data) || !is_array($data)) {
+            throw new InvalidArgumentException('No overdue data available for export');
+        }
+        
         $headers = ['Loan #', 'Client', 'Phone', 'Principal', 'Balance', 'Days Overdue'];
         $rows = [];
         foreach ($data as $r) {
+            // Validate each overdue record has required fields
+            if (!isset($r['loan_number']) || !isset($r['client_name'])) {
+                continue; // Skip malformed records
+            }
+            
             $rows[] = [
                 $r['loan_number'],
                 $r['client_name'],
                 $r['phone'] ?? '',
-                (float)$r['principal_amount'],
-                (float)$r['remaining_balance'],
-                (int)$r['days_overdue']
+                (float)($r['principal_amount'] ?? 0),
+                (float)($r['remaining_balance'] ?? 0),
+                (int)($r['days_overdue'] ?? 0)
             ];
         }
+        
+        // Ensure we have data to export after validation
+        if (empty($rows)) {
+            throw new InvalidArgumentException('No valid overdue records found for export');
+        }
+        
         $title = 'overdue_' . date('Y-m-d') . '.xls';
         ExcelExportUtility::outputSingleSheet('Overdue', $headers, $rows, $title);
     }
 
     public function exportFinancialSummaryExcel($data) {
+        // Validate data before export
+        if (empty($data) || !is_array($data)) {
+            throw new InvalidArgumentException('No financial summary data available for export');
+        }
+        
+        // Ensure required keys exist
+        $requiredKeys = ['period', 'loans', 'payments', 'outstanding', 'generated_at'];
+        foreach ($requiredKeys as $key) {
+            if (!isset($data[$key])) {
+                throw new InvalidArgumentException("Missing required financial data: $key");
+            }
+        }
+        
         $pairs = [
-            'Period' => $data['period']['from'] . ' to ' . $data['period']['to'],
-            'Total Loans' => (int)$data['loans']['total_loans'],
-            'Total Principal' => (float)$data['loans']['total_principal'],
-            'Total Amount (with interest)' => (float)$data['loans']['total_amount_with_interest'],
-            'Total Payments' => (int)$data['payments']['total_payments'],
-            'Total Amount Received' => (float)$data['payments']['total_payments_received'],
-            'Total Outstanding' => (float)$data['outstanding']['total_outstanding'],
+            'Period' => ($data['period']['from'] ?? '') . ' to ' . ($data['period']['to'] ?? ''),
+            'Total Loans' => (int)($data['loans']['total_loans'] ?? 0),
+            'Total Principal' => (float)($data['loans']['total_principal'] ?? 0),
+            'Total Amount (with interest)' => (float)($data['loans']['total_amount_with_interest'] ?? 0),
+            'Total Payments' => (int)($data['payments']['total_payments'] ?? 0),
+            'Total Amount Received' => (float)($data['payments']['total_payments_received'] ?? 0),
+            'Total Outstanding' => (float)($data['outstanding']['total_outstanding'] ?? 0),
             'Generated At' => $data['generated_at']
         ];
         $title = 'financial_summary_' . date('Y-m-d') . '.xls';
@@ -932,16 +1025,27 @@ class ReportService extends BaseService {
     }
 
     public function exportCashBlotterExcel($blotterData, $summary, $currentBalance, $filters) {
+        // Validate data before export
+        if (empty($blotterData) || !is_array($blotterData)) {
+            throw new InvalidArgumentException('No cash blotter data available for export');
+        }
+        
         $headers = ['Date', 'Inflow', 'Outflow', 'Closing Balance'];
         $rows = [];
         foreach ($blotterData as $entry) {
             $rows[] = [
-                date('Y-m-d', strtotime($entry['blotter_date'] ?? 'today')),
+                isset($entry['blotter_date']) ? date('Y-m-d', strtotime($entry['blotter_date'])) : date('Y-m-d'),
                 (float)($entry['total_inflow'] ?? 0),
                 (float)($entry['total_outflow'] ?? 0),
                 (float)($entry['calculated_balance'] ?? 0)
             ];
         }
+        
+        // Ensure we have data to export after validation
+        if (empty($rows)) {
+            throw new InvalidArgumentException('No valid cash blotter records found for export');
+        }
+        
         $title = 'cash_blotter_' . date('Y-m-d') . '.xls';
         ExcelExportUtility::outputSingleSheet('Cash Blotter', $headers, $rows, $title);
     }

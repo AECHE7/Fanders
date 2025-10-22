@@ -25,10 +25,21 @@ class ExcelExportUtility
 
     public static function outputSingleSheet(string $sheetName, array $headers, array $rows, string $filename): void
     {
+        // Clear any existing output buffers to prevent error messages from leaking into Excel file
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+        
+        // Validate input data
+        if (empty($headers) && empty($rows)) {
+            throw new InvalidArgumentException('Cannot export empty data - no headers or rows provided');
+        }
+        
         // Send headers for Excel
         header('Content-Type: application/vnd.ms-excel');
         header('Content-Disposition: attachment; filename=' . $filename);
         header('Cache-Control: max-age=0');
+        header('Pragma: no-cache');
 
         // Begin XML
         echo self::xmlHeader();
@@ -65,6 +76,11 @@ class ExcelExportUtility
 
     public static function outputKeyValueSheet(string $sheetName, array $pairs, string $filename): void
     {
+        // Validate input data
+        if (empty($pairs)) {
+            throw new InvalidArgumentException('Cannot export empty key-value pairs');
+        }
+        
         $headers = ['Metric', 'Value'];
         $rows = [];
         foreach ($pairs as $k => $v) {

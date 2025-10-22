@@ -34,13 +34,44 @@ if (!is_array($reportData)) {
 
 // Handle PDF export
 if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
-    $reportService->exportLoanReportPDF($reportData, $filters);
+    try {
+        // Validate report data
+        if (empty($reportData) || !is_array($reportData)) {
+            throw new Exception('No loan data available for export. Please generate a report first.');
+        }
+        
+        $reportService->exportLoanReportPDF($reportData, $filters);
+    } catch (Exception $e) {
+        error_log("Loan PDF export error: " . $e->getMessage());
+        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/reports/loans.php?' . http_build_query($filters));
+        exit;
+    }
     exit;
 }
 
 // Handle Excel export
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
-    $reportService->exportLoanReportExcel($reportData, $filters);
+    // Clear output buffers to prevent contamination
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    try {
+        // Validate report data
+        if (empty($reportData) || !is_array($reportData)) {
+            throw new Exception('No loan data available for export. Please generate a report first.');
+        }
+        
+        $reportService->exportLoanReportExcel($reportData, $filters);
+    } catch (Exception $e) {
+        // Restart output buffering for error display
+        ob_start();
+        error_log("Loan Excel export error: " . $e->getMessage());
+        $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/reports/loans.php?' . http_build_query($filters));
+        exit;
+    }
     exit;
 }
 

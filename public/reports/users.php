@@ -34,13 +34,44 @@ $reportData = $reportService->generateUserReport($filters);
 
 // Handle PDF export
 if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
-    $reportService->exportUserReportPDF($reportData, $filters);
+    try {
+        // Validate report data
+        if (empty($reportData) || !is_array($reportData)) {
+            throw new Exception('No user data available for export. Please generate a report first.');
+        }
+        
+        $reportService->exportUserReportPDF($reportData, $filters);
+    } catch (Exception $e) {
+        error_log("User PDF export error: " . $e->getMessage());
+        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/reports/users.php?' . http_build_query($filters));
+        exit;
+    }
     exit;
 }
 
 // Handle Excel export
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
-    $reportService->exportUserReportExcel($reportData, $filters);
+    // Clear output buffers to prevent contamination
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
+    try {
+        // Validate report data
+        if (empty($reportData) || !is_array($reportData)) {
+            throw new Exception('No user data available for export. Please generate a report first.');
+        }
+        
+        $reportService->exportUserReportExcel($reportData, $filters);
+    } catch (Exception $e) {
+        // Restart output buffering for error display
+        ob_start();
+        error_log("User Excel export error: " . $e->getMessage());
+        $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
+        header('Location: ' . APP_URL . '/public/reports/users.php?' . http_build_query($filters));
+        exit;
+    }
     exit;
 }
 
