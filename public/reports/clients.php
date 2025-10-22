@@ -51,18 +51,17 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 
 // Handle Excel export
 if (isset($_GET['export']) && $_GET['export'] === 'excel') {
-    // Clear output buffers to prevent contamination
-    while (ob_get_level()) {
-        ob_end_clean();
-    }
-    
     try {
         // Validate report data
         if (empty($reportData) || !is_array($reportData)) {
             throw new Exception('No client data available for export. Please generate a report first.');
         }
         
-        $reportService->exportClientReportExcel($reportData, $filters);
+        // Use safe export wrapper to prevent PHP warnings from contaminating Excel output
+        SafeExportWrapper::safeExecute(function() use ($reportService, $reportData, $filters) {
+            $reportService->exportClientReportExcel($reportData, $filters);
+        });
+        
     } catch (Exception $e) {
         // Restart output buffering for error display
         ob_start();

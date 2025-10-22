@@ -25,24 +25,24 @@ class ExcelExportUtility
 
     public static function outputSingleSheet(string $sheetName, array $headers, array $rows, string $filename): void
     {
-        // Clear any existing output buffers to prevent error messages from leaking into Excel file
-        while (ob_get_level()) {
-            ob_end_clean();
-        }
+        // Use safe export wrapper to prevent warnings from contaminating output
+        SafeExportWrapper::beginSafeExport();
         
         // Validate input data
         if (empty($headers) && empty($rows)) {
+            SafeExportWrapper::endSafeExport();
             throw new InvalidArgumentException('Cannot export empty data - no headers or rows provided');
         }
         
-        // Send headers for Excel
-        header('Content-Type: application/vnd.ms-excel');
-        header('Content-Disposition: attachment; filename=' . $filename);
-        header('Cache-Control: max-age=0');
-        header('Pragma: no-cache');
+        try {
+            // Send headers for Excel
+            header('Content-Type: application/vnd.ms-excel');
+            header('Content-Disposition: attachment; filename=' . $filename);
+            header('Cache-Control: max-age=0');
+            header('Pragma: no-cache');
 
-        // Begin XML
-        echo self::xmlHeader();
+            // Begin XML
+            echo self::xmlHeader();
         echo '<Worksheet ss:Name="' . self::escape($sheetName) . '">';
         echo '<Table>'; 
 
@@ -71,7 +71,20 @@ class ExcelExportUtility
         echo '</Table>';
         echo '</Worksheet>';
         echo self::xmlFooter();
+        
+        // Restore safe export environment
+        SafeExportWrapper::endSafeExport();
         exit;
+        
+    } catch (Exception $e) {
+        // Restore safe export environment before re-throwing
+        SafeExportWrapper::endSafeExport();
+        throw $e;
+    } catch (Error $e) {
+        // Restore safe export environment before re-throwing
+        SafeExportWrapper::endSafeExport();
+        throw $e;
+    }
     }
 
     public static function outputKeyValueSheet(string $sheetName, array $pairs, string $filename): void

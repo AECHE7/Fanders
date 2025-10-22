@@ -793,19 +793,33 @@ class ReportService extends BaseService {
         $headers = ['Loan #', 'Client', 'Principal', 'Total', 'Paid', 'Balance', 'Status'];
         $rows = [];
         foreach ($data as $loan) {
-            // Validate each loan record has required fields
-            if (!isset($loan['loan_number']) || !isset($loan['client_name'])) {
-                continue; // Skip malformed records
+            // Ensure $loan is an array and has basic structure
+            if (!is_array($loan)) {
+                continue; // Skip non-array records
+            }
+            
+            // Extract values safely with comprehensive null coalescing
+            $loanNumber = $loan['loan_number'] ?? $loan['number'] ?? '';
+            $clientName = $loan['client_name'] ?? $loan['name'] ?? $loan['full_name'] ?? '';
+            $principal = $loan['principal_amount'] ?? $loan['principal'] ?? 0;
+            $total = $loan['total_amount'] ?? $loan['amount'] ?? 0;
+            $paid = $loan['total_paid'] ?? $loan['paid'] ?? 0;
+            $balance = $loan['remaining_balance'] ?? $loan['balance'] ?? 0;
+            $status = $loan['status'] ?? 'unknown';
+            
+            // Skip records with no identifiable loan number or client
+            if (empty($loanNumber) && empty($clientName)) {
+                continue;
             }
             
             $rows[] = [
-                $loan['loan_number'],
-                $loan['client_name'],
-                (float)($loan['principal_amount'] ?? 0),
-                (float)($loan['total_amount'] ?? 0),
-                (float)($loan['total_paid'] ?? 0),
-                (float)($loan['remaining_balance'] ?? 0),
-                ucfirst((string)($loan['status'] ?? 'unknown'))
+                $loanNumber,
+                $clientName,
+                (float)$principal,
+                (float)$total,
+                (float)$paid,
+                (float)$balance,
+                ucfirst((string)$status)
             ];
         }
         
@@ -827,17 +841,29 @@ class ReportService extends BaseService {
         $headers = ['Payment #', 'Client', 'Loan #', 'Amount', 'Date'];
         $rows = [];
         foreach ($data as $p) {
-            // Validate each payment record has required fields
-            if (!isset($p['payment_number']) || !isset($p['client_name'])) {
-                continue; // Skip malformed records
+            // Ensure $p is an array and has basic structure
+            if (!is_array($p)) {
+                continue; // Skip non-array records
+            }
+            
+            // Extract values safely with comprehensive null coalescing
+            $paymentNumber = $p['payment_number'] ?? $p['number'] ?? '';
+            $clientName = $p['client_name'] ?? $p['name'] ?? $p['full_name'] ?? '';
+            $loanNumber = $p['loan_number'] ?? $p['loan_id'] ?? '';
+            $amount = $p['amount'] ?? $p['payment_amount'] ?? 0;
+            $paymentDate = $p['payment_date'] ?? $p['date'] ?? '';
+            
+            // Skip records with no identifiable payment number or client
+            if (empty($paymentNumber) && empty($clientName)) {
+                continue;
             }
             
             $rows[] = [
-                $p['payment_number'],
-                $p['client_name'],
-                $p['loan_number'] ?? '',
-                (float)($p['amount'] ?? 0),
-                isset($p['payment_date']) ? date('Y-m-d', strtotime($p['payment_date'])) : ''
+                $paymentNumber,
+                $clientName,
+                $loanNumber,
+                (float)$amount,
+                !empty($paymentDate) ? date('Y-m-d', strtotime($paymentDate)) : ''
             ];
         }
         
@@ -859,18 +885,31 @@ class ReportService extends BaseService {
         $headers = ['Client Name', 'Email', 'Phone', 'Loans', 'Outstanding', 'Status'];
         $rows = [];
         foreach ($data as $c) {
-            // Validate each client record has required fields
-            if (!isset($c['client_name'])) {
-                continue; // Skip malformed records
+            // Ensure $c is an array and has basic structure
+            if (!is_array($c)) {
+                continue; // Skip non-array records
+            }
+            
+            // Extract values safely with comprehensive null coalescing
+            $clientName = $c['client_name'] ?? $c['name'] ?? $c['full_name'] ?? '';
+            $email = $c['email'] ?? '';
+            $phone = $c['phone'] ?? $c['phone_number'] ?? '';
+            $totalLoans = $c['total_loans'] ?? $c['loan_count'] ?? 0;
+            $outstanding = $c['outstanding_balance'] ?? $c['balance'] ?? 0;
+            $status = $c['status'] ?? $c['is_active'] ?? 'unknown';
+            
+            // Skip records with no identifiable client name
+            if (empty($clientName)) {
+                continue;
             }
             
             $rows[] = [
-                $c['client_name'],
-                $c['email'] ?? '',
-                $c['phone'] ?? '',
-                (int)($c['total_loans'] ?? 0),
-                (float)($c['outstanding_balance'] ?? 0),
-                ucfirst((string)($c['status'] ?? 'unknown'))
+                $clientName,
+                $email,
+                $phone,
+                (int)$totalLoans,
+                (float)$outstanding,
+                ucfirst((string)$status)
             ];
         }
         
@@ -892,17 +931,29 @@ class ReportService extends BaseService {
         $headers = ['Username', 'Full Name', 'Email', 'Role', 'Status'];
         $rows = [];
         foreach ($data as $u) {
-            // Validate each user record has required fields
-            if (!isset($u['username'])) {
-                continue; // Skip malformed records
+            // Ensure $u is an array and has basic structure
+            if (!is_array($u)) {
+                continue; // Skip non-array records
+            }
+            
+            // Extract values safely with comprehensive null coalescing
+            $username = $u['username'] ?? $u['user_name'] ?? '';
+            $fullName = $u['full_name'] ?? $u['name'] ?? $u['first_name'] . ' ' . $u['last_name'] ?? '';
+            $email = $u['email'] ?? '';
+            $role = $u['role'] ?? $u['user_role'] ?? 'unknown';
+            $isActive = $u['is_active'] ?? $u['active'] ?? $u['status'] ?? false;
+            
+            // Skip records with no identifiable username
+            if (empty($username)) {
+                continue;
             }
             
             $rows[] = [
-                $u['username'],
-                $u['full_name'] ?? '',
-                $u['email'] ?? '',
-                ucfirst((string)($u['role'] ?? 'unknown')),
-                !empty($u['is_active']) ? 'Active' : 'Inactive'
+                $username,
+                trim($fullName),
+                $email,
+                ucfirst((string)$role),
+                $isActive ? 'Active' : 'Inactive'
             ];
         }
         
