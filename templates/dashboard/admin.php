@@ -30,6 +30,9 @@
             <a href="<?= APP_URL ?>/public/reports/payments.php" class="btn btn-sm btn-outline-secondary px-3">
                 <i data-feather="dollar-sign" class="me-1" style="width: 14px; height: 14px;"></i> Payments
             </a>
+            <a href="<?= APP_URL ?>/public/admin/backup.php" class="btn btn-sm btn-outline-success px-3">
+                <i data-feather="database" class="me-1" style="width: 14px; height: 14px;"></i> Backup
+            </a>
         </div>
     </div>
     <div class="notion-divider my-3"></div>
