@@ -410,6 +410,26 @@ class LoanService extends BaseService {
             }
         }
 
+        // 4. Generate SLR (Summary of Loan Release) document - FR-007, FR-008
+        if (class_exists('LoanReleaseService')) {
+            try {
+                require_once __DIR__ . '/LoanReleaseService.php';
+                $loanReleaseService = new LoanReleaseService();
+                
+                // Generate and save SLR document to storage
+                $slrPath = $loanReleaseService->generateAndSaveSLR($id);
+                
+                if ($slrPath) {
+                    error_log('SLR document generated successfully for loan ID ' . $id . ': ' . $slrPath);
+                } else {
+                    error_log('Failed to generate SLR document for loan ID ' . $id . ': ' . $loanReleaseService->getErrorMessage());
+                }
+            } catch (Exception $e) {
+                // Log the error but don't fail the disbursement
+                error_log('Exception while generating SLR for loan ID ' . $id . ': ' . $e->getMessage());
+            }
+        }
+
         return true;
     }
 
