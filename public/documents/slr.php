@@ -42,7 +42,11 @@ switch ($action) {
  * Show the SLR document generation interface
  */
 function showSLRInterface() {
-    global $loanService, $clientService, $session, $csrf;
+    global $loanService, $clientService, $session, $csrf, $auth;
+
+    // Resolve current role within function scope for permission checks
+    $currentUser = $auth && method_exists($auth, 'getCurrentUser') ? ($auth->getCurrentUser() ?: []) : [];
+    $currentRole = $currentUser['role'] ?? '';
 
     // Get active loans for selection
     $activeLoans = $loanService->getAllActiveLoansWithClients();
