@@ -22,20 +22,21 @@ if (!$loanId) {
     exit;
 }
 
-// Generate SLR document
-$pdfContent = $loanReleaseService->generateSLRDocument($loanId);
+// Generate and save SLR document
+$filePath = $loanReleaseService->generateAndSaveSLR($loanId, null, $_SESSION['user_id']);
 
-if ($pdfContent) {
+if ($filePath) {
     // Set headers for PDF download
-    header('Content-Type: application/pdf');
-    header('Content-Disposition: attachment; filename="SLR_' . str_pad($loanId, 6, '0', STR_PAD_LEFT) . '_' . date('Ymd') . '.pdf"');
-    header('Content-Length: ' . strlen($pdfContent));
-    header('Cache-Control: private, max-age=0, must-revalidate');
-    header('Pragma: public');
+    $filename = 'SLR_' . str_pad($loanId, 6, '0', STR_PAD_LEFT) . '_' . date('Ymd') . '.pdf';
     
-    echo $pdfContent;
-    exit;
-} else {
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . filesize($filePath));
+    header('Cache-Control: no-cache, must-revalidate');
+    header('Pragma: no-cache');
+
+    // Output file and clean up
+    readfile($filePath); else {
     $_SESSION['error'] = 'Failed to generate SLR: ' . $loanReleaseService->getErrorMessage();
     header('Location: index.php');
     exit;

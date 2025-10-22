@@ -10,15 +10,18 @@ require_once __DIR__ . '/../core/BaseService.php';
 require_once __DIR__ . '/../models/LoanModel.php';
 require_once __DIR__ . '/../models/ClientModel.php';
 require_once __DIR__ . '/../utilities/PDFGenerator.php';
+require_once __DIR__ . '/DocumentArchiveService.php';
 
 class LoanReleaseService extends BaseService {
     private $loanModel;
     private $clientModel;
+    private $documentArchive;
 
     public function __construct() {
         parent::__construct();
         $this->loanModel = new LoanModel();
         $this->clientModel = new ClientModel();
+        $this->documentArchive = new DocumentArchiveService();
     }
 
     /**
@@ -188,34 +191,53 @@ class LoanReleaseService extends BaseService {
     /**
      * Generate and save SLR document to file system
      * @param int $loanId
-     * @param string $outputPath Directory to save PDF
+     * @param string $outputPath Directory to save PDF (optional)
+     * @param int $userId User ID generating the document
      * @return string|false File path or false on failure
      */
-    public function generateAndSaveSLR($loanId, $outputPath = null) {
+    public function generateAndSaveSLR($loanId, $outputPath = null, $userId = null) {
         $pdfContent = $this->generateSLRDocument($loanId);
         
         if ($pdfContent === false) {
             return false;
         }
 
-        // Default output path
+        // Use archive service to generate storage path
         if ($outputPath === null) {
-            $outputPath = __DIR__ . '/../../storage/slr/';
+            $filepath = $this->documentArchive->generateStoragePath('SLR', $loanId);
+        } else {
+            // Create directory if it doesn't exist
+            if (!is_dir($outputPath)) {
+                mkdir($outputPath, 0755, true);
+            }
+            
+            $filename = 'SLR_' . str_pad($loanId, 6, '0', STR_PAD_LEFT) . '_' . date('Ymd_His') . '.pdf';
+            $filepath = $outputPath . $filename;
         }
-
-        // Create directory if it doesn't exist
-        if (!is_dir($outputPath)) {
-            mkdir($outputPath, 0755, true);
-        }
-
-        // Generate filename
-        $filename = 'SLR_' . str_pad($loanId, 6, '0', STR_PAD_LEFT) . '_' . date('Ymd_His') . '.pdf';
-        $filepath = $outputPath . $filename;
 
         // Save PDF
         if (file_put_contents($filepath, $pdfContent) === false) {
             $this->setErrorMessage('Failed to save SLR document to file.');
             return false;
+        }
+
+        // Archive the document if user ID is provided
+        if ($userId !== null) {
+            $documentData = [
+                'document_type' => 'SLR',
+                'loan_id' => $loanId,
+                'document_number' => 'SLR-' . str_pad($loanId, 6, '0', STR_PAD_LEFT),
+                'file_name' => basename($filepath),
+                'file_path' => $filepath,
+                'generated_by' => $userId,
+                'notes' => 'Auto-generated SLR document'
+            ];
+            
+            $archiveId = $this->documentArchive->archiveDocument($documentData);
+            if ($archiveId === false) {
+                // Log error but don't fail the generation
+                error_log('Failed to archive SLR document: ' . $this->documentArchive->getErrorMessage());
+            }
         }
 
         return $filepath;
@@ -256,5 +278,146 @@ class LoanReleaseService extends BaseService {
         $filters['status'] = $validStatuses;
 
         return $this->loanModel->getAllLoansWithClients($filters);
+    }
+
+    /**
+     * Generate SLR documents for multiple loans
+     * @param array $loanIds Array of loan IDs
+     * @param string $outputPath Directory to save PDFs (optional)
+     * @param int $userId User ID generating the documents
+     * @return array Results with success count and errors
+     */
+    public function generateBulkSLR($loanIds, $outputPath = null, $userId = null) {
+        if (empty($loanIds)) {
+            $this->setErrorMessage('No loan IDs provided for bulk generation.');
+            return ['success' => false, 'count' => 0, 'errors' => 0, 'files' => []];
+        }
+
+        $successCount = 0;
+        $errorCount = 0;
+        $generatedFiles = [];
+        $errors = [];
+
+        foreach ($loanIds as $loanId) {
+            try {
+                $filePath = $this->generateAndSaveSLR($loanId, $outputPath, $userId);
+                
+                if ($filePath !== false) {
+                    $successCount++;
+                    $generatedFiles[] = [
+                        'loan_id' => $loanId,
+                        'file_path' => $filePath,
+                        'filename' => basename($filePath)
+                    ];
+                } else {
+                    $errorCount++;
+                    $errors[] = "Loan ID {$loanId}: " . $this->getErrorMessage();
+                }
+            } catch (Exception $e) {
+                $errorCount++;
+                $errors[] = "Loan ID {$loanId}: " . $e->getMessage();
+                error_log("Bulk SLR Generation Error for Loan {$loanId}: " . $e->getMessage());
+            }
+        }
+
+        return [
+            'success' => $successCount > 0,
+            'count' => $successCount,
+            'errors' => $errorCount,
+            'files' => $generatedFiles,
+            'error_details' => $errors
+        ];
+    }
+
+    /**
+     * Generate bulk SLR as ZIP file for download
+     * @param array $loanIds Array of loan IDs
+     * @param int $userId User ID generating the documents
+     * @return string|false ZIP file path or false on failure
+     */
+    public function generateBulkSLRZip($loanIds, $userId = null) {
+        if (empty($loanIds)) {
+            $this->setErrorMessage('No loan IDs provided for bulk generation.');
+            return false;
+        }
+
+        // Create temporary directory for PDFs
+        $tempDir = sys_get_temp_dir() . '/slr_bulk_' . uniqid();
+        if (!mkdir($tempDir, 0755, true)) {
+            $this->setErrorMessage('Failed to create temporary directory.');
+            return false;
+        }
+
+        // Generate PDFs
+        $results = $this->generateBulkSLR($loanIds, $tempDir . '/', $userId);
+        
+        if ($results['count'] === 0) {
+            $this->setErrorMessage('No SLR documents were generated successfully.');
+            return false;
+        }
+
+        // Create ZIP file
+        $zipPath = sys_get_temp_dir() . '/SLR_Bulk_' . date('Ymd_His') . '.zip';
+        $zip = new ZipArchive();
+        
+        if ($zip->open($zipPath, ZipArchive::CREATE) !== TRUE) {
+            $this->setErrorMessage('Failed to create ZIP file.');
+            return false;
+        }
+
+        // Add PDFs to ZIP
+        foreach ($results['files'] as $file) {
+            $zip->addFile($file['file_path'], $file['filename']);
+        }
+
+        // Add summary file
+        $summary = $this->createBulkSummary($results);
+        $zip->addFromString('BULK_GENERATION_SUMMARY.txt', $summary);
+        
+        $zip->close();
+
+        // Cleanup temporary files
+        foreach ($results['files'] as $file) {
+            unlink($file['file_path']);
+        }
+        rmdir($tempDir);
+
+        return $zipPath;
+    }
+
+    /**
+     * Create summary text for bulk generation
+     * @param array $results Generation results
+     * @return string Summary text
+     */
+    private function createBulkSummary($results) {
+        $summary = "BULK SLR GENERATION SUMMARY\n";
+        $summary .= str_repeat("=", 50) . "\n\n";
+        $summary .= "Generation Date: " . date('F d, Y h:i A') . "\n";
+        $summary .= "Total Requested: " . (count($results['files']) + $results['errors']) . "\n";
+        $summary .= "Successfully Generated: " . $results['count'] . "\n";
+        $summary .= "Failed: " . $results['errors'] . "\n\n";
+
+        if (!empty($results['files'])) {
+            $summary .= "GENERATED FILES:\n";
+            $summary .= str_repeat("-", 30) . "\n";
+            foreach ($results['files'] as $file) {
+                $summary .= "Loan ID {$file['loan_id']}: {$file['filename']}\n";
+            }
+            $summary .= "\n";
+        }
+
+        if (!empty($results['error_details'])) {
+            $summary .= "ERRORS:\n";
+            $summary .= str_repeat("-", 30) . "\n";
+            foreach ($results['error_details'] as $error) {
+                $summary .= $error . "\n";
+            }
+        }
+
+        $summary .= "\n" . str_repeat("=", 50) . "\n";
+        $summary .= "Generated by Fanders Microfinance Inc.\n";
+
+        return $summary;
     }
 }

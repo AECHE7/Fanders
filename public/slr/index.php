@@ -71,6 +71,23 @@ include_once BASE_PATH . '/templates/layout/header.php';
                         </div>
                     <?php endif; ?>
                     
+                    <!-- Action Buttons -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="bulk.php" class="btn btn-primary">
+                                    <i data-feather="layers"></i> Bulk Generate SLR
+                                </a>
+                                <a href="archive.php" class="btn btn-info">
+                                    <i data-feather="archive"></i> Document Archive
+                                </a>
+                                <a href="../loan/" class="btn btn-outline-secondary">
+                                    <i data-feather="arrow-left"></i> Back to Loans
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Search and Filter -->
                     <div class="row mb-3">
                         <div class="col-md-12">

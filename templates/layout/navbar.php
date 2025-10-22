@@ -81,7 +81,7 @@ $navItems = [
         'active_pages' => ['cash_blotter', 'cash-blotter']
     ],
     'slr-documents' => [
-        'icon' => 'file-contract',
+        'icon' => 'file',
         'title' => 'SLR Documents',
         // Link to the new SLR management page
             'url' => APP_URL . '/public/slr/index.php',
