@@ -46,21 +46,51 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($loans as $loan): ?>
-                    <tr>
+                <?php foreach ($loans as $loan): 
+                    // Check if loan is overdue
+                    $isOverdue = false;
+                    $daysOverdue = 0;
+                    if (strtolower($loan['status']) === 'active' && isset($loan['completion_date'])) {
+                        $completionDate = strtotime($loan['completion_date']);
+                        $today = strtotime('today');
+                        if ($completionDate < $today) {
+                            $isOverdue = true;
+                            $daysOverdue = floor(($today - $completionDate) / 86400);
+                        }
+                    }
+                ?>
+                    <tr class="<?= $isOverdue ? 'table-danger' : '' ?>">
                         <td><?= htmlspecialchars($loan['id']) ?></td>
                         <td>
-                            <a href="<?= APP_URL ?>/public/clients/view.php?id=<?= $loan['client_id'] ?>" class="text-decoration-none fw-medium">
-                                <?= htmlspecialchars($loan['client_name'] ?? 'N/A') ?>
-                            </a>
-                            <small class="text-muted d-block"><?= htmlspecialchars($loan['phone_number'] ?? '') ?></small>
+                            <div class="d-flex align-items-center">
+                                <?php if ($isOverdue): ?>
+                                    <span class="badge bg-danger me-2" title="Overdue by <?= $daysOverdue ?> days">
+                                        <i data-feather="alert-triangle" style="width: 12px; height: 12px;"></i>
+                                    </span>
+                                <?php endif; ?>
+                                <div>
+                                    <a href="<?= APP_URL ?>/public/clients/view.php?id=<?= $loan['client_id'] ?>" class="text-decoration-none fw-medium">
+                                        <?= htmlspecialchars($loan['client_name'] ?? 'N/A') ?>
+                                    </a>
+                                    <small class="text-muted d-block"><?= htmlspecialchars($loan['phone_number'] ?? '') ?></small>
+                                </div>
+                            </div>
                         </td>
                         <td>₱<?= number_format($loan['principal'], 2) ?></td>
                         <td>₱<?= number_format($loan['total_loan_amount'] / $loan['term_weeks'], 2) ?></td>
                         <td>
-                            <span class="badge text-bg-<?= getLoanStatusBadgeClass($loan['status']) ?>">
-                                <?= htmlspecialchars(ucfirst($loan['status'])) ?>
-                            </span>
+                            <div>
+                                <span class="badge text-bg-<?= getLoanStatusBadgeClass($loan['status']) ?>">
+                                    <?= htmlspecialchars(ucfirst($loan['status'])) ?>
+                                </span>
+                                <?php if ($isOverdue): ?>
+                                    <br>
+                                    <small class="text-danger fw-bold">
+                                        <i data-feather="clock" style="width: 12px; height: 12px;"></i>
+                                        Overdue <?= $daysOverdue ?> day<?= $daysOverdue > 1 ? 's' : '' ?>
+                                    </small>
+                                <?php endif; ?>
+                            </div>
                         </td>
                         <td><?= htmlspecialchars(date('M d, Y', strtotime($loan['application_date']))) ?></td>
                         <td>

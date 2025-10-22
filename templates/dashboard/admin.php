@@ -225,6 +225,28 @@
 </div>
 <?php endif; ?>
 
+<!-- Overdue Loans Alert Section (New!) -->
+<?php if (($stats['overdue_returns'] ?? 0) > 0): ?>
+<div class="mb-5">
+    <div class="alert alert-danger border-0 shadow-sm" style="background-color: #fee2e2; border-left: 4px solid #dc2626 !important;">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: #dc2626;">
+                    <i data-feather="alert-triangle" style="width: 24px; height: 24px; color: white;"></i>
+                </div>
+                <div>
+                    <h5 class="mb-1 text-danger fw-bold">⚠️ <?= $stats['overdue_returns'] ?? 0 ?> Overdue Payment<?= ($stats['overdue_returns'] ?? 0) > 1 ? 's' : '' ?> Require Attention</h5>
+                    <p class="mb-0 text-dark small">These loans have passed their due date and need immediate follow-up.</p>
+                </div>
+            </div>
+            <a href="<?= APP_URL ?>/public/payments/overdue_loans.php" class="btn btn-danger">
+                <i data-feather="eye" style="width: 14px; height: 14px;" class="me-1"></i> View Details
+            </a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Recent Activity -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">

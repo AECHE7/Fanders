@@ -70,7 +70,7 @@ $usernameDisplay = $currentUser['username'] ?? ($currentUser['email'] ?? 'User')
                     <i data-feather="settings" class="me-2" style="width: 16px; height: 16px;"></i>
                     <span>Settings</span>
                 </a>
-            </li>
+            </l
             <li><hr class="dropdown-divider my-1"></li>
             <li>
                 <a class="dropdown-item d-flex align-items-center py-2 text-danger" href="<?= APP_URL ?>/public/logout.php">

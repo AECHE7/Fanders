@@ -51,67 +51,121 @@ if (!$details) { $session->setFlash('error', 'Sheet not found.'); header('Locati
 $sheet = $details['sheet'];
 $items = $details['items'];
 
+// Get active clients and their active loans for dropdown
+$clientService = new ClientService();
+$loanService = new LoanService();
+$activeClients = $clientService->getAllClients(['status' => 'active', 'limit' => 1000]);
+
 include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 <main class="main-content">
   <div class="content-wrapper">
+    <!-- Page Header -->
     <div class="notion-page-header mb-4">
-      <div class="d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center">
+      <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div class="d-flex align-items-center mb-2 mb-md-0">
           <div class="me-3">
-            <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f0f4fd;">
-              <i data-feather="plus-circle" style="width:24px;height:24px;color:#000;"></i>
+            <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #e0f2fe;">
+              <i data-feather="clipboard" style="width:24px;height:24px;color:#0b76ef;"></i>
             </div>
           </div>
           <div>
-            <h1 class="notion-page-title mb-0">Collection Sheet #<?= (int)$sheet['id'] ?> (<?= htmlspecialchars(ucfirst($sheet['status'])) ?>)</h1>
-            <div class="text-muted small">Date: <?= htmlspecialchars($sheet['sheet_date']) ?> • Officer ID: <?= (int)$sheet['officer_id'] ?></div>
+            <h1 class="notion-page-title mb-0">Collection Sheet #<?= (int)$sheet['id'] ?></h1>
+            <div class="text-muted small">
+              <span class="badge bg-<?= $sheet['status'] === 'draft' ? 'warning' : ($sheet['status'] === 'submitted' ? 'info' : 'success') ?> me-2">
+                <?= htmlspecialchars(ucfirst($sheet['status'])) ?>
+              </span>
+              Date: <?= htmlspecialchars(date('F d, Y', strtotime($sheet['sheet_date']))) ?> • Officer: <?= htmlspecialchars($user['name']) ?>
+            </div>
           </div>
         </div>
         <div>
-          <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-sm btn-outline-secondary">Back</a>
+          <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-sm btn-outline-secondary">
+            <i data-feather="arrow-left" style="width: 14px; height: 14px;" class="me-1"></i> Back to List
+          </a>
         </div>
       </div>
       <div class="notion-divider my-3"></div>
     </div>
 
-    <?php if ($session->hasFlash('success')): ?><div class="alert alert-success"><?= $session->getFlash('success') ?></div><?php endif; ?>
-    <?php if ($session->hasFlash('error')): ?><div class="alert alert-danger"><?= $session->getFlash('error') ?></div><?php endif; ?>
+    <!-- Flash Messages -->
+    <?php if ($session->hasFlash('success')): ?><div class="alert alert-success alert-dismissible fade show">
+      <?= $session->getFlash('success') ?>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div><?php endif; ?>
+    <?php if ($session->hasFlash('error')): ?><div class="alert alert-danger alert-dismissible fade show">
+      <?= $session->getFlash('error') ?>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div><?php endif; ?>
 
+    <!-- Add Item Form (Only for Draft Status) -->
     <?php if ($sheet['status'] === 'draft' && $userRole === 'account_officer'): ?>
     <div class="card shadow-sm mb-4">
-      <div class="card-header"><strong>Add Item</strong></div>
+      <div class="card-header bg-primary text-white">
+        <div class="d-flex align-items-center">
+          <i data-feather="plus-circle" style="width: 18px; height: 18px;" class="me-2"></i>
+          <strong>Add Collection Item</strong>
+        </div>
+      </div>
       <div class="card-body">
-        <form method="post" class="row g-3">
+        <form method="post" class="row g-3" id="addItemForm">
           <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
           <input type="hidden" name="action" value="add_item">
           <input type="hidden" name="sheet_id" value="<?= (int)$sheet['id'] ?>">
-          <div class="col-md-3">
-            <label class="form-label">Client ID</label>
-            <input type="number" class="form-control" name="client_id" required>
+          
+          <div class="col-md-6">
+            <label class="form-label">
+              <i data-feather="user" style="width: 14px; height: 14px;"></i> Client *
+            </label>
+            <select class="form-select" name="client_id" id="clientSelect" required>
+              <option value="">-- Select Client --</option>
+              <?php foreach ($activeClients as $client): ?>
+                <option value="<?= $client['id'] ?>" data-name="<?= htmlspecialchars($client['name']) ?>">
+                  <?= htmlspecialchars($client['name']) ?> - <?= htmlspecialchars($client['phone_number'] ?? 'No phone') ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">Loan ID</label>
-            <input type="number" class="form-control" name="loan_id" required>
+          
+          <div class="col-md-6">
+            <label class="form-label">
+              <i data-feather="file-text" style="width: 14px; height: 14px;"></i> Loan *
+            </label>
+            <select class="form-select" name="loan_id" id="loanSelect" required disabled>
+              <option value="">-- Select client first --</option>
+            </select>
+            <small class="text-muted">Active loans for selected client</small>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">Amount (₱)</label>
-            <input type="number" step="0.01" min="0.01" class="form-control" name="amount" required>
+          
+          <div class="col-md-4">
+            <label class="form-label">
+              <i data-feather="dollar-sign" style="width: 14px; height: 14px;"></i> Payment Amount (₱) *
+            </label>
+            <input type="number" step="0.01" min="0.01" class="form-control" name="amount" id="amountInput" placeholder="0.00" required>
           </div>
-          <div class="col-md-3">
-            <label class="form-label">Notes</label>
-            <input type="text" class="form-control" name="notes" placeholder="Optional">
+          
+          <div class="col-md-8">
+            <label class="form-label">
+              <i data-feather="message-circle" style="width: 14px; height: 14px;"></i> Notes (Optional)
+            </label>
+            <input type="text" class="form-control" name="notes" placeholder="Add any remarks or notes">
           </div>
+          
           <div class="col-12">
-            <button type="submit" class="btn btn-primary">Add Item</button>
+            <button type="submit" class="btn btn-primary">
+              <i data-feather="plus" style="width: 14px; height: 14px;" class="me-1"></i> Add to Collection Sheet
+            </button>
+            <button type="reset" class="btn btn-outline-secondary">
+              <i data-feather="x" style="width: 14px; height: 14px;" class="me-1"></i> Clear Form
+            </button>
           </div>
         </form>
       </div>
     </div>
     <?php endif; ?>
 
-    <div class="card shadow-sm">
+    <!-- Items List -->
       <div class="card-header d-flex justify-content-between align-items-center">
         <strong>Items</strong>
         <div>
@@ -159,4 +213,59 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div>
   </div>
 </main>
+
+<!-- JavaScript for dynamic loan loading -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const clientSelect = document.getElementById('clientSelect');
+    const loanSelect = document.getElementById('loanSelect');
+    const amountInput = document.getElementById('amountInput');
+    
+    if (clientSelect && loanSelect) {
+        clientSelect.addEventListener('change', async function() {
+            const clientId = this.value;
+            loanSelect.disabled = true;
+            loanSelect.innerHTML = '<option value="">Loading...</option>';
+            
+            if (!clientId) {
+                loanSelect.innerHTML = '<option value="">-- Select client first --</option>';
+                return;
+            }
+            
+            try {
+                // Fetch active loans for the selected client
+                const response = await fetch(`<?= APP_URL ?>/public/api/get_client_loans.php?client_id=${clientId}&status=active`);
+                const data = await response.json();
+                
+                if (data.success && data.loans && data.loans.length > 0) {
+                    loanSelect.innerHTML = '<option value="">-- Select Loan --</option>';
+                    data.loans.forEach(loan => {
+                        const weeklyPayment = (loan.total_loan_amount / loan.term_weeks).toFixed(2);
+                        const option = document.createElement('option');
+                        option.value = loan.id;
+                        option.textContent = `Loan #${loan.id} - ₱${parseFloat(loan.principal).toFixed(2)} (Weekly: ₱${weeklyPayment})`;
+                        option.dataset.weeklyPayment = weeklyPayment;
+                        loanSelect.appendChild(option);
+                    });
+                    loanSelect.disabled = false;
+                } else {
+                    loanSelect.innerHTML = '<option value="">No active loans for this client</option>';
+                }
+            } catch (error) {
+                console.error('Error fetching loans:', error);
+                loanSelect.innerHTML = '<option value="">Error loading loans</option>';
+            }
+        });
+        
+        // Auto-fill amount when loan is selected
+        loanSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.dataset.weeklyPayment) {
+                amountInput.value = selectedOption.dataset.weeklyPayment;
+            }
+        });
+    }
+});
+</script>
+
 <?php include_once BASE_PATH . '/templates/layout/footer.php'; ?>

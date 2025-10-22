@@ -99,6 +99,38 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               <?php else: foreach ($sheets as $s): ?>
                 <tr>
                   <td><?= (int)$s['id'] ?></td>
+                  <td><?= htmlspecialchars(date('M d, Y', strtotime($s['sheet_date']))) ?></td>
+                  <td><?= htmlspecialchars($s['officer_name'] ?? 'Officer ID ' . $s['officer_id']) ?></td>
+                  <td>
+                    <?php
+                    $statusBadge = 'secondary';
+                    if ($s['status'] === 'draft') $statusBadge = 'warning';
+                    elseif ($s['status'] === 'submitted') $statusBadge = 'info';
+                    elseif ($s['status'] === 'approved') $statusBadge = 'success';
+                    elseif ($s['status'] === 'posted') $statusBadge = 'primary';
+                    ?>
+                    <span class="badge bg-<?= $statusBadge ?>"><?= htmlspecialchars(ucfirst($s['status'])) ?></span>
+                  </td>
+                  <td class="text-end">₱<?= number_format((float)$s['total_amount'], 2) ?></td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <?php if ($s['status'] === 'draft' && $userRole === 'account_officer'): ?>
+                        <a href="<?= APP_URL ?>/public/collection-sheets/add.php?id=<?= $s['id'] ?>" class="btn btn-outline-primary" title="Edit">
+                          <i data-feather="edit-2" style="width: 14px; height: 14px;"></i> Edit
+                        </a>
+                      <?php elseif (in_array($s['status'], ['submitted', 'approved']) && in_array($userRole, ['cashier', 'admin', 'super-admin', 'manager'])): ?>
+                        <a href="<?= APP_URL ?>/public/collection-sheets/approve.php?id=<?= $s['id'] ?>" class="btn btn-outline-success" title="Review">
+                          <i data-feather="check-circle" style="width: 14px; height: 14px;"></i> Review
+                        </a>
+                      <?php else: ?>
+                        <a href="<?= APP_URL ?>/public/collection-sheets/add.php?id=<?= $s['id'] ?>" class="btn btn-outline-secondary" title="View">
+                          <i data-feather="eye" style="width: 14px; height: 14px;"></i> View
+                        </a>
+                      <?php endif; ?>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; endif; ?>
                   <td><?= htmlspecialchars($s['sheet_date']) ?></td>
                   <td><?= htmlspecialchars($s['officer_name']) ?></td>
                   <td><span class="badge bg-secondary"><?= htmlspecialchars($s['status']) ?></span></td>
