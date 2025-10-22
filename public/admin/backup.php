@@ -167,15 +167,34 @@ try {
 }
 
 $pageTitle = 'Database Backup';
-include __DIR__ . '/../../templates/header.php';
+include_once BASE_PATH . '/templates/layout/header.php';
 ?>
+
+<main class="main-content">
+    <div class="content-wrapper">
+        <!-- Flash Messages -->
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i><?= htmlspecialchars($_SESSION['error']) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['success'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle me-2"></i><?= htmlspecialchars($_SESSION['success']) ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            <?php unset($_SESSION['success']); ?>
+        <?php endif; ?>
 
 <div class="container-fluid mt-4">
     <div class="row">
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="fas fa-database"></i> Database Backup & Export</h4>
+                    <h4 class="mb-0"><i class="bi bi-database"></i> Database Backup & Export</h4>
                 </div>
                 <div class="card-body">
                     <?php if (isset($_SESSION['error'])): ?>
@@ -203,15 +222,15 @@ include __DIR__ . '/../../templates/header.php';
                             
                             <div class="btn-group" role="group">
                                 <a href="?action=download&format=excel" class="btn btn-success">
-                                    <i class="fas fa-file-excel"></i> Download as Excel (.xls)
+                                    <i class="bi bi-file-earmark-excel"></i> Download as Excel (.xls)
                                 </a>
                                 <a href="?action=download&format=csv_zip" class="btn btn-info">
-                                    <i class="fas fa-file-archive"></i> Download as CSV ZIP
+                                    <i class="bi bi-file-earmark-zip"></i> Download as CSV ZIP
                                 </a>
                             </div>
                             
                             <div class="alert alert-info mt-3">
-                                <i class="fas fa-info-circle"></i> 
+                                <i class="bi bi-info-circle"></i> 
                                 <strong>Excel Format:</strong> Single file with all tables (can be opened in Excel/LibreOffice)<br>
                                 <strong>CSV ZIP:</strong> Individual CSV files for each table in a ZIP archive
                             </div>
@@ -258,7 +277,7 @@ include __DIR__ . '/../../templates/header.php';
                     </div>
                     
                     <div class="alert alert-warning mt-3">
-                        <i class="fas fa-exclamation-triangle"></i> 
+                        <i class="bi bi-exclamation-triangle"></i> 
                         <strong>Important:</strong> 
                         <ul class="mb-0">
                             <li>Regular backups help protect against data loss</li>
@@ -273,4 +292,7 @@ include __DIR__ . '/../../templates/header.php';
     </div>
 </div>
 
-<?php include __DIR__ . '/../../templates/footer.php'; ?>
+    </div>
+</main>
+
+<?php include_once BASE_PATH . '/templates/layout/footer.php'; ?>
