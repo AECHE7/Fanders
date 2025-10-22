@@ -182,10 +182,20 @@ class FilterUtility
             }
         }
 
-        // Status filter
+        // Status filter - supports both single value and array
         if (!empty($filters['status']) && !empty($mappings['status_field'])) {
-            $conditions[] = "{$mappings['status_field']} = ?";
-            $params[] = $filters['status'];
+            if (is_array($filters['status'])) {
+                // Handle array of statuses with IN clause
+                $placeholders = implode(',', array_fill(0, count($filters['status']), '?'));
+                $conditions[] = "{$mappings['status_field']} IN ($placeholders)";
+                foreach ($filters['status'] as $status) {
+                    $params[] = $status;
+                }
+            } else {
+                // Handle single status value
+                $conditions[] = "{$mappings['status_field']} = ?";
+                $params[] = $filters['status'];
+            }
         }
 
         // Role filter (for users)

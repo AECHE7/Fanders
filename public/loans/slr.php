@@ -74,7 +74,7 @@ if ($searchTerm && !empty($eligibleLoans)) {
 }
 
 $pageTitle = $action === 'view' ? 'View SLR Document' : 'Summary of Loan Release (SLR)';
-include __DIR__ . '/../../templates/header.php';
+include_once BASE_PATH . '/templates/layout/header.php';
 ?>
 
 <div class="container-fluid mt-4">
@@ -339,4 +339,4 @@ include __DIR__ . '/../../templates/header.php';
     </div>
 </div>
 
-<?php include __DIR__ . '/../../templates/footer.php'; ?>
+<?php include_once BASE_PATH . '/templates/layout/footer.php'; ?>
