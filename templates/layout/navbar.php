@@ -84,7 +84,7 @@ $navItems = [
         'icon' => 'file-contract',
         'title' => 'SLR Documents',
         // Link to the new SLR management page
-        'url' => APP_URL . '/public/loans/slr.php',
+            'url' => APP_URL . '/public/slr/index.php',
         'roles' => ['super-admin', 'admin', 'manager', 'cashier'],
         'active_pages' => ['slr-documents', 'slr']
     ],
