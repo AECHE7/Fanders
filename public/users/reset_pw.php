@@ -1,18 +1,18 @@
 Try AI directly in your favorite apps … Use Gemini to generate drafts and refine content, plus get Gemini Advanced with access to Google’s next-gen AI for ₱1,100.00 ₱550.00 for 2 months
 <?php
 /**
- * Reset Staff User Password page for the Fanders Microfinance Loan Management System
+ * DEPRECATED - Reset Staff User Password page
+ * This feature has been replaced with direct password editing in the user edit form.
+ * Super-admins can now change staff passwords directly through the edit user page.
+ * 
+ * Redirecting to the edit user page...
  */
 
 // Include configuration
 require_once '../../app/config/config.php';
 
-// Start output buffering
-ob_start();
-
 // Include all required files
 function autoload($className) {
-    // Define the directories to look in
     $directories = [
         'app/core/',
         'app/models/',
@@ -20,7 +20,6 @@ function autoload($className) {
         'app/utilities/'
     ];
     
-    // Try to find the class file
     foreach ($directories as $directory) {
         $file = BASE_PATH . '/' . $directory . $className . '.php';
         if (file_exists($file)) {
@@ -30,7 +29,6 @@ function autoload($className) {
     }
 }
 
-// Register autoloader
 spl_autoload_register('autoload');
 
 // Initialize session management
@@ -41,48 +39,22 @@ $auth = new AuthService();
 
 // Check if user is logged in
 if (!$auth->isLoggedIn()) {
-    // Redirect to login page
     $session->setFlash('error', 'Please login to access this page.');
     header('Location: ' . APP_URL . '/public/login.php');
     exit;
 }
 
-// Check for session timeout
-if ($auth->checkSessionTimeout()) {
-    // Session has timed out, redirect to login page with message
-    $session->setFlash('error', 'Your session has expired. Please login again.');
-    header('Location: ' . APP_URL . '/public/login.php');
-    exit;
+// Get user ID from query parameter
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+// Set informational message
+$session->setFlash('info', 'Password reset feature has been updated. You can now change user passwords directly in the edit form.');
+
+// Redirect to edit page
+if ($id > 0) {
+    header('Location: ' . APP_URL . '/public/users/edit.php?id=' . $id);
+} else {
+    header('Location: ' . APP_URL . '/public/users/index.php');
 }
-
-// Get current user data
-$user = $auth->getCurrentUser();
-$userRole = $user['role'];
-
-// Check if user has permission to view users list (Super Admin or Admin)
-if (!$auth->hasRole(['super-admin', 'admin'])) {
-    // Redirect to dashboard with error message
-    $session->setFlash('error', 'You do not have permission to access this page.');
-    header('Location: ' . APP_URL . '/public/dashboard.php');
-    exit;
-}
-
-// Initialize user service
-$userService = new UserService();
-
-//reset password
-$id = $_GET['id'];
-$result = $userService->resetPassword($id);
-
-if ($result['success']) {
-    $newPassword = $result['password']; // Get the new password
-    echo "<script>alert('Password reset successfully! New password: $newPassword'); window.location.href = 'index.php';</script>";
-} 
-else {
-    echo "<script>alert('Failed to reset password. Please try again.'); window.history.back();</script>";
-}
-// Include footer
-include_once BASE_PATH . '/app/views/footer.php';
-// End output buffering and flush output
-ob_end_flush();
+exit;
 ?>
