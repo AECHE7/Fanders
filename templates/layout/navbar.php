@@ -81,12 +81,12 @@ $navItems = [
         'active_pages' => ['cash_blotter', 'cash-blotter']
     ],
     'slr-documents' => [
-        'icon' => 'file',
+        'icon' => 'file-contract',
         'title' => 'SLR Documents',
-        // Link to existing SLR documents controller interface
-        'url' => APP_URL . '/public/documents/slr.php',
-        'roles' => ['super-admin', 'admin', 'manager', 'account_officer'],
-        'active_pages' => ['slr-documents', 'documents']
+        // Link to the new SLR management page
+        'url' => APP_URL . '/public/loans/slr.php',
+        'roles' => ['super-admin', 'admin', 'manager', 'cashier'],
+        'active_pages' => ['slr-documents', 'slr']
     ],
     'reports' => [
         'icon' => 'bar-chart-2',
