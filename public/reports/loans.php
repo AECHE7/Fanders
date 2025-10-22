@@ -1,5 +1,5 @@
 <?php
-require_once '../init.php';
+require_once '../../public/init.php';
 
 // Check authentication
 if (!isset($_SESSION['user_id'])) {

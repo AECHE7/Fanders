@@ -5,7 +5,7 @@
  */
 
 // Include configuration
-require_once '../app/config/config.php';
+require_once '../../app/config/config.php';
 
 // Start output buffering
 ob_start();

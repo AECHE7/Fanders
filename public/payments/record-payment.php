@@ -6,7 +6,7 @@
  */
 
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
-require_once '../init.php';
+require_once '../../public/init.php';
 
 // Enforce role-based access control (Only Staff roles responsible for handling cash/payments)
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier', 'account-officer']);

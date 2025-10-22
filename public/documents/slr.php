@@ -5,7 +5,7 @@
  */
 
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
-require_once '../init.php';
+require_once '../../public/init.php';
 require_once BASE_PATH . '/app/utilities/Permissions.php';
 
 // Enforce role-based access control (Staff roles can generate SLR documents)

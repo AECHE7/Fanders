@@ -7,7 +7,7 @@
 ob_start();
 
 // Include configuration
-require_once '../app/config/config.php';
+require_once '../../app/config/config.php';
 
 // Include all required files
 function autoload($className) {

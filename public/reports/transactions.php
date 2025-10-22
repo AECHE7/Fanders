@@ -6,7 +6,7 @@
  */
 
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
-require_once '../init.php';
+require_once '../../public/init.php';
 
 // Enforce role-based access control (Admins and Managers can view transaction reports)
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager']);

@@ -2,7 +2,7 @@
 // Endpoint: /public/agreements/list.php
 // Lists all agreements generated after loan approval
 
-require_once '../init.php';
+require_once '../../public/init.php';
 
 // Only allow staff roles
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account-officer', 'cashier']);
