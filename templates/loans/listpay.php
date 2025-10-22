@@ -77,9 +77,37 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                                 ?>
 
                                 <?php if ($status === 'active'): ?>
-                                    <!-- Record Payment Button (All staff action) -->
-                                    <a href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loan['id'] ?>" class="btn btn-success" title="Record Payment">
-                                        <i data-feather="credit-card"></i> Pay
+                                    <!-- Enhanced Payment Options (Direct Payment vs Collection Sheet) -->
+                                    <div class="btn-group" role="group">
+                                        <a href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loan['id'] ?>" 
+                                           class="btn btn-success btn-sm" title="Record Direct Payment">
+                                            <i data-feather="credit-card"></i> Pay Now
+                                        </a>
+                                        <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split" 
+                                                data-bs-toggle="dropdown" aria-expanded="false" title="More Payment Options">
+                                            <span class="visually-hidden">Toggle Dropdown</span>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a class="dropdown-item" href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loan['id'] ?>">
+                                                    <i data-feather="credit-card" style="width: 14px; height: 14px;"></i> Direct Payment (Instant)
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>">
+                                                    <i data-feather="file-plus" style="width: 14px; height: 14px;"></i> Add to Collection Sheet
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <?php if (in_array($status, ['approved', 'active', 'completed'])): ?>
+                                    <!-- SLR Generation for eligible loans -->
+                                    <a href="<?= APP_URL ?>/public/slr/generate.php?loan_id=<?= $loan['id'] ?>" 
+                                       class="btn btn-outline-secondary btn-sm" title="Generate SLR Document">
+                                        <i data-feather="file-text"></i> SLR
                                     </a>
                                 <?php endif; ?>
                             </div>

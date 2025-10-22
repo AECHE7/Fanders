@@ -163,12 +163,28 @@ $navItems = [
                                 <i data-feather="plus-circle" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
                                 <span class="quick-action-text">New Loan</span>
                             </a>
-                        <?php elseif (Permissions::canRecordPayment($userRole)): ?>
-                            <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-sm btn-primary d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="Record Payment">
-                                <i data-feather="dollar-sign" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
-                                <span class="quick-action-text">Record Payment</span>
+                        <?php endif; ?>
+                        
+                        <?php if ($userRole === 'account-officer'): ?>
+                            <a href="<?= APP_URL ?>/public/collection-sheets/add.php" class="btn btn-sm btn-success d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="Collection Sheet">
+                                <i data-feather="clipboard" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
+                                <span class="quick-action-text">Collection Sheet</span>
                             </a>
-                        <?php else: ?>
+                        <?php elseif (Permissions::canRecordPayment($userRole)): ?>
+                            <a href="<?= APP_URL ?>/public/payments/list.php" class="btn btn-sm btn-success d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="Record Payment">
+                                <i data-feather="dollar-sign" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
+                                <span class="quick-action-text">Record Payments</span>
+                            </a>
+                        <?php endif; ?>
+                        
+                        <?php if (in_array($userRole, ['super-admin', 'admin', 'manager', 'cashier'])): ?>
+                            <a href="<?= APP_URL ?>/public/slr/index.php" class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="SLR Documents">
+                                <i data-feather="file-text" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
+                                <span class="quick-action-text">SLR Documents</span>
+                            </a>
+                        <?php endif; ?>
+                        
+                        <?php if (!in_array($userRole, ['super-admin', 'admin', 'manager', 'cashier', 'account-officer'])): ?>
                             <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-primary d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="My Loans">
                                 <i data-feather="file-text" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
                                 <span class="quick-action-text">My Loans</span>

@@ -192,4 +192,80 @@ class CollectionSheetService extends BaseService {
             return true;
         });
     }
+
+    /**
+     * Quick add loan to an existing draft collection sheet for an Account Officer
+     * @param int $userId Account Officer user ID
+     * @param int $loanId Loan ID to add
+     * @param float|null $amount Payment amount (defaults to weekly payment)
+     * @param string $notes Optional notes
+     * @return array|false Sheet info with item added or false on failure
+     */
+    public function quickAddLoanToSheet($userId, $loanId, $amount = null, $notes = '') {
+        // Get or create today's draft sheet for this AO
+        $sheetDate = date('Y-m-d');
+        $draft = $this->sheetModel->findTodaysDraft($userId, $sheetDate);
+        
+        if (!$draft) {
+            $draft = $this->createDraftSheet($userId, $sheetDate);
+            if (!$draft) {
+                $this->setErrorMessage('Failed to create collection sheet.');
+                return false;
+            }
+        }
+
+        // Get loan details
+        $loan = $this->loanModel->getLoanWithClient($loanId);
+        if (!$loan) {
+            $this->setErrorMessage('Loan not found.');
+            return false;
+        }
+
+        // Default amount to weekly payment if not provided
+        if ($amount === null) {
+            $amount = $loan['total_loan_amount'] / 17; // Weekly payment
+        }
+
+        // Add item to sheet
+        $success = $this->addItem($draft['id'], $loan['client_id'], $loanId, $amount, $notes);
+        if (!$success) {
+            return false;
+        }
+
+        // Return updated sheet details
+        return $this->getSheetDetails($draft['id']);
+    }
+
+    /**
+     * Get Account Officer's current draft sheet (today)
+     * @param int $userId Account Officer user ID
+     * @return array|false Current draft sheet or false if none exists
+     */
+    public function getCurrentDraftSheet($userId) {
+        $sheetDate = date('Y-m-d');
+        return $this->sheetModel->findTodaysDraft($userId, $sheetDate);
+    }
+
+    /**
+     * Get loan eligibility for collection sheets
+     * @param int $loanId
+     * @return array|false Loan details if eligible, false if not
+     */
+    public function getLoanCollectionEligibility($loanId) {
+        $loan = $this->loanModel->getLoanWithClient($loanId);
+        if (!$loan) {
+            return false;
+        }
+
+        // Only active loans can be collected
+        if ($loan['status'] !== LoanModel::STATUS_ACTIVE) {
+            return false;
+        }
+
+        // Add calculated weekly payment amount
+        $loan['weekly_payment'] = $loan['total_loan_amount'] / 17;
+        $loan['collection_eligible'] = true;
+
+        return $loan;
+    }
 }

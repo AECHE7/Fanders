@@ -208,6 +208,84 @@ if (!function_exists('getLoanStatusBadgeClass')) {
     </div>
 </div>
 
+<!-- SLR Documents Section (for eligible loans) -->
+<?php if (in_array(strtolower($loanData['status']), ['approved', 'active', 'completed'])): ?>
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-success text-white">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i data-feather="file-text" style="width: 18px; height: 18px;" class="me-2"></i>
+                SLR Documents (Summary of Loan Release)
+            </h6>
+            <small class="badge bg-light text-dark">Available</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <p class="mb-2 text-muted">
+                    <strong>SLR Document:</strong> Official proof of loan disbursement for client signature and records.
+                </p>
+                <p class="mb-0 small text-muted">
+                    Document ID: <code>SLR-<?= str_pad($loanData['id'], 6, '0', STR_PAD_LEFT) ?></code> • 
+                    Status: <?= ucfirst($loanData['status']) ?> Loan
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="btn-group" role="group">
+                    <a href="<?= APP_URL ?>/public/slr/generate.php?loan_id=<?= $loanData['id'] ?>" 
+                       class="btn btn-success">
+                        <i data-feather="download" style="width: 16px; height: 16px;" class="me-1"></i>
+                        Generate SLR
+                    </a>
+                    <a href="<?= APP_URL ?>/public/slr/index.php?loan_id=<?= $loanData['id'] ?>" 
+                       class="btn btn-outline-secondary">
+                        <i data-feather="eye" style="width: 16px; height: 16px;" class="me-1"></i>
+                        View All SLRs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Quick Actions Section (for active loans) -->
+<?php if (strtolower($loanData['status']) === 'active'): ?>
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-primary text-white">
+        <h6 class="mb-0">
+            <i data-feather="zap" style="width: 18px; height: 18px;" class="me-2"></i>
+            Quick Payment Actions
+        </h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="d-grid">
+                    <a href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loanData['id'] ?>" 
+                       class="btn btn-success">
+                        <i data-feather="credit-card" class="me-2"></i>
+                        Record Direct Payment
+                    </a>
+                    <small class="text-muted mt-1">Process payment immediately</small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-grid">
+                    <a href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loanData['id'] ?>" 
+                       class="btn btn-outline-primary">
+                        <i data-feather="file-plus" class="me-2"></i>
+                        Add to Collection Sheet
+                    </a>
+                    <small class="text-muted mt-1">Add to field collection batch</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <!-- Payment History Table (Full Width) -->
 <div class="card shadow-sm mt-4">
     <div class="card-header bg-dark text-white">

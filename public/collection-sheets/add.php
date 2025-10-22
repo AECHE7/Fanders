@@ -51,6 +51,18 @@ if (!$details) { $session->setFlash('error', 'Sheet not found.'); header('Locati
 $sheet = $details['sheet'];
 $items = $details['items'];
 
+// Handle loan pre-population from URL parameter
+$prePopulateLoanId = isset($_GET['loan_id']) ? (int)$_GET['loan_id'] : 0;
+$prePopulatedLoan = null;
+if ($prePopulateLoanId > 0) {
+    $prePopulatedLoan = $loanService->getLoanWithClient($prePopulateLoanId);
+    // Only allow active loans to be pre-populated
+    if (!$prePopulatedLoan || $prePopulatedLoan['status'] !== 'active') {
+        $prePopulatedLoan = null;
+        $session->setFlash('warning', 'Loan not found or not active for collection.');
+    }
+}
+
 // Get active clients and their active loans for dropdown
 $clientService = new ClientService();
 $loanService = new LoanService();
@@ -101,6 +113,22 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
     <!-- Add Item Form (Only for Draft Status) -->
     <?php if ($sheet['status'] === 'draft' && $userRole === 'account_officer'): ?>
+    
+    <!-- Pre-populated Loan Alert (if loan_id in URL) -->
+    <?php if ($prePopulatedLoan): ?>
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+      <div class="d-flex align-items-center">
+        <i data-feather="info" style="width: 18px; height: 18px;" class="me-2"></i>
+        <div>
+          <strong>Loan Pre-selected:</strong> 
+          Loan #<?= $prePopulatedLoan['id'] ?> for <?= htmlspecialchars($prePopulatedLoan['client_name']) ?> 
+          (Weekly Payment: ₱<?= number_format($prePopulatedLoan['total_loan_amount'] / 17, 2) ?>)
+        </div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <?php endif; ?>
+    
     <div class="card shadow-sm mb-4">
       <div class="card-header bg-primary text-white">
         <div class="d-flex align-items-center">
@@ -121,7 +149,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <select class="form-select" name="client_id" id="clientSelect" required>
               <option value="">-- Select Client --</option>
               <?php foreach ($activeClients as $client): ?>
-                <option value="<?= $client['id'] ?>" data-name="<?= htmlspecialchars($client['name']) ?>">
+                <option value="<?= $client['id'] ?>" 
+                        data-name="<?= htmlspecialchars($client['name']) ?>"
+                        <?= ($prePopulatedLoan && $prePopulatedLoan['client_id'] == $client['id']) ? 'selected' : '' ?>>
                   <?= htmlspecialchars($client['name']) ?> - <?= htmlspecialchars($client['phone_number'] ?? 'No phone') ?>
                 </option>
               <?php endforeach; ?>
@@ -132,8 +162,14 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <label class="form-label">
               <i data-feather="file-text" style="width: 14px; height: 14px;"></i> Loan *
             </label>
-            <select class="form-select" name="loan_id" id="loanSelect" required disabled>
-              <option value="">-- Select client first --</option>
+            <select class="form-select" name="loan_id" id="loanSelect" required <?= $prePopulatedLoan ? '' : 'disabled' ?>>
+              <?php if ($prePopulatedLoan): ?>
+                <option value="<?= $prePopulatedLoan['id'] ?>" selected>
+                  Loan #<?= $prePopulatedLoan['id'] ?> - ₱<?= number_format($prePopulatedLoan['principal'], 2) ?>
+                </option>
+              <?php else: ?>
+                <option value="">-- Select client first --</option>
+              <?php endif; ?>
             </select>
             <small class="text-muted">Active loans for selected client</small>
           </div>
@@ -142,7 +178,12 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <label class="form-label">
               <i data-feather="dollar-sign" style="width: 14px; height: 14px;"></i> Payment Amount (₱) *
             </label>
-            <input type="number" step="0.01" min="0.01" class="form-control" name="amount" id="amountInput" placeholder="0.00" required>
+            <input type="number" step="0.01" min="0.01" class="form-control" name="amount" id="amountInput" 
+                   placeholder="0.00" required 
+                   <?= $prePopulatedLoan ? 'value="' . number_format($prePopulatedLoan['total_loan_amount'] / 17, 2, '.', '') . '"' : '' ?>>
+            <?php if ($prePopulatedLoan): ?>
+              <small class="text-muted">Weekly payment: ₱<?= number_format($prePopulatedLoan['total_loan_amount'] / 17, 2) ?></small>
+            <?php endif; ?>
           </div>
           
           <div class="col-md-8">
