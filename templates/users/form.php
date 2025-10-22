@@ -61,12 +61,21 @@ $userId = $currentUser;
 
             <!-- Password Field -->
              <?php
-                // password conditionz
+                // Password conditions
                 $create = !isset($editUser['id']);
-                $fullEdit = isset($editUser['id']) && $editUser['id'] == $currentUser['id'];
-                $adminEdit = isset($editUser['id']) && $editUser['id'] != $currentUser['id'];
+                $isEditingSelf = isset($editUser['id']) && $editUser['id'] == $currentUser['id'];
+                $isSuperAdminEditingOthers = isset($editUser['id']) && 
+                                               $editUser['id'] != $currentUser['id'] && 
+                                               $currentUser['role'] === 'super-admin';
+                $canEditPassword = $create || $isEditingSelf || $isSuperAdminEditingOthers;
+                
+                // Prevent staff from editing super-admin passwords
+                if (isset($editUser['role']) && $editUser['role'] === 'super-admin' && 
+                    $currentUser['role'] !== 'super-admin') {
+                    $canEditPassword = false;
+                }
             ?>
-            <?php if ($create || $fullEdit): ?>
+            <?php if ($canEditPassword): ?>
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
                     <div class="input-group">
@@ -80,20 +89,20 @@ $userId = $currentUser;
                     <label for="password" class="notion-form-label">Password</label>
                     <div class="invalid-feedback">Please enter a password.</div>
                     <small class="form-text text-muted">
-                        <?= isset($editUser['id']) ? 'Leave empty to keep current password.' : 'Must enter password.' ?>
+                        <?php if (isset($editUser['id'])): ?>
+                            <?php if ($isSuperAdminEditingOthers): ?>
+                                Leave empty to keep current password, or enter new password to change it.
+                            <?php else: ?>
+                                Leave empty to keep current password.
+                            <?php endif; ?>
+                        <?php else: ?>
+                            Must enter password.
+                        <?php endif; ?>
                     </small>
-                    <?php endif; ?>
-                     <!-- Reset Password Link -->
-                <?php if ($adminEdit): ?>
-                <div class="col-md-6">
-                    <a href="reset_pw.php?id=<?= $editUser['id'] ?>" class="btn btn-reset-pw ripple-effect" onclick="return confirmReset()">Reset Password</a>
-                </div>
-                <?php endif; ?>
                 </div>
             </div>
 
             <!-- Confirm Password Field -->
-             <?php if ($create || $fullEdit): ?>
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
                     <input type="password" class="notion-form-control" id="password_confirmation" name="password_confirmation"
@@ -102,6 +111,18 @@ $userId = $currentUser;
                     <div class="invalid-feedback">Passwords do not match.</div>
                 </div>
             </div>
+            <?php else: ?>
+                <!-- Password change not allowed for this user -->
+                <div class="col-md-12">
+                    <div class="alert alert-info">
+                        <i data-feather="info"></i>
+                        <?php if (isset($editUser['role']) && $editUser['role'] === 'super-admin'): ?>
+                            Only super-admins can change super-admin passwords.
+                        <?php else: ?>
+                            Contact your administrator to change this user's password.
+                        <?php endif; ?>
+                    </div>
+                </div>
             <?php endif; ?>
 
             <!-- Role & Account Status Dropdowns in the same row -->
@@ -162,15 +183,9 @@ $userId = $currentUser;
         <button type="submit" class="btn btn-primary px-4 ripple-effect">
             <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
             <?= isset($editUser['id']) ? 'Update Account' : 'Create Account' ?>
-        </button>
+        </div>
     </div>
 </form>
-<script>
-// Confirm reset password
-    function confirmReset() {
-        return confirm("Are you sure you want to reset the password for this user?");
-    }
-</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -272,34 +287,6 @@ $userId = $currentUser;
     }
     @keyframes ripple {
         to { transform: scale(2.5); opacity: 0; }
-    }
-
-    .btn-reset-pw {
-        display: inline-block;
-        padding: 0.375rem 0.75rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: #ffffff;
-        background-color: #dc3545; /* Bootstrap danger color */
-        border: 1px solid #dc3545;
-        border-radius: 0.25rem;
-        text-decoration: none;
-        text-align: center;
-        transition: background-color 0.3s ease, color 0.3s ease;
-        cursor: pointer;
-        user-select: none;
-    }
-    .btn-reset-pw:hover,
-    .btn-reset-pw:focus {
-        background-color: #c82333;
-        border-color: #bd2130;
-        color: #ffffff;
-        text-decoration: none;
-    }
-    .btn-reset-pw:active {
-        background-color: #bd2130;
-        border-color: #b21f2d;
-        color: #ffffff;
     }
 </style>
 

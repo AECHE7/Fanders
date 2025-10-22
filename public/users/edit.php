@@ -93,6 +93,13 @@ if ($userRole === 'admin' && !in_array($editUser['role'], ['manager', 'cashier',
     exit;
 }
 
+// Additional check: Non-super-admins cannot edit super-admin accounts
+if ($editUser['role'] === 'super-admin' && $userRole !== 'super-admin') {
+    $session->setFlash('error', 'You do not have permission to edit super-admin accounts.');
+    header('Location: ' . APP_URL . '/public/users/index.php');
+    exit;
+}
+
 // Process form submission
 $error = '';
 
@@ -112,8 +119,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Handle password update
         if (!empty($_POST['password'])) {
-            $updatedUser['password'] = $_POST['password'];
-            $updatedUser['password_confirmation'] = $_POST['password_confirmation'];
+            // Check if user has permission to change password
+            $canChangePassword = false;
+            
+            // Can change own password
+            if ($userId === $user['id']) {
+                $canChangePassword = true;
+            }
+            // Super-admin can change any password
+            elseif ($userRole === 'super-admin') {
+                $canChangePassword = true;
+            }
+            // Non-super-admins cannot change super-admin passwords
+            elseif ($editUser['role'] === 'super-admin') {
+                $canChangePassword = false;
+                $error = 'You do not have permission to change super-admin passwords.';
+            }
+            
+            if ($canChangePassword) {
+                $updatedUser['password'] = $_POST['password'];
+                $updatedUser['password_confirmation'] = $_POST['password_confirmation'];
+            }
         }
 
         // Admin can only edit operational staff and can't change role
@@ -121,8 +147,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $updatedUser['role'] = $editUser['role']; // Keep existing role
         }
 
-        // Update the user
-        if ($userService->updateUser($userId, $updatedUser)) {
+        // Update the user (only if no error from password check)
+        if (empty($error) && $userService->updateUser($userId, $updatedUser)) {
             // User updated successfully
             $session->setFlash('success', 'Staff user updated successfully.');
             header('Location: ' . APP_URL . '/public/users/view.php?id=' . $userId);
