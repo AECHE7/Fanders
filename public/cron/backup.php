@@ -9,7 +9,7 @@
 
 // Security: Check for secret token
 $token = $_GET['token'] ?? '';
-$expectedToken = getenv('CRON_SECRET_TOKEN') ?: 'change-this-secret-token';
+$expectedToken = getenv('CRON_SECRET_TOKEN') ?: 'abc123xyz789';
 
 if ($token !== $expectedToken) {
     http_response_code(403);
