@@ -113,7 +113,7 @@ $navItems = [
 ?>
 
 <div class="sidebar-wrapper">
-    <div class="sidebar sidebar-expanded d-none d-md-block bg-light border-end" id="sidebarMenu" style="width: 280px; transition: all 0.3s ease;">
+    <div class="sidebar sidebar-expanded collapse d-md-block bg-light border-end" id="sidebarMenu" style="width: 280px; transition: all 0.3s ease;">
         <nav class="position-sticky pt-3" style="height: calc(100vh - 56px); overflow-y: auto;">
             <ul class="nav flex-column px-2">
                 <?php foreach ($navItems as $id => $item): ?>
