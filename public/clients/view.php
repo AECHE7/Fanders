@@ -23,6 +23,7 @@ if ($clientId <= 0) {
 // Initialize services
 $clientService = new ClientService();
 $loanService = new LoanService();
+$csrf->setTokenName('csrf_token_view'); // Use separate token to avoid interference from other pages
 $csrfToken = $csrf->generateToken(); // Pass token to template for status forms
 $currentUser = $auth->getCurrentUser() ?: [];
 $currentRole = $currentUser['role'] ?? '';

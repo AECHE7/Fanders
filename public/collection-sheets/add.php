@@ -273,49 +273,13 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               </div>
             </div>
             <small class="text-muted" id="loanSelectHelper">Active loans for selected client</small>
-          </div>php else: ?>
-                <option value="">-- Select Client --</option>
-                <?php foreach ($clients as $client): ?>
-                  <option value="<?= $client['id'] ?>"><?= htmlspecialchars($client['first_name'] . ' ' . $client['last_name']) ?></option>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </select>
-            <?php if ($prePopulatedLoan): ?>
-              <small class="text-success"><i data-feather="lock" style="width: 12px; height: 12px;"></i> Locked for automatic processing</small>
-            <?php endif; ?>
           </div>
-          
-          <div class="col-md-6">
-            <label class="form-label">
-              <i data-feather="file-text" style="width: 14px; height: 14px;"></i> Loan *
-              <?php if ($prePopulatedLoan): ?>
-                <span class="badge bg-success ms-2">Auto-Selected</span>
-              <?php endif; ?>
-            </label>
-            <select class="form-select" name="loan_id" id="loanSelect" required <?= $prePopulatedLoan ? 'disabled' : 'disabled' ?>>
-              <?php if ($prePopulatedLoan): ?>
-                <option value="<?= $prePopulatedLoan['id'] ?>" selected>
-                  Loan #<?= $prePopulatedLoan['id'] ?> - ₱<?= number_format($prePopulatedLoan['principal'], 2) ?>
-                </option>
-                <!-- Hidden input to ensure value is submitted when dropdown is disabled -->
-                <input type="hidden" name="loan_id" value="<?= $prePopulatedLoan['id'] ?>">
-              <?php else: ?>
-                <option value="">-- Select client first --</option>
-              <?php endif; ?>
-            </select>
-            <?php if ($prePopulatedLoan): ?>
-              <small class="text-success"><i data-feather="lock" style="width: 12px; height: 12px;"></i> Locked for automatic processing</small>
-            <?php else: ?>
-              <small class="text-muted">Active loans for selected client</small>
-            <?php endif; ?>
-          </div>
-          
           <div class="col-md-4">
             <label class="form-label">
               <i data-feather="dollar-sign" style="width: 14px; height: 14px;"></i> Payment Amount (₱) *
             </label>
-            <input type="number" step="0.01" min="0.01" class="form-control" name="amount" id="amountInput" 
-                   placeholder="0.00" required 
+            <input type="number" step="0.01" min="0.01" class="form-control" name="amount" id="amountInput"
+                   placeholder="0.00" required
                    <?= $prePopulatedLoan ? 'value="' . number_format($prePopulatedLoan['total_loan_amount'] / 17, 2, '.', '') . '"' : '' ?>>
             <!-- Locked amount display -->
             <div id="lockedAmountInfo" class="mt-2" style="display: none;">
@@ -331,12 +295,12 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               <small class="text-muted" id="amountHelper">Will be auto-filled when loan is selected</small>
             <?php endif; ?>
           </div>
-          
+
           <div class="col-md-8">
             <label class="form-label">
               <i data-feather="message-circle" style="width: 14px; height: 14px;"></i> Notes
             </label>
-            <input type="text" class="form-control" name="notes" id="notesInput" placeholder="Add any remarks or notes" 
+            <input type="text" class="form-control" name="notes" id="notesInput" placeholder="Add any remarks or notes"
                    value="<?= $prePopulatedLoan ? 'Auto-populated from loan selection' : '' ?>">
             <!-- Auto-fill notes toggle -->
             <div class="form-check mt-2">
@@ -346,7 +310,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               </label>
             </div>
           </div>
-          
+
           <div class="col-12">
             <button type="submit" class="btn btn-primary" id="addItemBtn">
               <i data-feather="plus" style="width: 14px; height: 14px;" class="me-1"></i> Add to Collection Sheet
