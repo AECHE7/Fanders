@@ -377,8 +377,8 @@ class CollectionSheetService extends BaseService {
                     continue;
                 }
 
-                // Record payment for this loan
-                $paymentId = $paymentService->recordPayment(
+                // Record payment for this loan using transaction-safe method
+                $paymentId = $paymentService->recordPaymentWithoutTransaction(
                     (int)$item['loan_id'], 
                     (float)$item['amount'], 
                     (int)$cashierUserId,

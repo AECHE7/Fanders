@@ -192,7 +192,7 @@ class BaseService {
             $this->db->commit();
             return $result;
         } catch (Exception $e) {
-            $this->db->rollBack();
+            $this->db->rollback();
             
             // Use ErrorHandler for better logging
             require_once __DIR__ . '/../utilities/ErrorHandler.php';

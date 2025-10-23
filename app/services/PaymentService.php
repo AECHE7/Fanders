@@ -115,6 +115,101 @@ class PaymentService extends BaseService {
     }
 
     /**
+     * Records a payment without starting a transaction (for use within existing transactions)
+     * @param int $loanId
+     * @param float $amount
+     * @param int $recordedBy
+     * @param string $description
+     * @return int|false Payment ID on success, false on failure
+     */
+    public function recordPaymentWithoutTransaction($loanId, $amount, $recordedBy, $description = null) {
+        // Validate input parameters
+        if (!$this->validate([
+            'loan_id' => $loanId,
+            'amount' => $amount,
+            'recorded_by' => $recordedBy
+        ], [
+            'loan_id' => 'required|numeric|positive',
+            'amount' => 'required|numeric|positive',
+            'recorded_by' => 'required|numeric|positive'
+        ])) {
+            return false;
+        }
+
+        // Verify the loan exists and is active
+        $loan = $this->loanModel->findById($loanId);
+        if (!$loan) {
+            $this->setErrorMessage('Loan not found.');
+            return false;
+        }
+
+        if ($loan['status'] !== LoanModel::STATUS_ACTIVE) {
+            $this->setErrorMessage('Payment can only be recorded for active loans.');
+            return false;
+        }
+
+        // Calculate and validate payment amount
+        $totalPaid = $this->paymentModel->getTotalPaymentsForLoan($loanId);
+        $remainingBalance = $loan['total_loan_amount'] - $totalPaid;
+
+        if ($amount <= 0) {
+            $this->setErrorMessage('Payment amount must be greater than zero.');
+            return false;
+        }
+
+        if ($remainingBalance <= 0) {
+            $this->setErrorMessage('This loan is already fully paid.');
+            return false;
+        }
+
+        // Ensure payment does not exceed the remaining balance
+        if ($amount > $remainingBalance) {
+            $amount = $remainingBalance;
+        }
+
+        try {
+            // 1. Record the Payment
+            $data = [
+                'loan_id' => $loanId,
+                'user_id' => $recordedBy,
+                'amount' => $amount,
+                'payment_date' => date('Y-m-d H:i:s'),
+            ];
+
+            $newPaymentId = $this->paymentModel->create($data);
+            if (!$newPaymentId) {
+                throw new Exception("Failed to create payment record.");
+            }
+
+            // 2. Check for Loan Completion
+            $newTotalPaid = $this->paymentModel->getTotalPaymentsForLoan($loanId);
+            if (round($newTotalPaid, 2) >= round($loan['total_loan_amount'], 2)) {
+                $completionSuccess = $this->loanModel->completeLoan($loanId);
+                if (!$completionSuccess) {
+                    throw new Exception("Failed to update loan status to completed.");
+                }
+            }
+
+            // 3. Log transaction for audit trail (optional)
+            if (class_exists('TransactionService')) {
+                $transactionService = new TransactionService();
+                $transactionService->logPaymentTransaction('recorded', $recordedBy, $newPaymentId, [
+                    'loan_id' => $loanId,
+                    'amount' => $amount,
+                    'payment_date' => date('Y-m-d H:i:s'),
+                    'description' => $description
+                ]);
+            }
+
+            return $newPaymentId;
+
+        } catch (Exception $e) {
+            $this->setErrorMessage($e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Calculates the current status and financial summary of a loan.
      * @param int $loanId
      * @return array|false Loan details combined with payment totals.
