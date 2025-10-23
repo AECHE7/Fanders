@@ -662,6 +662,29 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Handle form submission
         document.getElementById('addItemForm').addEventListener('submit', function(e) {
+            const form = this;
+            const clientId = parseInt(form.client_id.value);
+            const loanId = parseInt(form.loan_id.value);
+            const amount = parseFloat(form.amount.value);
+
+            if (clientId <= 0) {
+                e.preventDefault();
+                showNotification('Please select a valid client.', 'error');
+                return false;
+            }
+
+            if (loanId <= 0) {
+                e.preventDefault();
+                showNotification('Please select a valid loan.', 'error');
+                return false;
+            }
+
+            if (amount <= 0) {
+                e.preventDefault();
+                showNotification('Please enter a valid payment amount.', 'error');
+                return false;
+            }
+
             if (lockAfterAdd && lockAfterAdd.checked && selectedLoanData && !isFormLocked) {
                 // Lock form after submission if enabled
                 setTimeout(() => {
