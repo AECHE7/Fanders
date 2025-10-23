@@ -289,6 +289,31 @@ class TransactionService extends BaseService {
     }
 
     /**
+     * Logs a generic system event with flexible action and reference.
+     * @param string $action Action type/name
+     * @param int $userId User performing the action
+     * @param int|null $referenceId Reference ID (collection sheet, loan, etc.)
+     * @param array $additionalData Additional data
+     * @return bool Success status
+     */
+    public function logGeneric($action, $userId, $referenceId = null, $additionalData = []) {
+        $details = array_merge([
+            'action' => $action,
+            'timestamp' => date('Y-m-d H:i:s'),
+            'reference_id' => $referenceId,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null
+        ], $additionalData);
+
+        // Use system transaction type for generic events
+        return $this->transactionModel->create([
+            'user_id' => $userId,
+            'transaction_type' => TransactionModel::TYPE_SYSTEM_CONFIG_CHANGED, // Generic system event
+            'reference_id' => $referenceId,
+            'details' => $details
+        ]);
+    }
+
+    /**
      * Exports transactions to PDF.
      * @param array $transactions Transaction data
      * @param array $filters Applied filters
