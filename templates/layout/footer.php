@@ -95,14 +95,14 @@
                 const sidebarToggle = document.getElementById('sidebarToggle');
                 const sidebar = document.getElementById('sidebarMenu');
                 const mainContent = document.querySelector('.main-content');
+                const layout = document.querySelector('.layout');
 
                 // Function to collapse sidebar
                 function collapseSidebar() {
                     if (sidebar && !sidebar.classList.contains('sidebar-collapsed')) {
                         sidebar.classList.add('sidebar-collapsed');
                         sidebar.classList.remove('sidebar-expanded');
-                        document.body.classList.add('sidebar-hidden');
-                        document.body.classList.remove('sidebar-visible');
+                        if (layout) layout.classList.add('sidebar-hidden');
                         localStorage.setItem('sidebarCollapsed', 'true');
 
                         // Update toggle button icon
@@ -121,39 +121,17 @@
                     }
                 }
 
-                // Function to expand sidebar
-                function expandSidebar() {
-                    if (sidebar && sidebar.classList.contains('sidebar-collapsed')) {
-                        sidebar.classList.remove('sidebar-collapsed');
-                        sidebar.classList.add('sidebar-expanded');
-                        document.body.classList.remove('sidebar-hidden');
-                        document.body.classList.add('sidebar-visible');
-                        localStorage.setItem('sidebarCollapsed', 'false');
-
-                        // Update toggle button icon
-                        const toggleIcon = sidebarToggle ? sidebarToggle.querySelector('i') : null;
-                        if (toggleIcon) {
-                            toggleIcon.setAttribute('data-feather', 'x');
-                            if (typeof feather !== 'undefined') {
-                                feather.replace();
-                            }
-                        }
-                    }
-                }
-
                 if (sidebarToggle && sidebar) {
                     // Load sidebar state from localStorage
                     const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
                     if (sidebarCollapsed) {
                         sidebar.classList.add('sidebar-collapsed');
                         sidebar.classList.remove('sidebar-expanded');
-                        document.body.classList.add('sidebar-hidden');
-                        document.body.classList.remove('sidebar-visible');
+                        if (layout) layout.classList.add('sidebar-hidden');
                     } else {
                         sidebar.classList.add('sidebar-expanded');
                         sidebar.classList.remove('sidebar-collapsed');
-                        document.body.classList.remove('sidebar-hidden');
-                        document.body.classList.add('sidebar-visible');
+                        if (layout) layout.classList.remove('sidebar-hidden');
                     }
 
                     // Toggle sidebar on button click
@@ -161,7 +139,10 @@
                         const isCollapsed = sidebar.classList.contains('sidebar-collapsed');
 
                         if (isCollapsed) {
-                            expandSidebar();
+                            sidebar.classList.remove('sidebar-collapsed');
+                            sidebar.classList.add('sidebar-expanded');
+                            if (layout) layout.classList.remove('sidebar-hidden');
+                            localStorage.setItem('sidebarCollapsed', 'false');
                         } else {
                             collapseSidebar();
                         }
@@ -186,14 +167,15 @@
                             // On mobile, always show expanded sidebar
                             sidebar.classList.remove('sidebar-collapsed');
                             sidebar.classList.add('sidebar-expanded');
-                            document.body.classList.remove('sidebar-hidden');
-                            document.body.classList.add('sidebar-visible');
+                            if (layout) layout.classList.remove('sidebar-hidden');
                         }
                     });
                 }
             });
         </script>
+        <!-- Close layout wrapper opened in header -->
+        </div>
     </body>
-</html>
+    </html>
 
 <?php include_once BASE_PATH . '/templates/layout/session_timeout_modal.php'; ?>
