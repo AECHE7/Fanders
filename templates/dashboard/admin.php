@@ -536,7 +536,10 @@
                             $todayAmount = 0;
                             try {
                                 $today = date('Y-m-d');
-                                $todayPayments = $paymentService->getPaymentsByDateRange($today, $today);
+                                $todayPayments = $paymentService->getAllPayments([
+                                    'date_from' => $today,
+                                    'date_to' => $today
+                                ]);
                                 if (is_array($todayPayments)) {
                                     foreach ($todayPayments as $p) {
                                         $todayAmount += (float)($p['amount'] ?? 0);
@@ -565,7 +568,10 @@
                             try {
                                 $monthStart = date('Y-m-01');
                                 $monthEnd = date('Y-m-t');
-                                $monthPayments = $paymentService->getPaymentsByDateRange($monthStart, $monthEnd);
+                                $monthPayments = $paymentService->getAllPayments([
+                                    'date_from' => $monthStart,
+                                    'date_to' => $monthEnd
+                                ]);
                                 if (is_array($monthPayments)) {
                                     foreach ($monthPayments as $p) {
                                         $monthAmount += (float)($p['amount'] ?? 0);
