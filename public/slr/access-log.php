@@ -132,6 +132,16 @@ $statsStmt = $db->prepare($statsSql);
 $statsStmt->execute($countParams);
 $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
 
+// Ensure all stats have default values (handle NULL from aggregate functions)
+$stats = [
+    'total_accesses' => (int)($stats['total_accesses'] ?? 0),
+    'unique_documents' => (int)($stats['unique_documents'] ?? 0),
+    'unique_users' => (int)($stats['unique_users'] ?? 0),
+    'total_generations' => (int)($stats['total_generations'] ?? 0),
+    'total_downloads' => (int)($stats['total_downloads'] ?? 0),
+    'total_archives' => (int)($stats['total_archives'] ?? 0),
+];
+
 // Get all users for filter dropdown
 $usersStmt = $db->query("SELECT id, name, role FROM users WHERE role IN ('super-admin', 'admin', 'manager', 'cashier') ORDER BY name");
 $users = $usersStmt->fetchAll(PDO::FETCH_ASSOC);
