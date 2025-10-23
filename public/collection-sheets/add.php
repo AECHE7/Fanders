@@ -64,6 +64,10 @@ if (!$details) { $session->setFlash('error', 'Sheet not found.'); header('Locati
 $sheet = $details['sheet'];
 $items = $details['items'];
 
+// Initialize services first
+$clientService = new ClientService();
+$loanService = new LoanService();
+
 // Handle loan pre-population from URL parameter
 $prePopulateLoanId = isset($_GET['loan_id']) ? (int)$_GET['loan_id'] : 0;
 $prePopulatedLoan = null;
@@ -77,8 +81,6 @@ if ($prePopulateLoanId > 0) {
 }
 
 // Get active clients and their active loans for dropdown
-$clientService = new ClientService();
-$loanService = new LoanService();
 $activeClients = $clientService->getAllClients(['status' => 'active', 'limit' => 1000]);
 
 include_once BASE_PATH . '/templates/layout/header.php';
@@ -220,6 +222,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php endif; ?>
 
     <!-- Items List -->
+    <div class="card shadow-sm">
       <div class="card-header d-flex justify-content-between align-items-center">
         <strong>Items</strong>
         <div>
