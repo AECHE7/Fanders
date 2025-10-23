@@ -197,12 +197,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               <?php endif; ?>
             </div>
         </div>
-        <div>
-          <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-outline-primary btn-lg px-4 py-2 shadow-sm" style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;">
-            <i data-feather="arrow-left" style="width: 16px; height: 16px;" class="me-2"></i>
-            <span class="d-none d-sm-inline">Back to </span>Collection Sheets
-          </a>
-        </div>
+
       </div>
       <div class="notion-divider my-3"></div>
     </div>

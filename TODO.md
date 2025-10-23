@@ -13,7 +13,7 @@
   - status_distribution: Status counts with percentages
 
 ## Next Steps
-- [ ] Test the new method to ensure it returns correct statistics
-- [ ] Verify integration with existing UI if needed
+- [x] Test the new method to ensure it returns correct statistics
+- [x] Verify integration with existing UI if needed
 - [ ] Consider adding caching for performance if statistics are frequently accessed
 - [ ] Add unit tests for the statistics method
