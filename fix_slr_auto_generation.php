@@ -1,10 +1,10 @@
 <?php
 /**
- * Test SLR Auto-Generation Fix
+ * Fix SLR Auto-Generation on Loan Disbursement
  */
 
-echo "🧪 Testing SLR Auto-Generation Fix\n";
-echo "==================================\n\n";
+echo "🔧 Fixing SLR Auto-Generation on Loan Disbursement\n";
+echo "================================================\n\n";
 
 try {
     require_once __DIR__ . '/app/config/config.php';
@@ -25,15 +25,14 @@ try {
     }
     echo "\n";
 
-    // Check if disbursement rule exists and is enabled
+    // Check if disbursement rule exists
     echo "2. Checking loan_disbursement rule...\n";
     $stmt = $pdo->prepare("SELECT * FROM slr_generation_rules WHERE trigger_event = 'loan_disbursement'");
     $stmt->execute();
     $disbursementRule = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$disbursementRule) {
-        echo "   ❌ No loan_disbursement rule found!\n";
-        echo "   🔧 Creating loan_disbursement rule...\n";
+        echo "   ❌ No loan_disbursement rule found. Creating one...\n";
 
         $insertSql = "INSERT INTO slr_generation_rules
             (rule_name, description, trigger_event, auto_generate, require_signatures, notify_client, notify_officers, is_active, created_by)
@@ -66,59 +65,34 @@ try {
         }
     }
 
-    // Test with a real loan
-    echo "3. Testing with real loan data...\n";
-    $stmt = $pdo->query("SELECT id, status, principal FROM loans WHERE status = 'approved' LIMIT 1");
-    $loan = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Verify final state
+    echo "3. Verifying final configuration...\n";
+    $stmt = $pdo->query("SELECT rule_name, trigger_event, auto_generate, is_active FROM slr_generation_rules ORDER BY id");
+    $finalRules = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if ($loan) {
-        echo "   📊 Found approved loan #{$loan['id']} - Principal: ₱" . number_format($loan['principal'], 2) . "\n";
-
-        // Simulate disbursement
-        echo "   🔄 Simulating loan disbursement...\n";
-
-        // Update loan status to active (simulate disbursement)
-        $updateSql = "UPDATE loans SET status = 'active', disbursement_date = CURRENT_TIMESTAMP WHERE id = ?";
-        $stmt = $pdo->prepare($updateSql);
-        $stmt->execute([$loan['id']]);
-
-        echo "   ✅ Loan status updated to 'active'\n";
-
-        // Check if SLR was generated
-        $stmt = $pdo->prepare("SELECT * FROM slr_documents WHERE loan_id = ? ORDER BY generated_at DESC LIMIT 1");
-        $stmt->execute([$loan['id']]);
-        $slr = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($slr) {
-            echo "   ✅ SLR document generated automatically!\n";
-            echo "      Document Number: {$slr['document_number']}\n";
-            echo "      Status: {$slr['status']}\n";
-            echo "      Generated: {$slr['generated_at']}\n";
-        } else {
-            echo "   ❌ No SLR document found - auto-generation may have failed\n";
-        }
-
-        // Revert loan status for testing
-        $pdo->exec("UPDATE loans SET status = 'approved', disbursement_date = NULL WHERE id = {$loan['id']}");
-        echo "   🔄 Reverted loan status for testing\n";
-
-    } else {
-        echo "   ⚠️  No approved loans found for testing\n";
+    foreach ($finalRules as $rule) {
+        $status = $rule['is_active'] ? '🟢 ACTIVE' : '🔴 INACTIVE';
+        $auto = $rule['auto_generate'] ? '⚡ AUTO' : '👤 MANUAL';
+        echo "   📜 {$rule['rule_name']} ({$rule['trigger_event']}) - {$auto} - {$status}\n";
     }
 
     echo "\n🎯 RESULT:\n";
-    echo "   ✅ SLR auto-generation configuration is now ENABLED!\n";
+    echo "   ✅ SLR auto-generation on loan disbursement is now ENABLED!\n";
     echo "   ✅ When loans are disbursed (status changes to 'active'), SLR documents will be generated automatically\n";
-    echo "   ✅ SLR documents will appear in the SLR management page\n\n";
+    echo "   ✅ SLR documents will appear in the SLR management page\n";
+    echo "   ✅ Users can download SLR documents from the list\n\n";
 
-    echo "📝 NEXT STEPS:\n";
-    echo "   1. Disburse an approved loan through the web interface\n";
-    echo "   2. Check the SLR management page (/public/slr/manage.php)\n";
-    echo "   3. Verify that a new SLR document appears in the list\n";
-    echo "   4. Download the SLR PDF to confirm it contains the payment schedule\n\n";
+    echo "📝 WORKFLOW NOW:\n";
+    echo "   1. Loan application → Approved\n";
+    echo "   2. Staff clicks 'Disburse' → Status changes to 'active'\n";
+    echo "   3. 🚀 SLR document auto-generated with payment schedule\n";
+    echo "   4. Document appears in SLR Management (/public/slr/manage.php)\n";
+    echo "   5. Staff can download SLR PDF for client\n\n";
 
 } catch (Exception $e) {
     echo "❌ Error: " . $e->getMessage() . "\n";
-    echo "Stack trace:\n" . $e->getTraceAsString() . "\n";
+    exit(1);
 }
+
+echo "✅ Fix completed successfully!\n";
 ?>

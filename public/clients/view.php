@@ -23,7 +23,6 @@ if ($clientId <= 0) {
 // Initialize services
 $clientService = new ClientService();
 $loanService = new LoanService();
-$csrfToken = $csrf->generateToken(); // Generate token for status forms
 $currentUser = $auth->getCurrentUser() ?: [];
 $currentRole = $currentUser['role'] ?? '';
 
@@ -97,6 +96,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Location: ' . APP_URL . '/public/clients/view.php?id=' . $clientId);
     exit;
 }
+
+// Generate CSRF token for forms (AFTER POST validation to avoid regenerating before validation)
+$csrfToken = $csrf->getToken();
 
 // --- 4. Display View ---
 $pageTitle = "Client Profile: " . htmlspecialchars($clientData['name'] ?? 'N/A');
