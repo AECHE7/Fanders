@@ -167,6 +167,30 @@ body {
     padding: 16px;
 }
 
+/* High-contrast cards and metrics */
+.card-contrast {
+    background-color: #ffffff;
+    border: 1px solid #cfd4da; /* stronger border for contrast */
+}
+
+.metric-accent-primary { border-left: 4px solid #0d6efd; }
+.metric-accent-success { border-left: 4px solid #198754; }
+.metric-accent-info { border-left: 4px solid #0dcaf0; }
+.metric-accent-warning { border-left: 4px solid #ffc107; }
+.metric-accent-danger { border-left: 4px solid #dc3545; }
+
+.metric-card .card-title { color: #212529; }
+.metric-card .stat-value { color: #111; }
+.metric-card .icon-lg { opacity: .7; }
+
+/* Quick actions container */
+.quick-actions {
+    background-color: #fbfbfb;
+    border: 1px solid #e2e6ea;
+    border-radius: 6px;
+    padding: 12px;
+}
+
 /* Dashboard stats cards */
 .dashboard-stats {
     background-color: var(--notion-bg);

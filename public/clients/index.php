@@ -232,33 +232,33 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card text-white bg-primary shadow-sm">
+                <div class="card card-contrast shadow-sm metric-card metric-accent-primary">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h6 class="card-title text-uppercase small">Total Clients</h6>
                                 <h3 class="mb-0"><?= number_format((int)($clientStats['total_clients'] ?? 0)) ?></h3>
                             </div>
-                            <i data-feather="users" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                            <i data-feather="users" class="icon-lg" style="width: 3rem; height: 3rem; color:#0d6efd;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card text-white bg-success shadow-sm">
+                <div class="card card-contrast shadow-sm metric-card metric-accent-success">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
                                 <h6 class="card-title text-uppercase small">Active Clients</h6>
                                 <h3 class="mb-0"><?= number_format((int)($clientStats['active_clients'] ?? 0)) ?></h3>
                             </div>
-                            <i data-feather="check-circle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                            <i data-feather="check-circle" class="icon-lg" style="width: 3rem; height: 3rem; color:#198754;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card text-white bg-info shadow-sm">
+                <div class="card card-contrast shadow-sm metric-card metric-accent-info">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
@@ -274,13 +274,13 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                 ?>
                                 <h3 class="mb-0"><?= number_format($inactiveCount) ?></h3>
                             </div>
-                            <i data-feather="pause-circle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                            <i data-feather="pause-circle" class="icon-lg" style="width: 3rem; height: 3rem; color:#0dcaf0;"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card text-white bg-warning shadow-sm">
+                <div class="card card-contrast shadow-sm metric-card metric-accent-warning">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
@@ -295,7 +295,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                 ?>
                                 <h3 class="mb-0"><?= number_format($blacklistedCount) ?></h3>
                             </div>
-                            <i data-feather="alert-triangle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                            <i data-feather="alert-triangle" class="icon-lg" style="width: 3rem; height: 3rem; color:#ffc107;"></i>
                         </div>
                     </div>
                 </div>

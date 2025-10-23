@@ -173,53 +173,53 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-white bg-primary shadow-sm">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-primary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h6 class="card-title text-uppercase small">Current Balance</h6>
                             <h3 class="mb-0">₱<?= number_format($currentBalance, 2) ?></h3>
                         </div>
-                        <i data-feather="dollar-sign" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        <i data-feather="dollar-sign" class="icon-lg" style="width: 3rem; height: 3rem; color:#0d6efd;"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-success shadow-sm">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-success">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h6 class="card-title text-uppercase small">Total Inflow</h6>
                             <h3 class="mb-0">₱<?= number_format($summary['total_inflow'] ?? 0, 2) ?></h3>
                         </div>
-                        <i data-feather="trending-up" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        <i data-feather="trending-up" class="icon-lg" style="width: 3rem; height: 3rem; color:#198754;"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-danger shadow-sm">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-danger">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h6 class="card-title text-uppercase small">Total Outflow</h6>
                             <h3 class="mb-0">₱<?= number_format($summary['total_outflow'] ?? 0, 2) ?></h3>
                         </div>
-                        <i data-feather="trending-down" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        <i data-feather="trending-down" class="icon-lg" style="width: 3rem; height: 3rem; color:#dc3545;"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-info shadow-sm">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-info">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h6 class="card-title text-uppercase small">Net Flow</h6>
                             <h3 class="mb-0">₱<?= number_format(($summary['total_inflow'] ?? 0) - ($summary['total_outflow'] ?? 0), 2) ?></h3>
                         </div>
-                        <i data-feather="bar-chart-2" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        <i data-feather="bar-chart-2" class="icon-lg" style="width: 3rem; height: 3rem; color:#0dcaf0;"></i>
                     </div>
                 </div>
             </div>

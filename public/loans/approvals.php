@@ -19,6 +19,11 @@ $clientService = new ClientService();
 require_once '../../app/utilities/FilterUtility.php';
 $filters = FilterUtility::sanitizeFilters($_GET);
 
+// Default focus on approvals queue
+if (empty($filters['status'])) {
+    $filters['status'] = 'application';
+}
+
 // Rename start_date/end_date to date_from/date_to for consistency
 if (isset($filters['start_date'])) {
     $filters['date_from'] = $filters['start_date'];
@@ -116,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // --- 4. Display View ---
-$pageTitle = "Loans Management";
+$pageTitle = "Loan Approvals";
 
 // Helper function to get loan status badge class (used in the template)
 function getLoanStatusBadgeClass($status) {
@@ -136,13 +141,31 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="main-content">
     <div class="content-wrapper">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Loans Management</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="<?= APP_URL ?>/public/loans/add.php" class="btn btn-sm btn-success">
-                <i data-feather="plus"></i> New Loan Application
-            </a>
+    <!-- Notion-style header -->
+    <div class="notion-page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f0f4fd;">
+                        <i data-feather="check-square" style="width: 24px; height: 24px; color:rgb(0, 0, 0);"></i>
+                    </div>
+                </div>
+                <h1 class="notion-page-title mb-0">Loan Approvals</h1>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <div class="text-muted d-none d-md-block me-3">
+                    <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
+                    <?= date('l, F j, Y') ?>
+                </div>
+                <a href="<?= APP_URL ?>/public/loans/add.php" class="btn btn-sm btn-primary">
+                    <i data-feather="plus" class="me-1" style="width: 14px; height: 14px;"></i> New Loan
+                </a>
+                <a href="<?= APP_URL ?>/public/reports/index.php?type=loans" class="btn btn-sm btn-outline-secondary px-3">
+                    <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> Loan Reports
+                </a>
+            </div>
         </div>
+        <div class="notion-divider my-3"></div>
     </div>
 
     <!-- Flash Messages -->
@@ -157,49 +180,73 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     <?php endif; ?>
 
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/loans/approvals.php?status=application" class="btn btn-outline-primary w-100">
+                <i data-feather="inbox" class="me-2"></i>Pending Applications
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/loans/approvals.php?status=approved" class="btn btn-outline-success w-100">
+                <i data-feather="check" class="me-2"></i>Approved (Disburse)
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/loans/index.php?status=active" class="btn btn-outline-secondary w-100">
+                <i data-feather="activity" class="me-2"></i>Active Loans
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-outline-dark w-100">
+                <i data-feather="list" class="me-2"></i>All Loans
+            </a>
+        </div>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-white bg-primary shadow-sm">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-primary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h6 class="card-title text-uppercase small">Total Loans</h6>
                             <h3 class="mb-0"><?= $loanStats['total_loans'] ?? 0 ?></h3>
                         </div>
-                        <i data-feather="file-text" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        <i data-feather="file-text" class="icon-lg" style="width: 3rem; height: 3rem; color:#0d6efd;"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-success shadow-sm">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-success">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h6 class="card-title text-uppercase small">Total Disbursed</h6>
                             <h3 class="mb-0">₱<?= number_format($loanStats['total_disbursed'] ?? 0, 2) ?></h3>
                         </div>
-                        <i data-feather="dollar-sign" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        <i data-feather="dollar-sign" class="icon-lg" style="width: 3rem; height: 3rem; color:#198754;"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-info shadow-sm">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-info">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
                             <h6 class="card-title text-uppercase small">Active Loans</h6>
                             <h3 class="mb-0"><?= $loanStats['active_loans'] ?? 0 ?></h3>
                         </div>
-                        <i data-feather="check-circle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        <i data-feather="check-circle" class="icon-lg" style="width: 3rem; height: 3rem; color:#0dcaf0;"></i>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-warning shadow-sm">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-warning">
                 <div class="card-body">
                     <div class="d-flex justify-content-between">
                         <div>
@@ -207,7 +254,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                             <!-- NOTE: Total Outstanding is a Phase 2 calculation, using basic count for now -->
                             <h3 class="mb-0"><?= $loanStats['overdue_loans_count'] ?? 0 ?></h3>
                         </div>
-                        <i data-feather="alert-triangle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        <i data-feather="alert-triangle" class="icon-lg" style="width: 3rem; height: 3rem; color:#ffc107;"></i>
                     </div>
                 </div>
             </div>
@@ -217,7 +264,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <!-- Filters Card -->
     <div class="card mb-4 shadow-sm">
         <div class="card-body">
-            <form method="GET" action="<?= APP_URL ?>/public/loans/index.php" class="row g-3">
+            <form method="GET" action="<?= APP_URL ?>/public/loans/approvals.php" class="row g-3">
                 <div class="col-md-3">
                     <label for="search" class="form-label">Search Client/ID</label>
                     <input type="text" class="form-control" id="search" name="search"
