@@ -63,10 +63,18 @@ $filters = array_filter($filters, function($value) {
     return $value !== '' && $value !== null;
 });
 
-// Get SLR documents
+// Get SLR documents with pagination
 $limit = 20;
-$offset = ((int)($_GET['page'] ?? 1) - 1) * $limit;
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$offset = ($page - 1) * $limit;
 $slrDocuments = $slrService->listSLRDocuments($filters, $limit, $offset);
+
+// Get total count for pagination
+require_once BASE_PATH . '/app/services/SLR/SLRRepository.php';
+$database = Database::getInstance();
+$slrRepository = new App\Services\SLR\SLRRepository($database->getConnection());
+$totalDocuments = $slrRepository->countSLRDocuments($filters);
+$totalPages = ceil($totalDocuments / $limit);
 
 include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
@@ -165,7 +173,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <strong>SLR Documents</strong>
-                <span class="badge bg-primary"><?= count($slrDocuments) ?> documents</span>
+                <span class="badge bg-primary"><?= $totalDocuments ?> total</span>
             </div>
             <div class="card-body p-0">
                 <?php if (empty($slrDocuments)): ?>
@@ -255,6 +263,36 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 <?php endif; ?>
             </div>
         </div>
+
+        <!-- Pagination -->
+        <?php if ($totalPages > 1): ?>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                    Showing <?= count($slrDocuments) ?> of <?= $totalDocuments ?> documents
+                </div>
+                <nav aria-label="SLR pagination">
+                    <ul class="pagination mb-0">
+                        <?php if ($page > 1): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $page - 1])) ?>">Previous</a>
+                            </li>
+                        <?php endif; ?>
+                        
+                        <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
+                            <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                                <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $i])) ?>"><?= $i ?></a>
+                            </li>
+                        <?php endfor; ?>
+                        
+                        <?php if ($page < $totalPages): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="?<?= http_build_query(array_merge($_GET, ['page' => $page + 1])) ?>">Next</a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
+            </div>
+        <?php endif; ?>
     </div>
 </main>
 
