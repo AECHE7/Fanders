@@ -219,11 +219,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         </a>
                     </div>
                     <div class="col-md-4">
-                        <a href="<?= APP_URL ?>/public/slr/bulk.php" class="btn btn-info w-100 py-3">
-                            <i data-feather="layers" style="width: 20px; height: 20px;" class="me-2"></i>
-                            <span class="fw-bold">Bulk Generate</span>
+                        <a href="<?= APP_URL ?>/public/slr/access-log.php" class="btn btn-warning w-100 py-3">
+                            <i data-feather="activity" style="width: 20px; height: 20px;" class="me-2"></i>
+                            <span class="fw-bold">Access Log</span>
                             <br>
-                            <small class="text-white-50">Multiple loans</small>
+                            <small class="text-white-50">Audit trail</small>
                         </a>
                     </div>
                 </div>
@@ -401,8 +401,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         </p>
                         <ul class="small text-muted mb-0">
                             <li>From loan list (individual)</li>
-                            <li>Bulk generation (multiple)</li>
                             <li>Auto-generate (on approval/disbursement)</li>
+                            <li>Manual request from client</li>
                         </ul>
                     </div>
                 </div>

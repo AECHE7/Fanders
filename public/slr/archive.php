@@ -207,13 +207,16 @@ include_once BASE_PATH . '/templates/layout/header.php';
               <div class="row mb-3">
                 <div class="col-md-12">
                   <div class="d-flex gap-2 flex-wrap">
-                    <a href="../slr/" class="btn btn-primary">
-                      <i data-feather="file-plus"></i> Generate New SLR
+                    <a href="../slr/index.php" class="btn btn-primary">
+                      <i data-feather="home"></i> SLR Dashboard
                     </a>
-                    <a href="../slr/bulk.php" class="btn btn-success">
-                      <i data-feather="layers"></i> Bulk Generate
+                    <a href="../slr/manage.php" class="btn btn-success">
+                      <i data-feather="list"></i> View All Documents
                     </a>
-                    <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#cleanupModal">
+                    <a href="../slr/access-log.php" class="btn btn-warning">
+                      <i data-feather="activity"></i> Access Log
+                    </a>
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cleanupModal">
                       <i data-feather="trash-2"></i> Cleanup Old Files
                     </button>
                   </div>
