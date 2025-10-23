@@ -1,3 +1,10 @@
+#!/bin/bash
+
+echo "🔧 Creating Database Test Script"
+echo "================================"
+
+# Create a minimal PHP script that tests database connectivity
+cat > test_db_connection.php << 'EOF'
 <?php
 // Minimal database test without loading full framework
 $host = getenv('DB_HOST') ?: 'localhost';
@@ -40,3 +47,6 @@ try {
 } catch (Exception $e) {
     echo "❌ Database error: " . $e->getMessage() . "\n";
 }
+EOF
+
+echo "Running database connectivity test..."
