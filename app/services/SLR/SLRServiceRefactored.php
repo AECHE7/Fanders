@@ -102,17 +102,10 @@ class SLRServiceRefactored extends BaseService {
                     return $validationResult;
                 }
 
-                // Check for existing active SLR
-                $existing = $this->repository->getSLRByLoanId($loanId);
-                if ($existing && $existing['status'] === SLRConstants::STATUS_ACTIVE) {
-                    error_log("SLR: Active SLR already exists for loan $loanId");
-                    return SLRResult::failure(
-                        'Active SLR already exists for this loan. Archive the existing SLR first.',
-                        'ACTIVE_SLR_EXISTS'
-                    );
-                }
+                // Allow multiple SLR documents per loan (no restriction)
+                // Note: ensure document_number uniqueness when generating below
 
-                // Generate document number
+                // Generate unique document number
                 $documentNumber = $this->generateDocumentNumber($loanId);
 
                 // Create PDF content
@@ -376,8 +369,40 @@ class SLRServiceRefactored extends BaseService {
         $year = date('Y');
         $month = date('m');
         $loanPadded = str_pad($loanId, 6, '0', STR_PAD_LEFT);
-        
-        return "SLR-{$year}{$month}-{$loanPadded}";
+        $base = "SLR-{$year}{$month}-{$loanPadded}";
+
+        // Ensure uniqueness: if base exists, append -NNN incremental suffix
+        try {
+            $sql = "SELECT document_number FROM slr_documents WHERE document_number = ? OR document_number LIKE ? ORDER BY document_number DESC LIMIT 1";
+            $stmt = $this->db->prepare($sql);
+            // LIKE pattern to match suffixed numbers
+            $like = $base . '-%';
+            $stmt->execute([$base, $like]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$row) {
+                return $base;
+            }
+
+            $last = $row['document_number'];
+            // If exact base exists, start with -001
+            if ($last === $base) {
+                return $base . '-001';
+            }
+
+            // Extract numeric suffix
+            if (preg_match('/^' . preg_quote($base, '/') . '-(\d{3,})$/', $last, $m)) {
+                $next = (int)$m[1] + 1;
+                return sprintf('%s-%03d', $base, $next);
+            }
+
+            // Fallback in case of unexpected format
+            return $base . '-' . date('His');
+        } catch (\Exception $e) {
+            // On any error, fall back to timestamped number to avoid collisions
+            error_log('SLR: Failed to compute unique document number: ' . $e->getMessage());
+            return $base . '-' . date('His');
+        }
     }
 
     /**

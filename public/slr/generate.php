@@ -30,9 +30,9 @@ switch ($action) {
         $slrDocument = $slrService->generateSLR($loanId, $user['id'], 'manual_request');
         
         if ($slrDocument) {
-            $session->setFlash('success', 'SLR document generated successfully!');
-            // Redirect to download
-            header('Location: ' . APP_URL . '/public/slr/generate.php?action=download&loan_id=' . $loanId);
+            $session->setFlash('success', 'SLR document generated successfully! It is now listed in SLR Documents.');
+            // Redirect to SLR management list filtered by this loan
+            header('Location: ' . APP_URL . '/public/slr/manage.php?loan_id=' . $loanId);
             exit;
         } else {
             $session->setFlash('error', 'Failed to generate SLR: ' . $slrService->getErrorMessage());
