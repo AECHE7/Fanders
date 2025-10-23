@@ -52,44 +52,4 @@ class CollectionSheetModel extends BaseModel {
         $params[] = $limit;
         return $this->db->resultSet($sql, $params);
     }
-
-    /**
-     * Find today's draft collection sheet for a specific user
-     * @param int $userId User ID (Account Officer)
-     * @param string $sheetDate Date in Y-m-d format
-     * @return array|false
-     */
-    public function findTodaysDraft($userId, $sheetDate) {
-        $sql = "SELECT * FROM {$this->table} 
-                WHERE officer_id = ? AND sheet_date = ? AND status = 'draft'
-                ORDER BY id DESC LIMIT 1";
-        return $this->db->row($sql, [$userId, $sheetDate]);
-    }
-
-    /**
-     * Update the status of a collection sheet
-     * @param int $sheetId
-     * @param string $status
-     * @return bool
-     */
-    public function updateStatus($sheetId, $status) {
-        $sql = "UPDATE {$this->table} SET status = ?, updated_at = ? WHERE id = ?";
-        return $this->db->query($sql, [$status, date('Y-m-d H:i:s'), $sheetId]);
-    }
-
-    /**
-     * Recalculate the total amount for a collection sheet
-     * @param int $sheetId
-     * @return bool
-     */
-    public function recalcTotal($sheetId) {
-        $sql = "UPDATE {$this->table} 
-                SET total_amount = (
-                    SELECT COALESCE(SUM(amount), 0) 
-                    FROM collection_sheet_items 
-                    WHERE sheet_id = ?
-                ), updated_at = ?
-                WHERE id = ?";
-        return $this->db->query($sql, [$sheetId, date('Y-m-d H:i:s'), $sheetId]);
-    }
 }
