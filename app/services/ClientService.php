@@ -283,7 +283,18 @@ class ClientService extends BaseService {
         }
 
         // 4. Update client
-        return $this->clientModel->update($id, $clientData);
+        $result = $this->clientModel->update($id, $clientData);
+        
+        // 5. Log client update transaction
+        if ($result && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logClientTransaction('updated', $id, $_SESSION['user_id'] ?? null, [
+                'client_id' => $id,
+                'updated_fields' => array_keys($clientData)
+            ]);
+        }
+        
+        return $result;
     }
 
     /**
@@ -327,7 +338,19 @@ class ClientService extends BaseService {
             return false;
         }
         
-        return $this->clientModel->delete($id);
+        $client = $this->clientModel->findById($id);
+        $result = $this->clientModel->delete($id);
+        
+        // Log client deletion transaction
+        if ($result && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logClientTransaction('deleted', $id, $_SESSION['user_id'] ?? null, [
+                'client_id' => $id,
+                'client_name' => $client['name'] ?? 'Unknown'
+            ]);
+        }
+        
+        return $result;
     }
     
     // --- Validation Logic (Based on Client Creation/Update Rules) ---

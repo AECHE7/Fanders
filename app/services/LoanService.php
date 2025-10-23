@@ -284,7 +284,18 @@ class LoanService extends BaseService {
     public function updateLoan($id, $loanData) {
         // Validation check for status changes is handled in specific methods (approve, disburse, complete)
         // General update is for application stage adjustments only.
-        return $this->loanModel->update($id, $loanData);
+        $result = $this->loanModel->update($id, $loanData);
+        
+        // Log loan update transaction
+        if ($result && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logLoanTransaction('updated', $id, $_SESSION['user_id'] ?? null, [
+                'loan_id' => $id,
+                'updated_fields' => array_keys($loanData)
+            ]);
+        }
+        
+        return $result;
     }
 
     /**
@@ -391,6 +402,17 @@ class LoanService extends BaseService {
 
             return true;
         });
+
+        // Log loan approval transaction
+        if ($approvalSuccess && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logLoanTransaction('approved', $id, $approvedBy, [
+                'loan_id' => $id,
+                'approved_by' => $approvedBy,
+                'principal' => $loanWithClient['principal'] ?? 0,
+                'term_weeks' => $loanWithClient['term_weeks'] ?? 0
+            ]);
+        }
 
         return $approvalSuccess;
     }
@@ -544,7 +566,19 @@ class LoanService extends BaseService {
             return false;
         }
 
-        return $this->loanModel->update($id, ['status' => 'cancelled']);
+        $result = $this->loanModel->update($id, ['status' => 'cancelled']);
+        
+        // Log loan cancellation transaction
+        if ($result && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logLoanTransaction('cancelled', $id, $cancelledBy, [
+                'loan_id' => $id,
+                'cancelled_by' => $cancelledBy,
+                'principal' => $loan['principal'] ?? 0
+            ]);
+        }
+        
+        return $result;
     }
 
     /**

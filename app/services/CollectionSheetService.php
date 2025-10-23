@@ -49,6 +49,17 @@ class CollectionSheetService extends BaseService {
         ];
         $newId = $this->sheetModel->create($data);
         if (!$newId) { $this->setErrorMessage('Failed to create draft sheet.'); return false; }
+        
+        // Log collection sheet creation
+        if (class_exists('TransactionService')) {
+            $ts = new TransactionService();
+            $ts->logGeneric('collection_sheet_created', $officerId, $newId, [
+                'sheet_id' => $newId,
+                'officer_id' => $officerId,
+                'sheet_date' => $date
+            ]);
+        }
+        
         return $this->sheetModel->findById($newId);
     }
 
@@ -300,6 +311,16 @@ class CollectionSheetService extends BaseService {
 
             // Update all items to approved status
             $this->itemModel->updateStatusBySheet($sheetId, 'approved');
+            
+            // Log collection sheet approval
+            if (class_exists('TransactionService')) {
+                $ts = new TransactionService();
+                $ts->logGeneric('collection_sheet_approved', $approverUserId, $sheetId, [
+                    'sheet_id' => $sheetId,
+                    'approved_by' => $approverUserId,
+                    'total_amount' => $sheet['total_amount'] ?? 0
+                ]);
+            }
 
             return true;
         });

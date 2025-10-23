@@ -191,7 +191,20 @@ class UserService extends BaseService {
             unset($userData['password_confirmation']); // Always remove confirmation field
 
             // 3. Update user
-            return $this->userModel->update($id, $userData);
+            $result = $this->userModel->update($id, $userData);
+            
+            // 4. Log user update transaction
+            if ($result && class_exists('TransactionService')) {
+                $transactionService = new TransactionService();
+                $updatedFields = array_keys($userData);
+                $transactionService->logGeneric('user_updated', $_SESSION['user_id'] ?? null, $id, [
+                    'user_id' => $id,
+                    'updated_fields' => $updatedFields,
+                    'password_changed' => in_array('password', $updatedFields)
+                ]);
+            }
+            
+            return $result;
 
         } catch (\Exception $e) {
             $this->setErrorMessage($e->getMessage());
@@ -250,6 +263,16 @@ class UserService extends BaseService {
             $result = $this->userModel->updatePassword($id, $hashedPassword);
             
             if ($result) {
+                // Log password reset transaction
+                if (class_exists('TransactionService')) {
+                    $transactionService = new TransactionService();
+                    $transactionService->logGeneric('password_reset', $_SESSION['user_id'] ?? null, $id, [
+                        'target_user_id' => $id,
+                        'target_username' => $user['username'] ?? 'Unknown',
+                        'reset_by' => $_SESSION['user_id'] ?? null
+                    ]);
+                }
+                
                 return [
                     'success' => true, 
                     'password' => $newPassword,
