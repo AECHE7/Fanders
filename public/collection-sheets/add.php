@@ -70,13 +70,31 @@ $loanService = new LoanService();
 
 // Handle loan pre-population from URL parameter
 $prePopulateLoanId = isset($_GET['loan_id']) ? (int)$_GET['loan_id'] : 0;
+$autoAdd = isset($_GET['auto_add']) && $_GET['auto_add'] === '1';
 $prePopulatedLoan = null;
+$autoAdded = false;
+
 if ($prePopulateLoanId > 0) {
     $prePopulatedLoan = $loanService->getLoanWithClient($prePopulateLoanId);
     // Only allow active loans to be pre-populated
     if (!$prePopulatedLoan || $prePopulatedLoan['status'] !== 'active') {
         $prePopulatedLoan = null;
         $session->setFlash('warning', 'Loan not found or not active for collection.');
+    } else if ($autoAdd && $sheet['status'] === 'draft') {
+        // Automatically add the loan to the collection sheet
+        $weeklyPayment = $prePopulatedLoan['total_loan_amount'] / 17;
+        $notes = 'Auto-added from loan actions';
+        $success = $service->addItem($sheet['id'], $prePopulatedLoan['client_id'], $prePopulateLoanId, $weeklyPayment, $notes);
+        if ($success) {
+            $autoAdded = true;
+            $session->setFlash('success', 'Loan payment automatically added to collection sheet!');
+            // Refresh sheet details to show the new item
+            $details = $service->getSheetDetails($sheet['id']);
+            $sheet = $details['sheet'];
+            $items = $details['items'];
+        } else {
+            $session->setFlash('error', 'Failed to add loan to collection sheet: ' . $service->getErrorMessage());
+        }
     }
 }
 
@@ -130,7 +148,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account_officer'])): ?>
     
     <!-- Pre-populated Loan Alert (if loan_id in URL) -->
-    <?php if ($prePopulatedLoan): ?>
+    <?php if ($prePopulatedLoan && !$autoAdded): ?>
     <div class="alert alert-info alert-dismissible fade show" role="alert">
       <div class="d-flex align-items-center">
         <i data-feather="info" style="width: 18px; height: 18px;" class="me-2"></i>

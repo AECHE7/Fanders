@@ -152,8 +152,8 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item" href="#" onclick="addToActiveSheet(<?= $loan['id'] ?>, '<?= htmlspecialchars($loan['client_name'], ENT_QUOTES) ?>', <?= $loan['total_loan_amount'] / 17 ?>)">
-                                                    <i data-feather="plus-circle" style="width: 14px; height: 14px;"></i> Add to Current Sheet
+                                                <a class="dropdown-item" href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>&auto_add=1">
+                                                    <i data-feather="plus-circle" style="width: 14px; height: 14px;"></i> Add to Current Sheet (Auto)
                                                 </a>
                                             </li>
                                             <?php endif; ?>
@@ -240,8 +240,8 @@ if (!function_exists('getLoanStatusBadgeClass')) {
         <?php endif; ?>
 
         if (confirm(`Add ${clientName}'s loan (#${loanId}) with weekly payment ₱${weeklyAmount.toFixed(2)} to your current collection sheet?`)) {
-            // Redirect to collection sheet add page with this loan pre-populated
-            window.location.href = `<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=${loanId}`;
+            // Redirect to collection sheet add page with this loan pre-populated and auto-added
+            window.location.href = `<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=${loanId}&auto_add=1`;
         }
     }
 </script>
