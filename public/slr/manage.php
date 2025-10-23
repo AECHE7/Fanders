@@ -7,7 +7,7 @@
 require_once '../init.php';
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier']);
 
-$slrService = new SLRService();
+$slrService = new SLRServiceAdapter();
 $pageTitle = 'SLR Document Management';
 
 // Handle actions

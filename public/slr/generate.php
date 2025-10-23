@@ -10,8 +10,9 @@ require_once '../init.php';
 // Enforce role-based access control
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier']);
 
-// Initialize enhanced SLR service
-$slrService = new SLRService();
+// Initialize enhanced SLR service (adapter for refactor)
+require_once __DIR__ . '/../../app/services/SLRServiceAdapter.php';
+$slrService = new SLRServiceAdapter();
 
 // Get loan ID
 $loanId = isset($_GET['loan_id']) ? (int)$_GET['loan_id'] : null;

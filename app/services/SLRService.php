@@ -660,23 +660,42 @@ class SLRService extends BaseService {
                     slr_document_id, access_type, accessed_by, 
                     access_reason, ip_address, user_agent
                 ) VALUES (?, ?, ?, ?, ?, ?)";
-        
+
         $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-        
-        $this->db->query($sql, [
-            $slrId, $accessType, $userId, $reason, $ipAddress, $userAgent
-        ]);
+
+        try {
+            $ok = $this->db->query($sql, [
+                $slrId, $accessType, $userId, $reason, $ipAddress, $userAgent
+            ]);
+
+            if ($ok === false) {
+                // If insert failed, log a warning to help debugging
+                error_log("[SLRService] Failed to insert into slr_access_log for SLR ID {$slrId}. DB returned false.");
+            }
+        } catch (Exception $e) {
+            error_log("[SLRService] Exception when inserting slr_access_log for SLR ID {$slrId}: " . $e->getMessage());
+        }
 
         // Also log to transaction_logs for overall audit trail
         if (class_exists('TransactionService')) {
-            require_once __DIR__ . '/TransactionService.php';
-            $transactionService = new TransactionService();
-            $transactionService->logGeneric('slr_' . $accessType, $userId, $slrId, [
-                'access_type' => $accessType,
-                'reason' => $reason,
-                'slr_id' => $slrId
-            ]);
+            try {
+                require_once __DIR__ . '/TransactionService.php';
+                $transactionService = new TransactionService();
+                $res = $transactionService->logGeneric('slr_' . $accessType, $userId, $slrId, [
+                    'access_type' => $accessType,
+                    'reason' => $reason,
+                    'slr_id' => $slrId
+                ]);
+
+                if ($res === false) {
+                    error_log("[SLRService] TransactionService->logGeneric returned false when logging SLR {$slrId} access.");
+                }
+            } catch (Exception $e) {
+                error_log("[SLRService] Exception when forwarding SLR access to TransactionService for SLR ID {$slrId}: " . $e->getMessage());
+            }
+        } else {
+            error_log("[SLRService] TransactionService class not available to forward SLR access log for SLR ID {$slrId}.");
         }
     }
 
