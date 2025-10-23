@@ -26,7 +26,7 @@ if (!$loanId) {
 switch ($action) {
     case 'generate':
         // Generate new SLR document
-        $slrDocument = $slrService->generateSLR($loanId, $user['id'], 'manual');
+        $slrDocument = $slrService->generateSLR($loanId, $user['id'], 'manual_request');
         
         if ($slrDocument) {
             $session->setFlash('success', 'SLR document generated successfully!');

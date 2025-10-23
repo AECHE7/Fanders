@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             
         case 'generate':
             $loanId = (int)($_POST['loan_id'] ?? 0);
-            $trigger = $_POST['trigger'] ?? 'manual';
+            $trigger = $_POST['trigger'] ?? 'manual_request';
             
             if ($loanId) {
                 $slrDocument = $slrService->generateSLR($loanId, $user['id'], $trigger);
