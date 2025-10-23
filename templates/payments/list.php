@@ -81,7 +81,7 @@
                                         <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="btn btn-sm btn-outline-primary" title="View Loan Details">
                                             <i data-feather="eye"></i>
                                         </a>
-                                        <a href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loan['id'] ?>" class="btn btn-sm btn-outline-success" title="Record Payment">
+                                        <a href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>&auto_add=1&auto_process=1" class="btn btn-sm btn-outline-success" title="Process Payment via Collection Sheet">
                                             <i data-feather="credit-card"></i>
                                         </a>
                                         <?php if ($userRole == 'administrator' || $userRole == 'manager'): ?>

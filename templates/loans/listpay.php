@@ -77,32 +77,36 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                                 ?>
 
                                 <?php if ($status === 'active'): ?>
-                                    <!-- Enhanced Payment Options (Direct Payment vs Collection Sheet) -->
+                                    <!-- Collection Sheet Payment Options (All payments through collection sheets) -->
+                                    <?php if (in_array($userRole, ['super-admin', 'admin', 'manager', 'account_officer'])): ?>
                                     <div class="btn-group" role="group">
-                                        <a href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loan['id'] ?>" 
-                                           class="btn btn-success btn-sm" title="Record Direct Payment">
+                                        <a href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>&auto_add=1&auto_process=1"
+                                           class="btn btn-success btn-sm" title="Process Payment via Collection Sheet">
                                             <i data-feather="credit-card"></i> Pay Now
                                         </a>
-                                        <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split" 
-                                                data-bs-toggle="dropdown" aria-expanded="false" title="More Payment Options">
+                                        <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split"
+                                                data-bs-toggle="dropdown" aria-expanded="false" title="Collection Sheet Options">
                                             <span class="visually-hidden">Toggle Dropdown</span>
                                         </button>
                                         <ul class="dropdown-menu">
+                                            <li class="dropdown-header">
+                                                <i data-feather="file-text" style="width: 12px; height: 12px;"></i> <strong>Collection Sheet Processing</strong>
+                                            </li>
                                             <li>
-                                                <a class="dropdown-item" href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loan['id'] ?>">
-                                                    <i data-feather="credit-card" style="width: 14px; height: 14px;"></i> Direct Payment (Instant)
+                                                <a class="dropdown-item text-success fw-bold" href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>&auto_add=1&auto_process=1">
+                                                    <i data-feather="zap" style="width: 14px; height: 14px;"></i> Auto-Process Payment Now
                                                 </a>
+                                                <small class="text-muted px-3">Instantly records payment via collection sheet</small>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
-                                            <?php if (in_array($userRole, ['super-admin', 'admin', 'manager', 'account_officer'])): ?>
                                             <li>
                                                 <a class="dropdown-item" href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>">
-                                                    <i data-feather="file-plus" style="width: 14px; height: 14px;"></i> Add to Collection Sheet
+                                                    <i data-feather="file-plus" style="width: 14px; height: 14px;"></i> Add to Collection Sheet (Manual)
                                                 </a>
                                             </li>
-                                            <?php endif; ?>
                                         </ul>
                                     </div>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                                 
                                 <?php if (in_array($status, ['approved', 'active', 'completed']) && in_array($userRole, ['super-admin', 'admin', 'manager', 'cashier'])): ?>

@@ -263,12 +263,12 @@ if (!function_exists('getLoanStatusBadgeClass')) {
         <div class="row g-3">
             <div class="col-md-6">
                 <div class="d-grid">
-                    <a href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loanData['id'] ?>" 
+                    <a href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loanData['id'] ?>&auto_add=1&auto_process=1"
                        class="btn btn-success">
                         <i data-feather="credit-card" class="me-2"></i>
-                        Record Direct Payment
+                        Process Payment via Collection Sheet
                     </a>
-                    <small class="text-muted mt-1">Process payment immediately</small>
+                    <small class="text-muted mt-1">Instant payment processing</small>
                 </div>
             </div>
             <?php if (in_array($userRole, ['super-admin', 'admin', 'manager', 'account_officer'])): ?>
