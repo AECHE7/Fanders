@@ -74,9 +74,6 @@ include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
-include_once BASE_PATH . '/templates/layout/navbar.php';
-?>
-
 <main class="main-content">
     <div class="content-wrapper">
         <!-- Page Header with Icon -->

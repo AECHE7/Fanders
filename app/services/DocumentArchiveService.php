@@ -30,6 +30,12 @@ class DocumentArchiveService extends BaseService {
         }
 
         try {
+            // Check if database connection exists
+            if (!$this->db) {
+                $this->setErrorMessage("Database connection not available.");
+                return false;
+            }
+
             // Get file size if file exists
             $fileSize = 0;
             if (file_exists($documentData['file_path'])) {
@@ -41,7 +47,12 @@ class DocumentArchiveService extends BaseService {
                         file_path, file_size, generated_by, notes
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
+            if (!$stmt) {
+                $this->setErrorMessage("Failed to prepare database statement. Document archive table may not exist.");
+                return false;
+            }
+            
             $result = $stmt->execute([
                 $documentData['document_type'],
                 $documentData['loan_id'],
@@ -54,7 +65,7 @@ class DocumentArchiveService extends BaseService {
             ]);
 
             if ($result) {
-                return $this->pdo->lastInsertId();
+                return $this->db->lastInsertId();
             }
 
             $this->setErrorMessage('Failed to archive document.');
@@ -130,7 +141,7 @@ class DocumentArchiveService extends BaseService {
                     {$whereClause}
                     ORDER BY da.generated_at DESC";
 
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -164,7 +175,7 @@ class DocumentArchiveService extends BaseService {
                     LEFT JOIN users u2 ON da.last_downloaded_by = u2.id
                     WHERE da.id = ?";
 
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute([$archiveId]);
             
             return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -190,7 +201,7 @@ class DocumentArchiveService extends BaseService {
                         last_downloaded_by = ?
                     WHERE id = ?";
 
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             return $stmt->execute([$userId, $archiveId]);
 
         } catch (PDOException $e) {
@@ -261,7 +272,7 @@ class DocumentArchiveService extends BaseService {
 
             // Delete database record
             $sql = "DELETE FROM document_archive WHERE id = ?";
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             return $stmt->execute([$archiveId]);
 
         } catch (PDOException $e) {
@@ -287,7 +298,7 @@ class DocumentArchiveService extends BaseService {
             }
 
             $sql = "UPDATE document_archive SET status = ? WHERE id = ?";
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             return $stmt->execute([$status, $archiveId]);
 
         } catch (PDOException $e) {
@@ -313,7 +324,7 @@ class DocumentArchiveService extends BaseService {
                     GROUP BY document_type, status
                     ORDER BY document_type, status";
 
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute();
             
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -360,7 +371,7 @@ class DocumentArchiveService extends BaseService {
                     WHERE generated_at < NOW() - INTERVAL ? DAY 
                     AND status = 'archived'";
             
-            $stmt = $this->pdo->prepare($sql);
+            $stmt = $this->db->prepare($sql);
             $stmt->execute([$daysOld]);
             $oldDocuments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
