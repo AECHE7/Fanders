@@ -79,6 +79,9 @@ if (!$details) { $session->setFlash('error', 'Sheet not found.'); header('Locati
 $sheet = $details['sheet'];
 $items = $details['items'];
 
+// Define direct collection flag early for use in header
+$isDirectCollection = isset($_GET['direct']) && $_GET['direct'] === '1' && $userRole === 'super-admin';
+
 // Initialize services first
 $clientService = new ClientService();
 $loanService = new LoanService();
@@ -214,9 +217,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div><?php endif; ?>
 
     <!-- Add Item Form (Only for Draft Status) -->
-    <?php
-    $isDirectCollection = isset($_GET['direct']) && $_GET['direct'] === '1' && $userRole === 'super-admin';
-    if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account_officer'])): ?>
+    <?php if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account_officer'])): ?>
     
     <!-- Pre-populated Loan Alert (if loan_id in URL) -->
     <?php if ($prePopulatedLoan && !$autoAdded): ?>
