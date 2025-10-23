@@ -344,7 +344,7 @@ class LoanService extends BaseService {
                 $userService = new UserService();
                 $user = $userService->getUserWithRoleName($approvedBy);
                 if ($user) {
-                    $approvedByName = $user['first_name'] . ' ' . $user['last_name'];
+                    $approvedByName = $user['name'];
                 }
             }
         }
