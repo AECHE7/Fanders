@@ -151,9 +151,15 @@ if (!function_exists('getClientStatusBadgeClass')) {
         const actionIdInput = document.getElementById('actionId');
         const actionTypeInput = document.getElementById('actionType');
 
+        // Initialize Feather icons for dynamically rendered elements
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+
         // Status/Action Buttons Handler
         document.querySelectorAll('.btn-status-action').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
                 const clientId = this.getAttribute('data-id');
                 const action = this.getAttribute('data-action');
                 let message = `Are you sure you want to change the client status to ${action.toUpperCase()}?`;
@@ -172,7 +178,8 @@ if (!function_exists('getClientStatusBadgeClass')) {
 
         // Delete Button Handler
         document.querySelectorAll('.btn-delete-action').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
                 const clientId = this.getAttribute('data-id');
                 const clientName = this.getAttribute('data-name');
                 const message = `Are you absolutely sure you want to permanently delete the record for Client: ${clientName} (ID: ${clientId})?\n\nWARNING: This action is irreversible and requires the client to have NO active or pending loans.`;

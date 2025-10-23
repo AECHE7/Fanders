@@ -104,8 +104,8 @@ $currentIdType = $clientData['identification_type'] ?? '';
             <!-- Identification Type Field -->
             <div class="col-md-6">
                 <div class="notion-form-group">
-                    <label for="identification_type" class="notion-form-label">Primary ID Type (Required)</label>
-                    <select class="notion-form-select form-select" id="identification_type" name="identification_type" required>
+                    <label for="identification_type" class="form-label">Primary ID Type (Required)</label>
+                    <select class="form-select" id="identification_type" name="identification_type" required>
                         <option value="">Select ID type...</option>
                         <option value="passport" <?= $currentIdType === 'passport' ? 'selected' : '' ?>>Passport</option>
                         <option value="drivers_license" <?= $currentIdType === 'drivers_license' ? 'selected' : '' ?>>Driver's License</option>
@@ -131,9 +131,9 @@ $currentIdType = $clientData['identification_type'] ?? '';
             <!-- Account Status Dropdown (Only editable by Super Admin/Admin) -->
             <div class="col-md-6">
                 <div class="notion-form-group">
-                    <label for="status" class="notion-form-label">Account Status</label>
+                    <label for="status" class="form-label">Account Status</label>
                     <?php if ($auth->hasRole(['super-admin', 'admin'])): ?>
-                        <select class="notion-form-select form-select" id="status" name="status" required>
+                        <select class="form-select" id="status" name="status" required>
                             <option value="active" <?= $currentStatus === 'active' ? 'selected' : '' ?>>Active</option>
                             <option value="inactive" <?= $currentStatus === 'inactive' ? 'selected' : '' ?>>Inactive</option>
                             <option value="blacklisted" <?= $currentStatus === 'blacklisted' ? 'selected' : '' ?>>Blacklisted</option>
@@ -168,15 +168,22 @@ $currentIdType = $clientData['identification_type'] ?? '';
 <style>
 /* Notion Form Styles and Animations (Copied from existing code) */
 .notion-form-group { position: relative; margin-bottom: 1.5rem; }
-.notion-form-control, .notion-form-select {
+.notion-form-control, .form-select {
     padding: 0.75rem 1rem; border: 1px solid #e0e0e0; border-radius: 8px;
     transition: all 0.3s ease; width: 100%; font-size: 1rem; line-height: 1.5;
     background-color: #fff;
 }
-.notion-form-control:focus, .notion-form-select:focus {
+.notion-form-control:focus, .form-select:focus {
     border-color: #0ca789; box-shadow: 0 0 0 0.2rem rgba(12, 167, 137, 0.25); outline: none;
 }
-.notion-form-label {
+.notion-form-label, .form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+/* Floating labels for text inputs */
+.interactive-form-field .notion-form-label {
     position: absolute; top: 0.75rem; left: 1rem; padding: 0 0.25rem;
     pointer-events: none; transition: all 0.3s ease; background-color: white;
     color: #6c757d; font-size: 1rem;
