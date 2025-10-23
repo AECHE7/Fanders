@@ -289,7 +289,7 @@ class LoanService extends BaseService {
 
     /**
      * Moves a loan from 'Application' to 'Approved'.
-     * Generates PDF loan agreement upon approval.
+     * Generates PDF loan agreement and SLR document upon approval.
      * @param int $id Loan ID.
      * @param int $approvedBy User ID who approved the loan.
      * @return bool
@@ -350,9 +350,49 @@ class LoanService extends BaseService {
         // Generate PDF and save to file directly
         $pdfGenerator->generateLoanAgreementToFile($loanWithClient, $calculation['payment_schedule'], $approvedByName, $pdfPath);
 
-        // Update loan with PDF path (assuming you add agreement_pdf_path column to loans table)
-        // For now, we'll just approve the loan
-        return $this->loanModel->approveLoan($id);
+        // Perform core loan operations within transaction (status update and SLR generation)
+        $approvalSuccess = $this->transaction(function() use ($id, $approvedBy) {
+            // 1. Update loan status to approved
+            if (!$this->loanModel->approveLoan($id)) {
+                $this->setErrorMessage('Failed to approve loan.');
+                return false;
+            }
+
+            // 2. Auto-generate SLR document on approval
+            if (class_exists('SLRService')) {
+                try {
+                    require_once __DIR__ . '/SLRService.php';
+                    $slrService = new SLRService();
+
+                    // Check if auto-generation is enabled for loan approval
+                    $sql = "SELECT auto_generate FROM slr_generation_rules
+                            WHERE trigger_event = 'loan_approval' AND is_active = true LIMIT 1";
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->execute();
+                    $rule = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if ($rule && $rule['auto_generate']) {
+                        // Auto-generate SLR on approval
+                        $slrDocument = $slrService->generateSLR($id, $approvedBy ?? 1, 'loan_approval');
+
+                        if ($slrDocument) {
+                            error_log('SLR document auto-generated on loan approval for loan ID ' . $id . ': ' . $slrDocument['document_number']);
+                        } else {
+                            error_log('Failed to auto-generate SLR on loan approval for loan ID ' . $id . ': ' . $slrService->getErrorMessage());
+                        }
+                    } else {
+                        error_log('SLR auto-generation disabled for loan approval - loan ID ' . $id . ' requires manual generation');
+                    }
+                } catch (Exception $e) {
+                    // Log the error but don't fail the approval
+                    error_log('Exception while generating SLR on loan approval for loan ID ' . $id . ': ' . $e->getMessage());
+                }
+            }
+
+            return true;
+        });
+
+        return $approvalSuccess;
     }
 
     /**
