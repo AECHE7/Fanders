@@ -611,4 +611,74 @@ class PDFGenerator {
         $this->pdf->Output($filePath, 'F');
         return true;
     }
+
+    /**
+     * Get the underlying FPDF object for advanced operations
+     */
+    public function getPDF() {
+        return $this->pdf;
+    }
+
+    /**
+     * Set text color
+     */
+    public function setTextColor($r, $g, $b) {
+        $this->pdf->SetTextColor($r, $g, $b);
+    }
+
+    /**
+     * Set fill color
+     */
+    public function setFillColor($r, $g, $b) {
+        $this->pdf->SetFillColor($r, $g, $b);
+    }
+
+    /**
+     * Set font
+     */
+    public function setFont($family, $style = '', $size = 10) {
+        $this->pdf->SetFont($family, $style, $size);
+    }
+
+    /**
+     * Add cell with optional fill
+     */
+    public function addCell($width, $height, $text, $border = 0, $ln = 0, $align = 'L', $fill = false) {
+        $this->pdf->Cell($width, $height, $text, $border, $ln, $align, $fill);
+    }
+
+    /**
+     * Add line break
+     */
+    public function addLn($height = null) {
+        $this->pdf->Ln($height);
+    }
+
+    /**
+     * Get current Y position
+     */
+    public function getY() {
+        return $this->pdf->GetY();
+    }
+
+    /**
+     * Get current X position
+     */
+    public function getX() {
+        return $this->pdf->GetX();
+    }
+
+    /**
+     * Set position
+     */
+    public function setXY($x, $y) {
+        $this->pdf->SetXY($x, $y);
+    }
+
+    /**
+     * Add multi-cell text
+     */
+    public function addMultiCell($width, $height, $text, $border = 0, $align = 'L', $fill = false) {
+        $this->pdf->MultiCell($width, $height, $text, $border, $align, $fill);
+    }
 }
