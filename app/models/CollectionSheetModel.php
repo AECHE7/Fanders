@@ -8,7 +8,9 @@ class CollectionSheetModel extends BaseModel {
     protected $table = 'collection_sheets';
     protected $primaryKey = 'id';
     protected $fillable = [
-        'officer_id', 'sheet_date', 'status', 'total_amount', 'created_at', 'updated_at'
+        'officer_id', 'sheet_date', 'status', 'total_amount', 'submitted_at', 
+        'approved_at', 'approved_by', 'posted_at', 'posted_by', 'notes', 
+        'created_at', 'updated_at'
     ];
     protected $hidden = [];
 

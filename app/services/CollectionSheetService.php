@@ -268,4 +268,167 @@ class CollectionSheetService extends BaseService {
 
         return $loan;
     }
+
+    /**
+     * Approve a submitted collection sheet (Cashier workflow)
+     * @param int $sheetId
+     * @param int $approverUserId
+     * @return bool
+     */
+    public function approveSheet($sheetId, $approverUserId) {
+        return $this->transaction(function() use ($sheetId, $approverUserId) {
+            $sheet = $this->sheetModel->findById($sheetId);
+            if (!$sheet) {
+                throw new Exception('Collection sheet not found.');
+            }
+            
+            if ($sheet['status'] !== 'submitted') {
+                throw new Exception('Only submitted sheets can be approved.');
+            }
+
+            // Update sheet status to approved
+            $updateData = [
+                'status' => 'approved',
+                'approved_by' => $approverUserId,
+                'approved_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            if (!$this->sheetModel->update($sheetId, $updateData)) {
+                throw new Exception('Failed to approve collection sheet.');
+            }
+
+            // Update all items to approved status
+            $this->itemModel->updateStatusBySheet($sheetId, 'approved');
+
+            return true;
+        });
+    }
+
+    /**
+     * Reject a submitted collection sheet and return to draft (Cashier workflow)
+     * @param int $sheetId
+     * @param int $rejectorUserId
+     * @param string $reason
+     * @return bool
+     */
+    public function rejectSheet($sheetId, $rejectorUserId, $reason = '') {
+        return $this->transaction(function() use ($sheetId, $rejectorUserId, $reason) {
+            $sheet = $this->sheetModel->findById($sheetId);
+            if (!$sheet) {
+                throw new Exception('Collection sheet not found.');
+            }
+            
+            if ($sheet['status'] !== 'submitted') {
+                throw new Exception('Only submitted sheets can be rejected.');
+            }
+
+            // Update sheet status back to draft with rejection notes
+            $updateData = [
+                'status' => 'draft',
+                'notes' => 'REJECTED: ' . $reason,
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            if (!$this->sheetModel->update($sheetId, $updateData)) {
+                throw new Exception('Failed to reject collection sheet.');
+            }
+
+            // Update all items back to draft status
+            $this->itemModel->updateStatusBySheet($sheetId, 'draft');
+
+            // Optional audit log
+            if (class_exists('TransactionService')) {
+                $ts = new TransactionService();
+                $ts->logGeneric('collection_sheet_rejected', $rejectorUserId, $sheetId, [
+                    'rejection_reason' => $reason,
+                    'officer_id' => $sheet['officer_id']
+                ]);
+            }
+
+            return true;
+        });
+    }
+
+    /**
+     * Post all approved collection sheet items as payments (Cashier workflow)
+     * @param int $sheetId
+     * @param int $cashierUserId
+     * @return bool
+     */
+    public function postSheetPayments($sheetId, $cashierUserId) {
+        $paymentService = new PaymentService();
+        return $this->transaction(function() use ($sheetId, $cashierUserId, $paymentService) {
+            $details = $this->getSheetDetails($sheetId);
+            if (!$details) {
+                throw new Exception('Collection sheet not found.');
+            }
+            
+            $sheet = $details['sheet'];
+            if ($sheet['status'] !== 'approved') {
+                throw new Exception('Only approved sheets can have payments posted.');
+            }
+
+            $items = $details['items'];
+            $postedCount = 0;
+
+            foreach ($items as $item) {
+                if ($item['status'] !== 'approved') {
+                    continue;
+                }
+
+                // Record payment for this loan
+                $paymentId = $paymentService->recordPayment(
+                    (int)$item['loan_id'], 
+                    (float)$item['amount'], 
+                    (int)$cashierUserId,
+                    'collection_sheet'
+                );
+
+                if (!$paymentId) {
+                    throw new Exception('Failed to record payment for loan #' . $item['loan_id'] . ': ' . $paymentService->getErrorMessage());
+                }
+
+                // Mark item as posted
+                $this->itemModel->update($item['id'], [
+                    'status' => 'posted',
+                    'posted_at' => date('Y-m-d H:i:s'),
+                    'posted_by' => $cashierUserId,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+
+                $postedCount++;
+            }
+
+            if ($postedCount === 0) {
+                throw new Exception('No items were available for posting.');
+            }
+
+            // Update sheet status to posted
+            $updateData = [
+                'status' => 'posted',
+                'posted_at' => date('Y-m-d H:i:s'),
+                'posted_by' => $cashierUserId,
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+            
+            if (!$this->sheetModel->update($sheetId, $updateData)) {
+                throw new Exception('Failed to update sheet status to posted.');
+            }
+
+            // Recalculate total
+            $this->sheetModel->recalcTotal($sheetId);
+
+            // Optional audit log
+            if (class_exists('TransactionService')) {
+                $ts = new TransactionService();
+                $ts->logGeneric('collection_sheet_posted', $cashierUserId, $sheetId, [
+                    'total_amount' => $sheet['total_amount'],
+                    'posted_items' => $postedCount
+                ]);
+            }
+
+            return true;
+        });
+    }
 }
