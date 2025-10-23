@@ -301,7 +301,7 @@ class LoanService extends BaseService {
             return false;
         }
 
-        if ($loan['status'] !== LoanModel::STATUS_APPLICATION) {
+        if (strcasecmp($loan['status'], LoanModel::STATUS_APPLICATION) !== 0) {
             $this->setErrorMessage('Only loan applications can be approved.');
             return false;
         }
@@ -368,7 +368,7 @@ class LoanService extends BaseService {
             return false;
         }
 
-        if ($loan['status'] !== LoanModel::STATUS_APPROVED) {
+        if (strcasecmp($loan['status'], LoanModel::STATUS_APPROVED) !== 0) {
             $this->setErrorMessage('Only approved loans can be disbursed.');
             return false;
         }
@@ -467,7 +467,7 @@ class LoanService extends BaseService {
             return false;
         }
 
-        if ($loan['status'] !== LoanModel::STATUS_APPLICATION) {
+        if (strcasecmp($loan['status'], LoanModel::STATUS_APPLICATION) !== 0) {
             $this->setErrorMessage('Only loan applications can be cancelled.');
             return false;
         }
