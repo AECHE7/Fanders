@@ -87,10 +87,34 @@ class SLRValidator {
         $sql = "SELECT * FROM slr_generation_rules 
                 WHERE trigger_event = ? AND is_active = true 
                 ORDER BY id DESC LIMIT 1";
-        
+
+        // Primary lookup using provided trigger
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$trigger]);
-        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+        $rule = $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+
+        // Fallbacks for legacy/alias trigger names
+        if (!$rule) {
+            // Handle historical alias: 'manual_request' vs 'manual'
+            if ($trigger === 'manual_request') {
+                $stmt->execute(['manual']);
+                $rule = $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+            } elseif ($trigger === 'manual') {
+                $stmt->execute(['manual_request']);
+                $rule = $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+            }
+
+            // Handle older auto_* aliases just in case
+            if (!$rule && $trigger === 'auto_approval') {
+                $stmt->execute(['loan_approval']);
+                $rule = $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+            } elseif (!$rule && $trigger === 'auto_disbursement') {
+                $stmt->execute(['loan_disbursement']);
+                $rule = $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+            }
+        }
+
+        return $rule;
     }
     
     /**
