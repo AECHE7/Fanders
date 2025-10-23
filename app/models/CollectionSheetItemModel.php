@@ -26,4 +26,12 @@ class CollectionSheetItemModel extends BaseModel {
         $sql = "UPDATE {$this->table} SET status = ?, updated_at = ? WHERE sheet_id = ?";
         return $this->db->query($sql, [$status, date('Y-m-d H:i:s'), $sheetId]) ? true : false;
     }
+
+    /**
+     * Get last inserted ID
+     * @return int|null
+     */
+    public function getLastInsertId() {
+        return $this->db->lastInsertId();
+    }
 }

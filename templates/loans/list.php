@@ -148,13 +148,23 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                                             <?php if (in_array($userRole, ['super-admin', 'admin', 'manager', 'account_officer'])): ?>
                                             <li>
                                                 <a class="dropdown-item" href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>">
-                                                    <i data-feather="file-plus" style="width: 14px; height: 14px;"></i> Add to Collection Sheet
+                                                    <i data-feather="file-plus" style="width: 14px; height: 14px;"></i> Add to Collection Sheet (Manual)
                                                 </a>
                                             </li>
                                             <li>
                                                 <a class="dropdown-item" href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>&auto_add=1">
                                                     <i data-feather="plus-circle" style="width: 14px; height: 14px;"></i> Add to Current Sheet (Auto)
                                                 </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li class="dropdown-header">
+                                                <i data-feather="zap" style="width: 12px; height: 12px;"></i> <strong>Instant Payment Processing</strong>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item text-success fw-bold" href="<?= APP_URL ?>/public/collection-sheets/add.php?loan_id=<?= $loan['id'] ?>&auto_add=1&auto_process=1">
+                                                    <i data-feather="zap" style="width: 14px; height: 14px;"></i> Auto-Process Payment Now
+                                                </a>
+                                                <small class="text-muted px-3">Instantly records payment via collection sheet</small>
                                             </li>
                                             <?php endif; ?>
                                         </ul>

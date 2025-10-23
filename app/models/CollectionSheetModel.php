@@ -54,4 +54,31 @@ class CollectionSheetModel extends BaseModel {
         $params[] = $limit;
         return $this->db->resultSet($sql, $params);
     }
+
+    /**
+     * Update metadata for automation settings
+     * @param int $sheetId
+     * @param string $metadata JSON string
+     * @return bool
+     */
+    public function updateMetadata($sheetId, $metadata) {
+        return $this->update($sheetId, [
+            'notes' => $metadata, // Store in notes field for now
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+    }
+
+    /**
+     * Get automation metadata for a sheet
+     * @param int $sheetId
+     * @return array|null
+     */
+    public function getAutomationMetadata($sheetId) {
+        $sheet = $this->findById($sheetId);
+        if (!$sheet || !$sheet['notes']) return null;
+        
+        $metadata = json_decode($sheet['notes'], true);
+        return (json_last_error() === JSON_ERROR_NONE && isset($metadata['automated_mode'])) 
+            ? $metadata : null;
+    }
 }

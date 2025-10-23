@@ -431,4 +431,171 @@ class CollectionSheetService extends BaseService {
             return true;
         });
     }
+
+    /**
+     * Add loan with automatic calculation and lock preferences
+     * @param int $sheetId
+     * @param int $loanId
+     * @param array $options ['auto_calculate' => bool, 'lock_form' => bool, 'auto_notes' => bool]
+     * @return array|false Result with item data or false on error
+     */
+    public function addLoanAutomated($sheetId, $loanId, $options = []) {
+        // Default options
+        $options = array_merge([
+            'auto_calculate' => true,
+            'lock_form' => false,
+            'auto_notes' => true
+        ], $options);
+
+        // Get loan details
+        $loan = $this->loanModel->findById($loanId);
+        if (!$loan) { 
+            $this->setErrorMessage('Loan not found.'); 
+            return false; 
+        }
+
+        if ($loan['status'] !== LoanModel::STATUS_ACTIVE) {
+            $this->setErrorMessage('Only active loans can be added to collection sheets.'); 
+            return false;
+        }
+
+        // Auto-calculate weekly payment amount
+        $amount = $options['auto_calculate'] ? 
+            ($loan['total_loan_amount'] / ($loan['term_weeks'] ?? 17)) : 
+            $loan['weekly_payment'] ?? 0;
+
+        // Generate automatic notes
+        $notes = $options['auto_notes'] ? 
+            "Auto-generated: Weekly payment collection for Loan #{$loanId}" : 
+            null;
+
+        // Add the item
+        $success = $this->addItem($sheetId, $loan['client_id'], $loanId, $amount, $notes);
+        
+        if ($success) {
+            // Return detailed item information
+            return [
+                'success' => true,
+                'item_id' => $this->itemModel->getLastInsertId(),
+                'loan_id' => $loanId,
+                'client_id' => $loan['client_id'],
+                'client_name' => $loan['client_name'] ?? 'Unknown',
+                'amount' => $amount,
+                'weekly_payment' => $amount,
+                'principal' => $loan['principal'],
+                'notes' => $notes,
+                'locked' => $options['lock_form']
+            ];
+        }
+
+        return false;
+    }
+
+    /**
+     * Batch add multiple loans with automatic processing
+     * @param int $sheetId
+     * @param array $loanIds
+     * @param array $options
+     * @return array Results for each loan
+     */
+    public function addMultipleLoansAutomated($sheetId, $loanIds, $options = []) {
+        $results = [];
+        
+        foreach ($loanIds as $loanId) {
+            $result = $this->addLoanAutomated($sheetId, $loanId, $options);
+            $results[$loanId] = $result;
+        }
+        
+        return $results;
+    }
+
+    /**
+     * Auto-collect payments for all active loans of specified clients
+     * @param int $sheetId
+     * @param array $clientIds
+     * @param array $options
+     * @return array Collection results
+     */
+    public function autoCollectForClients($sheetId, $clientIds, $options = []) {
+        $options = array_merge([
+            'only_due_payments' => false,
+            'max_per_client' => 1,
+            'auto_submit' => false
+        ], $options);
+
+        $results = [];
+        
+        foreach ($clientIds as $clientId) {
+            // Get active loans for client
+            $activeLoans = $this->loanModel->getActiveLoansForClient($clientId);
+            $clientResults = [];
+            
+            $count = 0;
+            foreach ($activeLoans as $loan) {
+                if ($count >= $options['max_per_client']) break;
+                
+                // Check if payment is due (optional)
+                if ($options['only_due_payments'] && !$this->isPaymentDue($loan)) {
+                    continue;
+                }
+                
+                $result = $this->addLoanAutomated($sheetId, $loan['id'], $options);
+                if ($result) {
+                    $clientResults[] = $result;
+                    $count++;
+                }
+            }
+            
+            $results[$clientId] = $clientResults;
+        }
+        
+        // Auto-submit sheet if requested
+        if ($options['auto_submit'] && !empty($results)) {
+            $this->submitSheet($sheetId);
+        }
+        
+        return $results;
+    }
+
+    /**
+     * Check if a payment is due for a loan
+     * @param array $loan
+     * @return bool
+     */
+    private function isPaymentDue($loan) {
+        // Simple check: payment is due if it's been a week since last payment
+        // This can be enhanced with more sophisticated logic
+        if (!isset($loan['last_payment_date'])) return true;
+        
+        $lastPayment = new DateTime($loan['last_payment_date']);
+        $now = new DateTime();
+        $daysSincePayment = $now->diff($lastPayment)->days;
+        
+        return $daysSincePayment >= 7; // Weekly payment cycle
+    }
+
+    /**
+     * Enable automated collection mode for a sheet
+     * @param int $sheetId
+     * @param array $settings
+     * @return bool
+     */
+    public function enableAutomatedMode($sheetId, $settings = []) {
+        $settings = array_merge([
+            'auto_calculate' => true,
+            'lock_after_add' => true,
+            'auto_submit_when_complete' => false,
+            'prevent_manual_entry' => true
+        ], $settings);
+
+        // Store automation settings in sheet metadata or separate table
+        // For now, we'll use a simple approach with sheet notes/metadata field
+        $metadata = json_encode([
+            'automated_mode' => true,
+            'automation_settings' => $settings,
+            'enabled_at' => date('Y-m-d H:i:s')
+        ]);
+
+        return $this->sheetModel->updateMetadata($sheetId, $metadata);
+    }
 }

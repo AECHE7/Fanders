@@ -405,4 +405,71 @@ class LoanModel extends BaseModel {
         // Call parent create method
         return parent::create($data);
     }
+
+    /**
+     * Get active loans for a specific client
+     * @param int $clientId
+     * @return array
+     */
+    public function getActiveLoansForClient($clientId) {
+        $sql = "SELECT l.*, c.name as client_name, c.phone_number,
+                       CASE WHEN p.last_payment_date IS NULL THEN l.disbursement_date 
+                            ELSE p.last_payment_date 
+                       END as last_payment_date
+                FROM {$this->table} l
+                JOIN clients c ON l.client_id = c.id
+                LEFT JOIN (
+                    SELECT loan_id, MAX(payment_date) as last_payment_date
+                    FROM payments 
+                    GROUP BY loan_id
+                ) p ON l.id = p.loan_id
+                WHERE l.client_id = ? AND l.status = ?
+                ORDER BY l.disbursement_date ASC";
+        
+        return $this->db->resultSet($sql, [$clientId, self::STATUS_ACTIVE]);
+    }
+
+    /**
+     * Get loans that are due for payment (weekly basis)
+     * @param array $clientIds Optional filter by client IDs
+     * @return array
+     */
+    public function getLoansRequiringPayment($clientIds = []) {
+        $sql = "SELECT l.*, c.name as client_name, c.phone_number,
+                       COALESCE(p.total_paid, 0) as total_paid,
+                       (l.total_loan_amount - COALESCE(p.total_paid, 0)) as remaining_balance,
+                       CASE WHEN p.last_payment_date IS NULL THEN l.disbursement_date 
+                            ELSE p.last_payment_date 
+                       END as last_payment_date,
+                       CASE WHEN p.last_payment_date IS NULL 
+                            THEN DATEDIFF(CURRENT_DATE, l.disbursement_date)
+                            ELSE DATEDIFF(CURRENT_DATE, p.last_payment_date)
+                       END as days_since_payment
+                FROM {$this->table} l
+                JOIN clients c ON l.client_id = c.id
+                LEFT JOIN (
+                    SELECT loan_id, 
+                           SUM(amount) as total_paid,
+                           MAX(payment_date) as last_payment_date
+                    FROM payments 
+                    GROUP BY loan_id
+                ) p ON l.id = p.loan_id
+                WHERE l.status = ?";
+        
+        $params = [self::STATUS_ACTIVE];
+        
+        if (!empty($clientIds)) {
+            $placeholders = str_repeat('?,', count($clientIds) - 1) . '?';
+            $sql .= " AND l.client_id IN ({$placeholders})";
+            $params = array_merge($params, $clientIds);
+        }
+        
+        $sql .= " AND (
+                    (p.last_payment_date IS NULL AND DATEDIFF(CURRENT_DATE, l.disbursement_date) >= 7)
+                    OR (p.last_payment_date IS NOT NULL AND DATEDIFF(CURRENT_DATE, p.last_payment_date) >= 7)
+                )
+                ORDER BY days_since_payment DESC, l.disbursement_date ASC";
+        
+        return $this->db->resultSet($sql, $params);
+    }
 }
