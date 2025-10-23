@@ -303,7 +303,19 @@ class ClientService extends BaseService {
      * @return bool
      */
     public function activateClient($id) {
-        return $this->clientModel->updateStatus($id, ClientModel::STATUS_ACTIVE);
+        $result = $this->clientModel->updateStatus($id, ClientModel::STATUS_ACTIVE);
+        
+        // Log client activation
+        if ($result && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logClientTransaction('status_changed', $id, $_SESSION['user_id'] ?? null, [
+                'client_id' => $id,
+                'new_status' => 'active',
+                'action' => 'activated'
+            ]);
+        }
+        
+        return $result;
     }
 
     /**
@@ -312,7 +324,19 @@ class ClientService extends BaseService {
      * @return bool
      */
     public function deactivateClient($id) {
-        return $this->clientModel->updateStatus($id, ClientModel::STATUS_INACTIVE);
+        $result = $this->clientModel->updateStatus($id, ClientModel::STATUS_INACTIVE);
+        
+        // Log client deactivation
+        if ($result && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logClientTransaction('status_changed', $id, $_SESSION['user_id'] ?? null, [
+                'client_id' => $id,
+                'new_status' => 'inactive',
+                'action' => 'deactivated'
+            ]);
+        }
+        
+        return $result;
     }
 
     /**
@@ -321,7 +345,19 @@ class ClientService extends BaseService {
      * @return bool
      */
     public function blacklistClient($id) {
-        return $this->clientModel->updateStatus($id, ClientModel::STATUS_BLACKLISTED);
+        $result = $this->clientModel->updateStatus($id, ClientModel::STATUS_BLACKLISTED);
+        
+        // Log client blacklisting
+        if ($result && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logClientTransaction('status_changed', $id, $_SESSION['user_id'] ?? null, [
+                'client_id' => $id,
+                'new_status' => 'blacklisted',
+                'action' => 'blacklisted'
+            ]);
+        }
+        
+        return $result;
     }
 
     /**

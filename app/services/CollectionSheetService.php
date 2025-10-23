@@ -110,6 +110,19 @@ class CollectionSheetService extends BaseService {
         ]);
         if (!$id) { $this->setErrorMessage('Failed to add item.'); return false; }
 
+        // Log collection sheet item addition
+        if (class_exists('TransactionService')) {
+            $sheet = $this->sheetModel->findById($sheetId);
+            $ts = new TransactionService();
+            $ts->logGeneric('collection_sheet_item_added', $sheet['officer_id'] ?? null, $sheetId, [
+                'sheet_id' => $sheetId,
+                'item_id' => $id,
+                'client_id' => $clientId,
+                'loan_id' => $loanId,
+                'amount' => $amount
+            ]);
+        }
+
         // Recalculate sheet total
         $this->sheetModel->recalcTotal($sheetId);
         return true;
@@ -129,6 +142,17 @@ class CollectionSheetService extends BaseService {
             if (!$this->sheetModel->updateStatus($sheetId, 'submitted')) {
                 throw new Exception('Failed to submit sheet.');
             }
+            
+            // Log collection sheet submission
+            if (class_exists('TransactionService')) {
+                $ts = new TransactionService();
+                $ts->logGeneric('collection_sheet_submitted', $sheet['officer_id'] ?? null, $sheetId, [
+                    'sheet_id' => $sheetId,
+                    'officer_id' => $sheet['officer_id'] ?? null,
+                    'total_amount' => $sheet['total_amount'] ?? 0
+                ]);
+            }
+            
             return true;
         });
     }

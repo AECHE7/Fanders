@@ -223,6 +223,16 @@ class UserService extends BaseService {
         if ($result) {
             $this->cache->delete('user_stats');
             $this->cache->delete('staff_stats');
+            
+            // Log user deactivation
+            if (class_exists('TransactionService')) {
+                $transactionService = new TransactionService();
+                $transactionService->logGeneric('user_status_changed', $_SESSION['user_id'] ?? null, $id, [
+                    'user_id' => $id,
+                    'new_status' => 'inactive',
+                    'action' => 'deactivated'
+                ]);
+            }
         }
         return $result;
     }
@@ -237,6 +247,16 @@ class UserService extends BaseService {
         if ($result) {
             $this->cache->delete('user_stats');
             $this->cache->delete('staff_stats');
+            
+            // Log user activation
+            if (class_exists('TransactionService')) {
+                $transactionService = new TransactionService();
+                $transactionService->logGeneric('user_status_changed', $_SESSION['user_id'] ?? null, $id, [
+                    'user_id' => $id,
+                    'new_status' => 'active',
+                    'action' => 'activated'
+                ]);
+            }
         }
         return $result;
     }

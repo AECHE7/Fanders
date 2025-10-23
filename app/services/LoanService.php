@@ -598,7 +598,19 @@ class LoanService extends BaseService {
             return false;
         }
 
-        return $this->loanModel->update($id, ['status' => LoanModel::STATUS_APPLICATION]);
+        $result = $this->loanModel->update($id, ['status' => LoanModel::STATUS_APPLICATION]);
+        
+        // Log loan restoration transaction
+        if ($result && class_exists('TransactionService')) {
+            $transactionService = new TransactionService();
+            $transactionService->logLoanTransaction('restored', $id, $_SESSION['user_id'] ?? null, [
+                'loan_id' => $id,
+                'restored_by' => $_SESSION['user_id'] ?? null,
+                'principal' => $loan['principal'] ?? 0
+            ]);
+        }
+        
+        return $result;
     }
 
     /**
