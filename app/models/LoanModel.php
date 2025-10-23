@@ -32,7 +32,12 @@ class LoanModel extends BaseModel {
      * @return array|false
      */
     public function getLoanWithClient($id) {
-        $sql = "SELECT l.*, c.name as client_name, c.phone_number, c.email, c.status as client_status
+        $sql = "SELECT l.*, 
+                       c.name as client_name, 
+                       c.phone_number, 
+                       c.email, 
+                       c.status as client_status,
+                       c.address as client_address
                 FROM {$this->table} l
                 JOIN clients c ON l.client_id = c.id
                 WHERE l.id = ?";
