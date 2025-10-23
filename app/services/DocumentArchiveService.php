@@ -228,31 +228,6 @@ class DocumentArchiveService extends BaseService {
             return [];
         }
     }
-                        l.principal,
-                        l.total_loan_amount,
-                        l.status as loan_status,
-                        COALESCE(c.full_name, CONCAT(c.first_name, ' ', c.last_name)) as client_name,
-                        u.username as generated_by_username,
-                        u2.username as downloaded_by_username
-                    FROM document_archive da
-                    LEFT JOIN loans l ON da.loan_id = l.id
-                    LEFT JOIN clients c ON l.client_id = c.id
-                    LEFT JOIN users u ON da.generated_by = u.id
-                    LEFT JOIN users u2 ON da.last_downloaded_by = u2.id
-                    {$whereClause}
-                    ORDER BY da.generated_at DESC";
-
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($params);
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        } catch (PDOException $e) {
-            error_log('Get Archived Documents Error: ' . $e->getMessage());
-            $this->setErrorMessage('Failed to retrieve archived documents.');
-            return [];
-        }
-    }
 
     /**
      * Get a specific archived document

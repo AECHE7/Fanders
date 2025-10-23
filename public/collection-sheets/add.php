@@ -376,7 +376,6 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </form>
       </div>
     </div>
-    <?php endif; ?>
 
     <!-- Items List -->
     <div class="card shadow-sm">
@@ -427,6 +426,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div>
   </div>
 </main>
+<?php endif; ?>
 
 <!-- JavaScript for automated collection sheet workflow -->
 <script>
