@@ -232,6 +232,30 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <div class="notion-divider my-3"></div>
     </div>
 
+        <!-- Quick Actions -->
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-3">
+                <a href="<?= APP_URL ?>/public/reports/index.php?type=loans" class="btn btn-outline-primary w-100">
+                    <i data-feather="file-text" class="me-2"></i>Loans Report
+                </a>
+            </div>
+            <div class="col-12 col-md-3">
+                <a href="<?= APP_URL ?>/public/reports/index.php?type=payments" class="btn btn-outline-success w-100">
+                    <i data-feather="credit-card" class="me-2"></i>Payments Report
+                </a>
+            </div>
+            <div class="col-12 col-md-3">
+                <a href="<?= APP_URL ?>/public/reports/index.php?type=clients" class="btn btn-outline-info w-100">
+                    <i data-feather="users" class="me-2"></i>Clients Report
+                </a>
+            </div>
+            <div class="col-12 col-md-3">
+                <a href="<?= APP_URL ?>/public/reports/index.php?type=users" class="btn btn-outline-warning w-100">
+                    <i data-feather="user-check" class="me-2"></i>Users Report
+                </a>
+            </div>
+        </div>
+
     <!-- Report Filters -->
     <div class="card mb-4">
         <div class="card-header">

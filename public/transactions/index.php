@@ -97,6 +97,34 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     <?php endif; ?>
 
+    <!-- Quick Actions -->
+    <?php
+        $today = date('Y-m-d');
+        $todayQuery = http_build_query(array_merge($filters, ['date_from' => $today, 'date_to' => $today, 'page' => 1]));
+    ?>
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/reports/index.php?type=financial" class="btn btn-outline-dark w-100">
+                <i data-feather="trending-up" class="me-2"></i>Financial Summary
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/reports/index.php?type=payments" class="btn btn-outline-primary w-100">
+                <i data-feather="credit-card" class="me-2"></i>Payments Report
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/transactions/index.php?<?= $todayQuery ?>" class="btn btn-outline-secondary w-100">
+                <i data-feather="calendar" class="me-2"></i>Today’s Logs
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/transactions/index.php" class="btn btn-outline-secondary w-100">
+                <i data-feather="x-circle" class="me-2"></i>Clear Filters
+            </a>
+        </div>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
