@@ -103,7 +103,7 @@ $countSql = "SELECT COUNT(*) as total
              LEFT JOIN loans l ON s.loan_id = l.id";
 
 if (!empty($conditions)) {
-    $countSql .= ' WHERE ' . implode(' AND ', array_slice(explode('LIMIT', $sql)[0], 0, -1));
+    $countSql .= ' WHERE ' . implode(' AND ', $conditions);
 }
 
 $countParams = array_slice($params, 0, -2); // Remove limit and offset
@@ -112,7 +112,7 @@ $countStmt->execute($countParams);
 $totalLogs = (int)$countStmt->fetchColumn();
 $totalPages = ceil($totalLogs / $limit);
 
-// Get statistics
+// Get statistics (using same conditions and params)
 $statsSql = "SELECT 
                 COUNT(*) as total_accesses,
                 COUNT(DISTINCT slr_document_id) as unique_documents,
@@ -120,7 +120,9 @@ $statsSql = "SELECT
                 SUM(CASE WHEN access_type = 'generation' THEN 1 ELSE 0 END) as total_generations,
                 SUM(CASE WHEN access_type = 'download' THEN 1 ELSE 0 END) as total_downloads,
                 SUM(CASE WHEN access_type = 'archive' THEN 1 ELSE 0 END) as total_archives
-             FROM slr_access_log";
+             FROM slr_access_log sal
+             LEFT JOIN slr_documents s ON sal.slr_document_id = s.id
+             LEFT JOIN loans l ON s.loan_id = l.id";
 
 if (!empty($conditions)) {
     $statsSql .= ' WHERE ' . implode(' AND ', $conditions);
