@@ -144,6 +144,20 @@ $totalPages = ceil($totalClients / $limit);
 require_once '../../app/utilities/PaginationUtility.php';
 $pagination = new PaginationUtility($totalClients, $page, $limit, 'page');
 
+// Fetch client dashboard statistics (DB-backed)
+$clientStats = [];
+try {
+    $clientStats = $clientService->getClientStats(true) ?: [];
+} catch (Exception $e) {
+    error_log('Client stats error: ' . $e->getMessage());
+    $clientStats = [
+        'total_clients' => 0,
+        'active_clients' => 0,
+        'clients_by_status' => [],
+        'recent_clients' => []
+    ];
+}
+
 $pageTitle = "Manage Clients";
 include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
@@ -190,6 +204,103 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <?= $session->getFlash('error') ?>
         </div>
     <?php endif; ?>
+
+        <!-- Quick Actions -->
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-3">
+                <a href="<?= APP_URL ?>/public/clients/add.php" class="btn btn-primary w-100">
+                    <i data-feather="user-plus" class="me-2"></i>Add Client
+                </a>
+            </div>
+            <div class="col-12 col-md-3">
+                <a href="<?= APP_URL ?>/public/reports/index.php?type=clients" class="btn btn-outline-secondary w-100">
+                    <i data-feather="file-text" class="me-2"></i>Clients Report
+                </a>
+            </div>
+            <div class="col-12 col-md-3">
+                <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-outline-primary w-100">
+                    <i data-feather="file-text" class="me-2"></i>Loans Module
+                </a>
+            </div>
+            <div class="col-12 col-md-3">
+                <a href="<?= APP_URL ?>/public/dashboard/index.php" class="btn btn-outline-dark w-100">
+                    <i data-feather="arrow-left" class="me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title text-uppercase small">Total Clients</h6>
+                                <h3 class="mb-0"><?= number_format((int)($clientStats['total_clients'] ?? 0)) ?></h3>
+                            </div>
+                            <i data-feather="users" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title text-uppercase small">Active Clients</h6>
+                                <h3 class="mb-0"><?= number_format((int)($clientStats['active_clients'] ?? 0)) ?></h3>
+                            </div>
+                            <i data-feather="check-circle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title text-uppercase small">Inactive Clients</h6>
+                                <?php
+                                    // Derive inactive from clients_by_status if available
+                                    $inactiveCount = 0;
+                                    if (!empty($clientStats['clients_by_status']) && is_array($clientStats['clients_by_status'])) {
+                                        foreach ($clientStats['clients_by_status'] as $row) {
+                                            if (($row['status'] ?? '') === 'inactive') { $inactiveCount = (int)($row['count'] ?? 0); break; }
+                                        }
+                                    }
+                                ?>
+                                <h3 class="mb-0"><?= number_format($inactiveCount) ?></h3>
+                            </div>
+                            <i data-feather="pause-circle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title text-uppercase small">Blacklisted</h6>
+                                <?php
+                                    $blacklistedCount = 0;
+                                    if (!empty($clientStats['clients_by_status']) && is_array($clientStats['clients_by_status'])) {
+                                        foreach ($clientStats['clients_by_status'] as $row) {
+                                            if (($row['status'] ?? '') === 'blacklisted') { $blacklistedCount = (int)($row['count'] ?? 0); break; }
+                                        }
+                                    }
+                                ?>
+                                <h3 class="mb-0"><?= number_format($blacklistedCount) ?></h3>
+                            </div>
+                            <i data-feather="alert-triangle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <!-- Filter/Search Form -->
     <div class="card mb-4 shadow-sm">

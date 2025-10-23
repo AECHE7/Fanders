@@ -218,6 +218,30 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     <?php endif; ?>
 
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/loans/add.php" class="btn btn-success w-100">
+                <i data-feather="plus" class="me-2"></i>New Loan
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/loans/index.php?status=application" class="btn btn-outline-secondary w-100">
+                <i data-feather="inbox" class="me-2"></i>Applications Queue
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/loans/index.php?status=active" class="btn btn-outline-primary w-100">
+                <i data-feather="activity" class="me-2"></i>Active Loans
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/reports/index.php?type=loans" class="btn btn-outline-dark w-100">
+                <i data-feather="file-text" class="me-2"></i>Loans Report
+            </a>
+        </div>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">

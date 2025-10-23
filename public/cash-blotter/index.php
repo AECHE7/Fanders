@@ -144,6 +144,32 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     <?php endif; ?>
 
+    <!-- Quick Actions -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-primary w-100">
+                <i data-feather="credit-card" class="me-2"></i>Record Payment
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/payments/index.php" class="btn btn-outline-secondary w-100">
+                <i data-feather="list" class="me-2"></i>Payments Module
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-outline-primary w-100">
+                <i data-feather="clipboard" class="me-2"></i>Collection Sheets
+            </a>
+        </div>
+        <div class="col-12 col-md-3">
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-dark w-100" onclick="recalculateBlotter()">
+                    <i data-feather="refresh-cw" class="me-2"></i>Recalculate
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
