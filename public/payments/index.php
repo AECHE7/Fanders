@@ -15,6 +15,9 @@ $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier', 'account-o
 $paymentService = new PaymentService();
 $loanService = new LoanService();
 $clientService = new ClientService();
+// DB handle for lightweight aggregates
+$database = Database::getInstance();
+$db = $database->getConnection();
 
 // --- 1. Handle Filters and Search ---
 require_once '../../app/utilities/FilterUtility.php';
@@ -96,6 +99,37 @@ $filterSummary = FilterUtility::getFilterSummary($filters);
 $pageTitle = "Payment Records";
 $userRole = $user['role'] ?? '';
 
+// --- 5. Dashboard-style aggregates for uniform entry design ---
+// Compute robust stats independent of current page size
+$today = date('Y-m-d');
+$monthStart = date('Y-m-01');
+$stats = [
+    'total_payments' => (int)$totalPayments,
+    'amount_today' => 0.0,
+    'payments_today' => 0,
+    'amount_this_month' => 0.0,
+];
+
+try {
+    // Today
+    $stmt = $db->prepare("SELECT COALESCE(SUM(p.amount),0) as amt, COUNT(*) as cnt
+                           FROM payments p
+                           WHERE DATE(p.payment_date) = ?");
+    $stmt->execute([$today]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC) ?: ['amt' => 0, 'cnt' => 0];
+    $stats['amount_today'] = (float)$row['amt'];
+    $stats['payments_today'] = (int)$row['cnt'];
+
+    // This month
+    $stmt = $db->prepare("SELECT COALESCE(SUM(p.amount),0) as amt
+                           FROM payments p
+                           WHERE p.payment_date >= ? AND p.payment_date < (?::date + INTERVAL '1 month')");
+    $stmt->execute([$monthStart, $monthStart]);
+    $stats['amount_this_month'] = (float)($stmt->fetchColumn() ?: 0);
+} catch (Exception $e) {
+    // keep defaults
+}
+
 // Include template
 include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
@@ -119,7 +153,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
                     <?= date('l, F j, Y') ?>
                 </div>
-                <a href="<?= APP_URL ?>/public/reports/payments.php" class="btn btn-sm btn-outline-secondary px-3">
+                                <a href="<?= APP_URL ?>/public/reports/payments.php" class="btn btn-sm btn-outline-secondary px-3">
                     <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> Payments Report
                 </a>
                 <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-sm btn-success">
@@ -129,6 +163,38 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
         <div class="notion-divider my-3"></div>
     </div>
+
+        <!-- Quick Actions -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <i data-feather="zap" class="me-2" style="width:18px;height:18px;"></i>
+                    <strong>Quick Actions</strong>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-success w-100 py-3">
+                            <i data-feather="plus-circle" class="me-2" style="width:18px;height:18px;"></i>
+                            Record Payment
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-primary w-100 py-3">
+                            <i data-feather="clipboard" class="me-2" style="width:18px;height:18px;"></i>
+                            Collection Sheets
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="<?= APP_URL ?>/public/cash-blotter/index.php" class="btn btn-outline-secondary w-100 py-3">
+                            <i data-feather="book-open" class="me-2" style="width:18px;height:18px;"></i>
+                            Cash Blotter
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <!-- Flash Messages -->
     <?php if ($session->hasFlash('success')): ?>
@@ -142,50 +208,61 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     <?php endif; ?>
 
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-white bg-primary shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title text-uppercase small">Total Payments</h6>
-                            <h3 class="mb-0"><?= number_format($totalPayments) ?></h3>
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title text-uppercase small">Total Payments</h6>
+                                <h3 class="mb-0"><?= number_format($stats['total_payments']) ?></h3>
+                            </div>
+                            <i data-feather="credit-card" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                         </div>
-                        <i data="feather" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title text-uppercase small">Amount (Today)</h6>
+                                <h3 class="mb-0">₱<?= number_format($stats['amount_today'], 2) ?></h3>
+                            </div>
+                            <i data-feather="calendar" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title text-uppercase small">Payments (Today)</h6>
+                                <h3 class="mb-0"><?= number_format($stats['payments_today']) ?></h3>
+                            </div>
+                            <i data-feather="clock" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title text-uppercase small">This Month</h6>
+                                <h3 class="mb-0">₱<?= number_format($stats['amount_this_month'], 2) ?></h3>
+                            </div>
+                            <i data-feather="bar-chart-2" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-success shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title text-uppercase small">Total Amount</h6>
-                            <h3 class="mb-0">₱<?= number_format(array_sum(array_column($payments, 'amount'))) ?></h3>
-                        </div>
-                        <i data="feather" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-info shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title text-uppercase small">This Month</h6>
-                            <h3 class="mb-0">₱<?= number_format(array_sum(array_filter(array_column($payments, 'amount'), function($amount, $key) use ($payments) {
-                                return date('Y-m', strtotime($payments[$key]['payment_date'])) == date('Y-m');
-                            }, ARRAY_FILTER_USE_BOTH))) ?></h3>
-                        </div>
-                        <i data="feather" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Payments List -->
     <div class="card shadow-sm">
