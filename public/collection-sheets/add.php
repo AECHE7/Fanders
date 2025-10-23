@@ -55,6 +55,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . $sheetId);
             }
             exit;
+        case 'direct_post_sheet':
+            if ($userRole !== 'super-admin') {
+                $session->setFlash('error', 'Unauthorized access.');
+                header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . $sheetId);
+                exit;
+            }
+            $ok = $service->directPost($sheetId, $user['id']);
+            if ($ok) {
+                $session->setFlash('success', 'Collection sheet directly posted! All payments have been processed immediately.');
+                header('Location: ' . APP_URL . '/public/collection-sheets/index.php');
+            } else {
+                $session->setFlash('error', $service->getErrorMessage() ?: 'Failed to post collection sheet.');
+                header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . $sheetId . '&direct=1');
+            }
+            exit;
     }
 }
 
@@ -157,14 +172,27 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </div>
           </div>
           <div>
-            <h1 class="notion-page-title mb-0">Collection Sheet #<?= (int)$sheet['id'] ?></h1>
+            <h1 class="notion-page-title mb-0">
+              Collection Sheet #<?= (int)$sheet['id'] ?>
+              <?php if ($isDirectCollection): ?>
+                <span class="badge bg-success ms-2">
+                  <i data-feather="zap" style="width: 12px; height: 12px;" class="me-1"></i>
+                  Direct Mode
+                </span>
+              <?php endif; ?>
+            </h1>
             <div class="text-muted small">
               <span class="badge bg-<?= $sheet['status'] === 'draft' ? 'warning' : ($sheet['status'] === 'submitted' ? 'info' : 'success') ?> me-2">
                 <?= htmlspecialchars(ucfirst($sheet['status'])) ?>
               </span>
               Date: <?= htmlspecialchars(date('F d, Y', strtotime($sheet['sheet_date']))) ?> • Officer: <?= htmlspecialchars($user['name']) ?>
+              <?php if ($isDirectCollection): ?>
+                <span class="text-success ms-2">
+                  <i data-feather="check-circle" style="width: 12px; height: 12px;" class="me-1"></i>
+                  Super-Admin Direct Collection
+                </span>
+              <?php endif; ?>
             </div>
-          </div>
         </div>
         <div>
           <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-sm btn-outline-secondary">
@@ -186,7 +214,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div><?php endif; ?>
 
     <!-- Add Item Form (Only for Draft Status) -->
-    <?php if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account_officer'])): ?>
+    <?php
+    $isDirectCollection = isset($_GET['direct']) && $_GET['direct'] === '1' && $userRole === 'super-admin';
+    if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account_officer'])): ?>
     
     <!-- Pre-populated Loan Alert (if loan_id in URL) -->
     <?php if ($prePopulatedLoan && !$autoAdded): ?>
@@ -214,10 +244,15 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php endif; ?>
     
     <div class="card shadow-sm mb-4">
-      <div class="card-header bg-primary text-white">
+      <div class="card-header <?= $isDirectCollection ? 'bg-success text-white' : 'bg-primary text-white' ?>">
         <div class="d-flex align-items-center">
-          <i data-feather="plus-circle" style="width: 18px; height: 18px;" class="me-2"></i>
-          <strong>Add Collection Item</strong>
+          <i data-feather="<?= $isDirectCollection ? 'zap' : 'plus-circle' ?>" style="width: 18px; height: 18px;" class="me-2"></i>
+          <strong>
+            <?= $isDirectCollection ? 'Direct Collection - Add Payment Item' : 'Add Collection Item' ?>
+            <?php if ($isDirectCollection): ?>
+              <small class="ms-2 opacity-75">(Super-Admin Direct Mode)</small>
+            <?php endif; ?>
+          </strong>
         </div>
       </div>
       <div class="card-body">
@@ -346,13 +381,25 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <strong>Items</strong>
         <div>
           <span class="me-3">Total: <strong>₱<?= number_format((float)$sheet['total_amount'], 2) ?></strong></span>
-          <?php if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account_officer'])): ?>
-          <form method="post" class="d-inline">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-            <input type="hidden" name="action" value="submit_sheet">
-            <input type="hidden" name="sheet_id" value="<?= (int)$sheet['id'] ?>">
-            <button type="submit" class="btn btn-success">Submit for Review</button>
-          </form>
+          <?php if ($sheet['status'] === 'draft'): ?>
+            <?php if ($isDirectCollection && $userRole === 'super-admin'): ?>
+              <form method="post" class="d-inline me-2">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                <input type="hidden" name="action" value="direct_post_sheet">
+                <input type="hidden" name="sheet_id" value="<?= (int)$sheet['id'] ?>">
+                <button type="submit" class="btn btn-success">
+                  <i data-feather="zap" style="width: 14px; height: 14px;" class="me-1"></i>
+                  Direct Post Payments
+                </button>
+              </form>
+            <?php elseif (in_array($userRole, ['super-admin', 'account_officer'])): ?>
+              <form method="post" class="d-inline">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                <input type="hidden" name="action" value="submit_sheet">
+                <input type="hidden" name="sheet_id" value="<?= (int)$sheet['id'] ?>">
+                <button type="submit" class="btn btn-success">Submit for Review</button>
+              </form>
+            <?php endif; ?>
           <?php endif; ?>
         </div>
       </div>

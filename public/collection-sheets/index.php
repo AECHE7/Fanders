@@ -14,20 +14,41 @@ $successMsg = $session->hasFlash('success') ? $session->getFlash('success') : nu
 $errorMsg = $session->hasFlash('error') ? $session->getFlash('error') : null;
 
 // AO quick create action
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_today') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!$csrf->validateRequest(false)) {
         $session->setFlash('error', 'Invalid security token.');
         header('Location: ' . APP_URL . '/public/collection-sheets/index.php');
         exit;
     }
-    $draft = $service->createDraftSheet($user['id'], date('Y-m-d'));
-    if ($draft) {
-        header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . $draft['id']);
+
+    if ($_POST['action'] === 'create_today') {
+        $draft = $service->createDraftSheet($user['id'], date('Y-m-d'));
+        if ($draft) {
+            header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . $draft['id']);
+            exit;
+        }
+        $session->setFlash('error', $service->getErrorMessage() ?: 'Failed to create draft.');
+        header('Location: ' . APP_URL . '/public/collection-sheets/index.php');
+        exit;
+    } elseif ($_POST['action'] === 'create_direct_today') {
+        // Create draft sheet for super-admin direct collection
+        $draft = $service->createDraftSheet($user['id'], date('Y-m-d'));
+        if ($draft) {
+            // Mark as direct collection sheet
+            $service->enableAutomatedMode($draft['id'], [
+                'auto_calculate' => true,
+                'lock_after_add' => false, // Allow super-admin flexibility
+                'auto_submit_when_complete' => false,
+                'prevent_manual_entry' => false,
+                'direct_post_enabled' => true
+            ]);
+            header('Location: ' . APP_URL . '/public/collection-sheets/add.php?id=' . $draft['id'] . '&direct=1');
+            exit;
+        }
+        $session->setFlash('error', $service->getErrorMessage() ?: 'Failed to create direct collection sheet.');
+        header('Location: ' . APP_URL . '/public/collection-sheets/index.php');
         exit;
     }
-    $session->setFlash('error', $service->getErrorMessage() ?: 'Failed to create draft.');
-    header('Location: ' . APP_URL . '/public/collection-sheets/index.php');
-    exit;
 }
 
 // Load sheets (AO sees own; others see recent)
@@ -64,6 +85,15 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <button type="submit" class="btn btn-sm btn-primary">
               <i data-feather="plus-circle" class="me-1" style="width:14px;height:14px;"></i>
               New Draft (Today)
+            </button>
+          </form>
+          <?php elseif ($userRole === 'super-admin'): ?>
+          <form method="post" class="m-0">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+            <input type="hidden" name="action" value="create_direct_today">
+            <button type="submit" class="btn btn-sm btn-success">
+              <i data-feather="zap" class="me-1" style="width:14px;height:14px;"></i>
+              Direct Collection (Today)
             </button>
           </form>
           <?php endif; ?>

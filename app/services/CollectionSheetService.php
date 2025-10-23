@@ -598,4 +598,88 @@ class CollectionSheetService extends BaseService {
 
         return $this->sheetModel->updateMetadata($sheetId, $metadata);
     }
+
+    /**
+     * Direct post collection sheet for super-admin (bypasses approval workflow)
+     * Creates Payment entries, updates Cash Blotter, logs transactions immediately.
+     * @param int $sheetId
+     * @param int $superAdminUserId
+     * @return bool
+     */
+    public function directPost($sheetId, $superAdminUserId) {
+        $paymentService = new PaymentService();
+        return $this->transaction(function() use ($sheetId, $superAdminUserId, $paymentService) {
+            $details = $this->getSheetDetails($sheetId);
+            if (!$details) { throw new Exception('Sheet not found.'); }
+            $sheet = $details['sheet'];
+
+            // Allow direct posting for draft sheets by super-admin
+            if (!in_array($sheet['status'], ['draft', 'submitted'])) {
+                throw new Exception('Only draft or submitted sheets can be directly posted by super-admin.');
+            }
+
+            $items = $details['items'];
+            $postedCount = 0;
+
+            foreach ($items as $item) {
+                if (!in_array($item['status'], ['draft', 'submitted'])) { continue; }
+
+                // Record payment for this loan using transaction-safe method
+                $paymentId = $paymentService->recordPaymentWithoutTransaction(
+                    (int)$item['loan_id'],
+                    (float)$item['amount'],
+                    (int)$superAdminUserId,
+                    'direct_collection_sheet'
+                );
+
+                if (!$paymentId) {
+                    throw new Exception('Failed to record payment for loan #' . $item['loan_id'] . ': ' . $paymentService->getErrorMessage());
+                }
+
+                // Mark item as posted
+                $this->itemModel->update($item['id'], [
+                    'status' => 'posted',
+                    'posted_at' => date('Y-m-d H:i:s'),
+                    'posted_by' => $superAdminUserId,
+                    'updated_at' => date('Y-m-d H:i:s')
+                ]);
+
+                $postedCount++;
+            }
+
+            if ($postedCount === 0) {
+                throw new Exception('No items were available for posting.');
+            }
+
+            // Update sheet status to posted directly
+            $updateData = [
+                'status' => 'posted',
+                'posted_at' => date('Y-m-d H:i:s'),
+                'posted_by' => $superAdminUserId,
+                'approved_by' => $superAdminUserId, // Mark as self-approved
+                'approved_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+                'notes' => ($sheet['notes'] ? $sheet['notes'] . ' | ' : '') . 'DIRECT POST by Super-Admin'
+            ];
+
+            if (!$this->sheetModel->update($sheetId, $updateData)) {
+                throw new Exception('Failed to update sheet status to posted.');
+            }
+
+            // Recalculate total
+            $this->sheetModel->recalcTotal($sheetId);
+
+            // Audit log for direct posting
+            if (class_exists('TransactionService')) {
+                $ts = new TransactionService();
+                $ts->logGeneric('collection_sheet_direct_posted', $superAdminUserId, $sheetId, [
+                    'total_amount' => $sheet['total_amount'],
+                    'posted_items' => $postedCount,
+                    'bypassed_approval' => true
+                ]);
+            }
+
+            return true;
+        });
+    }
 }
