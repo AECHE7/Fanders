@@ -67,37 +67,9 @@ $paymentService = new PaymentService();
 $userService = new UserService();
 // $reportService = new ReportService();
 
-    // Get role-specific dashboard data with enhanced filtering
-    if (in_array($userRole, [UserModel::$ROLE_CLIENT, UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER, UserModel::$ROLE_STUDENT, UserModel::$ROLE_STAFF, UserModel::$ROLE_OTHER])) {
-        // Client/Borrower Dashboard
-        $clientId = $user['id']; // Assuming user ID maps to client ID, or need to get client by user ID
-        $stats = [];
-
-        // Get client's loans with enhanced filtering
-        $clientLoans = $loanService->getLoansByClient($clientId);
-        $clientLoans = is_array($clientLoans) ? $clientLoans : [];
-        
-        $activeLoans = array_filter($clientLoans, function($loan) {
-            return isset($loan['status']) && strtolower($loan['status']) === 'active';
-        });
-        $loanHistory = $clientLoans;
-
-        // Get overdue payments using enhanced method
-        $overduePayments = $paymentService->getOverduePayments(['client_id' => $clientId]);
-
-        $stats['active_loans'] = $activeLoans;
-        $stats['loan_history'] = $loanHistory;
-        $stats['overdue_count'] = is_array($overduePayments) ? count($overduePayments) : 0;
-
-        // Get total borrowed (loan amounts)
-        // Sum by schema-accurate field total_loan_amount
-        $stats['total_borrowed'] = is_array($clientLoans) && !empty($clientLoans) ? 
-            array_sum(array_column($clientLoans, 'total_loan_amount')) : 0;
-        $stats['current_borrowed'] = is_array($activeLoans) && !empty($activeLoans) ? 
-            array_sum(array_column($activeLoans, 'total_loan_amount')) : 0;
-
-        $dashboardTemplate = BASE_PATH . '/templates/dashboard/client.php';
-        } elseif (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_SUPER_ADMIN, UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER])) {
+    // Get role-specific dashboard data for admin and staff roles only
+    if (in_array($userRole, [UserModel::$ROLE_ADMIN, UserModel::$ROLE_SUPER_ADMIN])) {
+        // Super Admin & Admin Dashboard
         // Admin/Staff Dashboard with enhanced data fetching
         $stats = [];
 
@@ -159,12 +131,57 @@ $userService = new UserService();
         }
 
         $dashboardTemplate = BASE_PATH . '/templates/dashboard/admin.php';
+    } elseif (in_array($userRole, [UserModel::$ROLE_MANAGER, UserModel::$ROLE_ACCOUNT_OFFICER, UserModel::$ROLE_CASHIER])) {
+        // Staff Dashboard (Manager, Account Officer, Cashier)
+        $stats = [];
+
+        // Get loan statistics
+        $loanStats = $loanService->getLoanStats();
+        if (is_array($loanStats)) {
+            $stats = array_merge($stats, $loanStats);
+        }
+
+        // Get active loans count using enhanced method
+        $activeLoansFilter = ['status' => 'Active'];
+        $stats['active_loans'] = $loanService->getTotalLoansCount($activeLoansFilter);
+
+        // Get overdue payments using enhanced method
+        $overduePayments = $paymentService->getOverduePayments();
+        $stats['overdue_payments'] = is_array($overduePayments) ? count($overduePayments) : 0;
+
+        // Get recent payments using enhanced method
+        $recentPayments = $paymentService->getRecentPayments(5);
+        $stats['recent_transactions'] = is_array($recentPayments) ? $recentPayments : [];
+
+        // Get active loans list with details
+        $activeLoansFullFilter = ['status' => 'Active', 'limit' => 5];
+        $activeLoans = $loanService->getAllLoansWithClients($activeLoansFullFilter);
+        $stats['active_loans_list'] = is_array($activeLoans) ? $activeLoans : [];
+
+        // Get recent loans
+        $recentLoans = $loanService->getRecentLoans(5);
+        $stats['recent_loans'] = is_array($recentLoans) ? $recentLoans : [];
+
+        // Get analytics placeholder
+        $analytics = [
+            'borrower_growth_text' => 'Active borrowers compared to last month',
+            'monthly' => []
+        ];
+
+        // Map total_principal_disbursed to total_disbursed for template compatibility
+        $stats['total_portfolio'] = $stats['total_principal_disbursed'] ?? 0;
+
+        // Get total clients count
+        $clientsFilter = [];
+        $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
+
+        $dashboardTemplate = BASE_PATH . '/templates/dashboard/staff.php';
     } else {
-    // Unknown role
-    $session->setFlash('error', 'Invalid user role.');
-    header('Location: ' . APP_URL . '/public/auth/logout.php');
-    exit;
-}
+        // Unknown or unauthorized role
+        $session->setFlash('error', 'Invalid user role. Access denied.');
+        header('Location: ' . APP_URL . '/public/auth/logout.php');
+        exit;
+    }
 
 // Include header
 include_once BASE_PATH . '/templates/layout/header.php';
