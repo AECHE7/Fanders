@@ -2,6 +2,7 @@
 /**
  * DocumentArchiveService - Manages document storage and archival
  * Handles SLR document storage, retrieval, and archival management
+ * Updated: 2025-10-23 - Fixed PDO reference issues
  */
 
 require_once __DIR__ . '/../core/BaseService.php';
