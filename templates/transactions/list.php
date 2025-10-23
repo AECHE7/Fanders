@@ -61,16 +61,17 @@ $pagination = [
                 $counter = (($pagination['current_page'] - 1) * $pagination['items_per_page']) + 1;
                 foreach ($transactions as $transaction):
                     $details = json_decode($transaction['details'], true);
-                    $transactionTypes = TransactionModel::getTransactionTypes();
-                    $actionLabel = $transactionTypes[$transaction['transaction_type']] ?? ucfirst(str_replace('_', ' ', $transaction['transaction_type']));
+                    // Use action field from new transaction_logs structure
+                    $action = $transaction['action'] ?? 'unknown';
+                    $actionLabel = ucfirst(str_replace('_', ' ', $action));
                 ?>
                     <tr class="transaction-row" data-transaction-id="<?= $transaction['id'] ?>" style="cursor: pointer;">
                         <td>
                             <span class="badge bg-secondary"><?= $counter++ ?></span>
                         </td>
                         <td>
-                            <div class="fw-bold"><?= date('M j, Y', strtotime($transaction['created_at'])) ?></div>
-                            <small class="text-muted"><?= date('H:i:s', strtotime($transaction['created_at'])) ?></small>
+                            <div class="fw-bold"><?= date('M j, Y', strtotime($transaction['timestamp'])) ?></div>
+                            <small class="text-muted"><?= date('H:i:s', strtotime($transaction['timestamp'])) ?></small>
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
@@ -79,24 +80,24 @@ $pagination = [
                                 </div>
                                 <div>
                                     <div class="fw-bold"><?= htmlspecialchars($transaction['user_name'] ?? 'Unknown') ?></div>
-                                    <small class="text-muted">ID: <?= $transaction['user_id'] ?></small>
+                                    <small class="text-muted">ID: <?= $transaction['user_id'] ?? 'N/A' ?></small>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <span class="badge bg-<?= getActionBadgeClass($transaction['transaction_type']) ?>">
+                            <span class="badge bg-<?= getActionBadgeClass($action) ?>">
                                 <?= $actionLabel ?>
                             </span>
                         </td>
                         <td>
                             <small class="text-muted">
-                                <?= ucfirst(str_replace('_', ' ', $transaction['transaction_type'])) ?>
+                                <?= ucfirst(str_replace('_', ' ', $transaction['entity_type'] ?? 'system')) ?>
                             </small>
                         </td>
                         <td>
-                            <?php if ($transaction['reference_id']): ?>
+                            <?php if (!empty($transaction['entity_id'])): ?>
                                 <span class="badge bg-light text-dark">
-                                    #<?= $transaction['reference_id'] ?>
+                                    #<?= $transaction['entity_id'] ?>
                                 </span>
                             <?php else: ?>
                                 <span class="text-muted">-</span>
@@ -136,18 +137,19 @@ $pagination = [
         <?php foreach ($transactions as $transaction): ?>
             <?php
             $details = json_decode($transaction['details'], true);
-            $transactionTypes = TransactionModel::getTransactionTypes();
-            $actionLabel = $transactionTypes[$transaction['transaction_type']] ?? ucfirst(str_replace('_', ' ', $transaction['transaction_type']));
+            // Use action field from new transaction_logs structure
+            $action = $transaction['action'] ?? 'unknown';
+            $actionLabel = ucfirst(str_replace('_', ' ', $action));
             ?>
             <div class="col-md-6 col-lg-4 mb-3">
                 <div class="card h-100 shadow-sm transaction-card" data-transaction-id="<?= $transaction['id'] ?>" style="cursor: pointer;">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <span class="badge bg-<?= getActionBadgeClass($transaction['transaction_type']) ?>">
+                            <span class="badge bg-<?= getActionBadgeClass($action) ?>">
                                 <?= $actionLabel ?>
                             </span>
                             <small class="text-muted">
-                                <?= date('M j, H:i', strtotime($transaction['created_at'])) ?>
+                                <?= date('M j, H:i', strtotime($transaction['timestamp'])) ?>
                             </small>
                         </div>
 
@@ -160,9 +162,9 @@ $pagination = [
                             </small>
                         </div>
 
-                        <?php if ($transaction['reference_id']): ?>
+                        <?php if (!empty($transaction['entity_id'])): ?>
                             <div class="mb-2">
-                                <small class="text-muted">Reference: #<?= $transaction['reference_id'] ?></small>
+                                <small class="text-muted">Reference: #<?= $transaction['entity_id'] ?></small>
                             </div>
                         <?php endif; ?>
 
