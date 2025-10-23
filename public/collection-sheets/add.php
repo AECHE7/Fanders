@@ -475,32 +475,60 @@ document.addEventListener('DOMContentLoaded', function() {
     // Lock/unlock form elements
     function lockForm(lockState = true) {
         isFormLocked = lockState;
-        
+
         clientSelect.disabled = lockState;
         loanSelect.disabled = lockState;
         amountInput.disabled = lockState;
-        
+
         if (lockState && selectedLoanData) {
             // Show locked info displays
             lockedClientInfo.style.display = 'block';
             lockedLoanInfo.style.display = 'block';
             lockedAmountInfo.style.display = 'block';
-            
+
             // Hide original selects
             clientSelect.style.display = 'none';
             loanSelect.style.display = 'none';
             amountInput.style.display = 'none';
-            
+
             // Hide helpers
             if (loanSelectHelper) loanSelectHelper.style.display = 'none';
             if (amountHelper) amountHelper.style.display = 'none';
-            
+
             // Fill locked display info
             lockedClientName.textContent = selectedLoanData.client_name;
             lockedLoanDetails.textContent = `#${selectedLoanData.loan_id} - ₱${parseFloat(selectedLoanData.principal).toFixed(2)}`;
             lockedWeeklyAmount.textContent = selectedLoanData.weekly_payment;
             lockedAmountValue.textContent = selectedLoanData.weekly_payment;
-            
+
+            // Add hidden inputs to ensure form submission works when elements are hidden
+            if (!document.getElementById('hidden_client_id')) {
+                const hiddenClientId = document.createElement('input');
+                hiddenClientId.type = 'hidden';
+                hiddenClientId.name = 'client_id';
+                hiddenClientId.id = 'hidden_client_id';
+                hiddenClientId.value = selectedLoanData.client_id;
+                document.getElementById('addItemForm').appendChild(hiddenClientId);
+            }
+
+            if (!document.getElementById('hidden_loan_id')) {
+                const hiddenLoanId = document.createElement('input');
+                hiddenLoanId.type = 'hidden';
+                hiddenLoanId.name = 'loan_id';
+                hiddenLoanId.id = 'hidden_loan_id';
+                hiddenLoanId.value = selectedLoanData.loan_id;
+                document.getElementById('addItemForm').appendChild(hiddenLoanId);
+            }
+
+            if (!document.getElementById('hidden_amount')) {
+                const hiddenAmount = document.createElement('input');
+                hiddenAmount.type = 'hidden';
+                hiddenAmount.name = 'amount';
+                hiddenAmount.id = 'hidden_amount';
+                hiddenAmount.value = selectedLoanData.weekly_payment;
+                document.getElementById('addItemForm').appendChild(hiddenAmount);
+            }
+
             // Keep submit button enabled for locked form
             autoCollectBtn.style.display = 'inline-block';
             addItemBtn.textContent = 'Add Locked Item to Sheet';
@@ -512,15 +540,25 @@ document.addEventListener('DOMContentLoaded', function() {
             lockedClientInfo.style.display = 'none';
             lockedLoanInfo.style.display = 'none';
             lockedAmountInfo.style.display = 'none';
-            
+
             clientSelect.style.display = 'block';
             loanSelect.style.display = 'block';
             amountInput.style.display = 'block';
-            
+
             // Show helpers
             if (loanSelectHelper) loanSelectHelper.style.display = 'block';
             if (amountHelper) amountHelper.style.display = 'block';
-            
+
+            // Remove hidden inputs when unlocking
+            const hiddenClientId = document.getElementById('hidden_client_id');
+            if (hiddenClientId) hiddenClientId.remove();
+
+            const hiddenLoanId = document.getElementById('hidden_loan_id');
+            if (hiddenLoanId) hiddenLoanId.remove();
+
+            const hiddenAmount = document.getElementById('hidden_amount');
+            if (hiddenAmount) hiddenAmount.remove();
+
             // Hide auto-collect button
             autoCollectBtn.style.display = 'none';
             addItemBtn.textContent = 'Add to Collection Sheet';
