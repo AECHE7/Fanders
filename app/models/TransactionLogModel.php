@@ -170,4 +170,121 @@ class TransactionLogModel extends BaseModel {
         $searchTerm = '%' . $term . '%';
         return $this->query($sql, [$searchTerm, $searchTerm, $searchTerm, $limit]);
     }
+
+    /**
+     * Gets filtered transaction logs with advanced filtering.
+     * @param array $filters Filter options
+     * @param int $limit Number of records
+     * @param int $offset Offset for pagination
+     * @return array
+     */
+    public function getFilteredLogs($filters = [], $limit = 50, $offset = 0) {
+        $sql = "SELECT tl.*, u.name as user_name, u.email as user_email
+                FROM {$this->table} tl
+                LEFT JOIN users u ON tl.user_id = u.id
+                WHERE 1=1";
+
+        $params = [];
+
+        // Apply filters
+        if (!empty($filters['user_id'])) {
+            $sql .= " AND tl.user_id = ?";
+            $params[] = $filters['user_id'];
+        }
+
+        if (!empty($filters['entity_type'])) {
+            $sql .= " AND tl.entity_type = ?";
+            $params[] = $filters['entity_type'];
+        }
+
+        if (!empty($filters['entity_id'])) {
+            $sql .= " AND tl.entity_id = ?";
+            $params[] = $filters['entity_id'];
+        }
+
+        if (!empty($filters['action'])) {
+            $sql .= " AND tl.action = ?";
+            $params[] = $filters['action'];
+        }
+
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(tl.timestamp) >= ?";
+            $params[] = $filters['date_from'];
+        }
+
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(tl.timestamp) <= ?";
+            $params[] = $filters['date_to'];
+        }
+
+        if (!empty($filters['search'])) {
+            $sql .= " AND (tl.details LIKE ? OR tl.action LIKE ? OR u.name LIKE ? OR tl.entity_type LIKE ?)";
+            $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+
+        $sql .= " ORDER BY tl.timestamp DESC LIMIT ? OFFSET ?";
+        $params[] = $limit;
+        $params[] = $offset;
+
+        return $this->query($sql, $params);
+    }
+
+    /**
+     * Gets the count of filtered transaction logs for pagination.
+     * @param array $filters Filter options
+     * @return int
+     */
+    public function getFilteredCount($filters = []) {
+        $sql = "SELECT COUNT(*) as count FROM {$this->table} tl 
+                LEFT JOIN users u ON tl.user_id = u.id
+                WHERE 1=1";
+        $params = [];
+
+        // Apply same filters as getFilteredLogs
+        if (!empty($filters['user_id'])) {
+            $sql .= " AND tl.user_id = ?";
+            $params[] = $filters['user_id'];
+        }
+
+        if (!empty($filters['entity_type'])) {
+            $sql .= " AND tl.entity_type = ?";
+            $params[] = $filters['entity_type'];
+        }
+
+        if (!empty($filters['entity_id'])) {
+            $sql .= " AND tl.entity_id = ?";
+            $params[] = $filters['entity_id'];
+        }
+
+        if (!empty($filters['action'])) {
+            $sql .= " AND tl.action = ?";
+            $params[] = $filters['action'];
+        }
+
+        if (!empty($filters['date_from'])) {
+            $sql .= " AND DATE(tl.timestamp) >= ?";
+            $params[] = $filters['date_from'];
+        }
+
+        if (!empty($filters['date_to'])) {
+            $sql .= " AND DATE(tl.timestamp) <= ?";
+            $params[] = $filters['date_to'];
+        }
+
+        if (!empty($filters['search'])) {
+            $sql .= " AND (tl.details LIKE ? OR tl.action LIKE ? OR u.name LIKE ? OR tl.entity_type LIKE ?)";
+            $searchTerm = '%' . $filters['search'] . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+
+        $result = $this->query($sql, $params);
+        return $result[0]['count'] ?? 0;
+    }
 }

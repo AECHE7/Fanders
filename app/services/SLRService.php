@@ -655,6 +655,7 @@ class SLRService extends BaseService {
      * @param string $reason
      */
     public function logSLRAccess($slrId, $accessType, $userId, $reason = '') {
+        // Log to slr_access_log table for detailed SLR-specific tracking
         $sql = "INSERT INTO slr_access_log (
                     slr_document_id, access_type, accessed_by, 
                     access_reason, ip_address, user_agent
@@ -666,6 +667,17 @@ class SLRService extends BaseService {
         $this->db->query($sql, [
             $slrId, $accessType, $userId, $reason, $ipAddress, $userAgent
         ]);
+
+        // Also log to transaction_logs for overall audit trail
+        if (class_exists('TransactionService')) {
+            require_once __DIR__ . '/TransactionService.php';
+            $transactionService = new TransactionService();
+            $transactionService->logGeneric('slr_' . $accessType, $userId, $slrId, [
+                'access_type' => $accessType,
+                'reason' => $reason,
+                'slr_id' => $slrId
+            ]);
+        }
     }
 
     /**

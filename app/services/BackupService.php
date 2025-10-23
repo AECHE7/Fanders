@@ -91,6 +91,19 @@ class BackupService extends BaseService {
             // Log successful backup
             error_log("Database backup completed successfully: {$filename} ({$fileSize} bytes)");
 
+            // Log transaction
+            if (class_exists('TransactionService')) {
+                require_once __DIR__ . '/TransactionService.php';
+                $transactionService = new TransactionService();
+                $transactionService->logSystemTransaction('backup', 1, [ // Using user_id 1 (system)
+                    'backup_id' => $backupId,
+                    'filename' => $filename,
+                    'size' => $fileSize,
+                    'backup_type' => $backupType,
+                    'cloud_url' => $cloudUrl
+                ]);
+            }
+
             // Clean up old backups
             $this->cleanupOldBackups();
 
@@ -187,6 +200,17 @@ class BackupService extends BaseService {
 
             // Log successful restore
             error_log('Database restore completed successfully: ' . $backup['filename']);
+
+            // Log transaction
+            if (class_exists('TransactionService')) {
+                require_once __DIR__ . '/TransactionService.php';
+                $transactionService = new TransactionService();
+                $transactionService->logSystemTransaction('backup_restored', 1, [ // Using user_id 1 (system)
+                    'backup_id' => $backupId,
+                    'filename' => $backup['filename'],
+                    'restore_count' => ($backup['restore_count'] ?? 0) + 1
+                ]);
+            }
 
             // Update backup metadata
             $this->updateBackupMetadata($backupId, [
