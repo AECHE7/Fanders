@@ -174,7 +174,7 @@ class PDFGenerator {
         $this->pdf->AddPage();
     }
 
-    public function output($disposition = 'I', $filename = null) {
+    public function output($disposition = 'S', $filename = null) {
         if ($filename === null) {
             $filename = $this->title . ' - ' . date('Y-m-d') . '.pdf';
         }
