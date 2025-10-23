@@ -26,65 +26,175 @@ if (!function_exists('getLoanStatusBadgeClass')) {
     }
 }
 ?>
+<!-- Custom Styling for Loans Table -->
+<style>
+    .loans-approval-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .loans-approval-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .loans-approval-table thead th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        padding: 1rem 0.75rem;
+        border: none;
+        vertical-align: middle;
+    }
+    
+    .loans-approval-table tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .loans-approval-table tbody tr:hover {
+        background-color: #f8f9fe;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    }
+    
+    .loans-approval-table tbody td {
+        padding: 1rem 0.75rem;
+        vertical-align: middle;
+        border: none;
+    }
+    
+    .loans-approval-table tbody tr:last-child {
+        border-bottom: none;
+    }
+    
+    .loan-id-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    
+    .client-info-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .client-name-link {
+        color: #2d3748;
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    
+    .client-name-link:hover {
+        color: #667eea;
+    }
+    
+    .client-phone {
+        color: #718096;
+        font-size: 0.85rem;
+    }
+    
+    .amount-cell {
+        font-weight: 600;
+        color: #2d3748;
+        font-size: 1rem;
+    }
+    
+    .status-badge-custom {
+        padding: 0.4rem 0.9rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-block;
+    }
+    
+    .status-active { background: #48bb78; color: white; }
+    .status-application { background: #ed8936; color: white; }
+    .status-approved { background: #4299e1; color: white; }
+    .status-completed { background: #9f7aea; color: white; }
+    .status-defaulted { background: #f56565; color: white; }
+    .status-secondary { background: #a0aec0; color: white; }
+    
+    .date-cell {
+        color: #718096;
+        font-size: 0.9rem;
+    }
+    
+    .action-btn-group {
+        display: flex;
+        gap: 0.4rem;
+        justify-content: center;
+    }
+    
+    .action-btn-group .btn {
+        border-radius: 6px;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .action-btn-group .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+</style>
+
 <!-- Loans List Table -->
 <?php if (empty($loans)): ?>
     <div class="alert alert-info" role="alert">
-        No loans found matching the current filters.
+        <i data-feather="info"></i> No loans found matching the current filters.
     </div>
 <?php else: ?>
-    <!-- Agreements Section -->
-    <div class="mb-4">
-        <h5 class="mb-2">Generated Agreements</h5>
-        <div class="table-responsive">
-            <table class="table table-bordered table-sm">
-                <thead>
-                    <tr>
-                        <th>Loan ID</th>
-                        <th>Agreement File</th>
-                        <th>Download</th>
-                    </tr>
-                </thead>
-                <tbody id="agreements-list">
-                    <!-- Agreements will be loaded here by JS -->
-                </tbody>
-            </table>
-        </div>
-    </div>
     <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle mb-0">
-            <thead class="table-light">
+        <table class="table loans-approval-table align-middle mb-0">
+            <thead>
                 <tr>
-                    <th style="width: 5%;">ID</th>
-                    <th style="width: 20%;">Client</th>
-                    <th style="width: 15%;">Principal</th>
-                    <th style="width: 15%;">Weekly Pay</th>
-                    <th style="width: 15%;">Status</th>
-                    <th style="width: 10%;">Applied On</th>
+                    <th style="width: 8%;">Loan ID</th>
+                    <th style="width: 22%;">Client Details</th>
+                    <th style="width: 13%;">Principal</th>
+                    <th style="width: 13%;">Weekly Pay</th>
+                    <th style="width: 12%;">Status</th>
+                    <th style="width: 12%;">Applied On</th>
                     <th style="width: 20%;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($loans as $loan): ?>
                     <tr>
-                        <td><?= htmlspecialchars($loan['id']) ?></td>
                         <td>
-                            <a href="<?= APP_URL ?>/public/clients/view.php?id=<?= $loan['client_id'] ?>" class="text-decoration-none fw-medium">
-                                <?= htmlspecialchars($loan['client_name'] ?? 'N/A') ?>
-                            </a>
-                            <small class="text-muted d-block"><?= htmlspecialchars($loan['phone_number'] ?? '') ?></small>
+                            <span class="loan-id-badge">#<?= htmlspecialchars($loan['id']) ?></span>
                         </td>
-                        <td>₱<?= number_format($loan['principal'], 2) ?></td>
-                        <td>₱<?= number_format($loan['total_loan_amount'] / $loan['term_weeks'], 2) ?></td>
                         <td>
-                            <span class="badge text-bg-<?= getLoanStatusBadgeClass($loan['status']) ?>">
+                            <div class="client-info-cell">
+                                <a href="<?= APP_URL ?>/public/clients/view.php?id=<?= $loan['client_id'] ?>" class="client-name-link">
+                                    <?= htmlspecialchars($loan['client_name'] ?? 'N/A') ?>
+                                </a>
+                                <span class="client-phone"><?= htmlspecialchars($loan['phone_number'] ?? 'N/A') ?></span>
+                            </div>
+                        </td>
+                        <td class="amount-cell">₱<?= number_format($loan['principal'], 2) ?></td>
+                        <td class="amount-cell">₱<?= number_format($loan['total_loan_amount'] / $loan['term_weeks'], 2) ?></td>
+                        <td>
+                            <span class="status-badge-custom status-<?= strtolower($loan['status']) ?>">
                                 <?= htmlspecialchars(ucfirst($loan['status'])) ?>
                             </span>
                         </td>
-                        <td><?= htmlspecialchars(date('M d, Y', strtotime($loan['application_date']))) ?></td>
+                        <td class="date-cell"><?= htmlspecialchars(date('M d, Y', strtotime($loan['application_date']))) ?></td>
                         <td>
-                            <div class="btn-group btn-group-sm" role="group">
+                            <div class="action-btn-group">
                                 <!-- View Details -->
-                                <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="btn btn-outline-info" title="View Loan Details">
+                                <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="btn btn-sm btn-outline-info" title="View Loan Details">
                                     <i data-feather="eye"></i>
                                 </a>
 
@@ -96,12 +206,12 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 
                                 <?php if ($canManage && $status === 'application'): ?>
                                     <!-- Approve Button (Manager/Admin action) -->
-                                    <button type="button" class="btn btn-outline-success btn-loan-action"
+                                    <button type="button" class="btn btn-sm btn-outline-success btn-loan-action"
                                             data-action="approve" data-id="<?= $loan['id'] ?>" title="Approve Loan">
                                         <i data-feather="check"></i>
                                     </button>
                                     <!-- Cancel Button -->
-                                    <button type="button" class="btn btn-outline-danger btn-loan-action"
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-loan-action"
                                             data-action="cancel" data-id="<?= $loan['id'] ?>" title="Cancel Application">
                                         <i data-feather="x-circle"></i>
                                     </button>
@@ -109,7 +219,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 
                                 <?php if ($canManage && $status === 'approved'): ?>
                                     <!-- Disburse Button (Manager/Admin action) -->
-                                    <button type="button" class="btn btn-outline-primary btn-loan-action"
+                                    <button type="button" class="btn btn-sm btn-outline-primary btn-loan-action"
                                             data-action="disburse" data-id="<?= $loan['id'] ?>" title="Disburse Funds (Activate Loan)">
                                         <i data-feather="send"></i> Disburse
                                     </button>
@@ -303,32 +413,5 @@ if (!function_exists('getLoanStatusBadgeClass')) {
             actionTypeInput.value = 'cancel';
             actionForm.submit();
         });
-
-        // Agreements fetch and render
-        fetch('<?= APP_URL ?>/public/agreements/list.php')
-            .then(response => response.json())
-            .then(data => {
-                const agreementsList = document.getElementById('agreements-list');
-                agreementsList.innerHTML = '';
-                if (data.agreements && data.agreements.length > 0) {
-                    data.agreements.forEach(agreement => {
-                        // Try to extract loan ID from filename
-                        let loanId = '';
-                        const match = agreement.name.match(/loan_(\d+)_|Loan(\d+)/i);
-                        if (match) {
-                            loanId = match[1] || match[2] || '';
-                        }
-                        agreementsList.innerHTML += `
-                            <tr>
-                                <td>${loanId}</td>
-                                <td>${agreement.name}</td>
-                                <td><a href="${agreement.url}" target="_blank" class="btn btn-sm btn-outline-primary">Download</a></td>
-                            </tr>
-                        `;
-                    });
-                } else {
-                    agreementsList.innerHTML = '<tr><td colspan="3">No agreements found.</td></tr>';
-                }
-            });
     });
 </script>

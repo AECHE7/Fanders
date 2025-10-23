@@ -70,22 +70,21 @@ $loanService = new LoanService();
 
 // Handle loan pre-population from URL parameter
 $prePopulateLoanId = isset($_GET['loan_id']) ? (int)$_GET['loan_id'] : 0;
-$autoAdd = isset($_GET['auto_add']) && $_GET['auto_add'] === '1';
-$autoProcess = isset($_GET['auto_process']) && $_GET['auto_process'] === '1';
+$autoAdd = isset($_GET['auto_add']) && $_GET['auto_add'] === '1';$autoProcess = isset($_GET['auto_process']) && $_GET['auto_process'] === '1';
 $prePopulatedLoan = null;
 $autoAdded = false;
 $autoProcessed = false;
 
-if ($prePopulateLoanId > 0) {
-    $prePopulatedLoan = $loanService->getLoanWithClient($prePopulateLoanId);
-    // Only allow active loans to be pre-populated (check for both 'Active' and 'active')
-    if (!$prePopulatedLoan || (strtolower($prePopulatedLoan['status']) !== 'active')) {
-        $prePopulatedLoan = null;
-        $session->setFlash('warning', 'Loan not found or not active for collection.');
-    } else if ($autoAdd && $sheet['status'] === 'draft') {
-        // Automatically add the loan to the collection sheet
-        $weeklyPayment = $prePopulatedLoan['total_loan_amount'] / 17;
-        $notes = 'Auto-added from loan actions';
+    if ($prePopulateLoanId > 0) {
+        $prePopulatedLoan = $loanService->getLoanWithClient($prePopulateLoanId);
+        // Only allow active loans to be pre-populated (check for both 'Active' and 'active')
+        if (!$prePopulatedLoan || (strtolower($prePopulatedLoan['status']) !== 'active')) {
+            $prePopulatedLoan = null;
+            $session->setFlash('warning', 'Loan not found or not active for collection.');
+        } else if ($autoAdd && $sheet['status'] === 'draft') {
+            // Automatically add the loan to the collection sheet
+            $weeklyPayment = $prePopulatedLoan['total_loan_amount'] / ($prePopulatedLoan['term_weeks'] ?? 17);
+            $notes = 'Auto-added from loan actions';
         $success = $service->addItem($sheet['id'], $prePopulatedLoan['client_id'], $prePopulateLoanId, $weeklyPayment, $notes);
         if ($success) {
             $autoAdded = true;
@@ -196,8 +195,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <i data-feather="info" style="width: 18px; height: 18px;" class="me-2"></i>
         <div>
           <strong>Loan Pre-selected:</strong> 
-          Loan #<?= $prePopulatedLoan['id'] ?> for <?= htmlspecialchars($prePopulatedLoan['client_name']) ?> 
-          (Weekly Payment: ₱<?= number_format($prePopulatedLoan['total_loan_amount'] / 17, 2) ?>)
+          Loan #<?= $prePopulatedLoan['id'] ?> for <?= htmlspecialchars($prePopulatedLoan['client_name']) ?>
+          (Weekly Payment: ₱<?= number_format($prePopulatedLoan['total_loan_amount'] / ($prePopulatedLoan['term_weeks'] ?? 17), 2) ?>)
         </div>
       </div>
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -280,7 +279,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </label>
             <input type="number" step="0.01" min="0.01" class="form-control" name="amount" id="amountInput"
                    placeholder="0.00" required
-                   <?= $prePopulatedLoan ? 'value="' . number_format($prePopulatedLoan['total_loan_amount'] / 17, 2, '.', '') . '"' : '' ?>>
+                   <?= $prePopulatedLoan ? 'value="' . number_format($prePopulatedLoan['total_loan_amount'] / ($prePopulatedLoan['term_weeks'] ?? 17), 2, '.', '') . '"' : '' ?>>
             <!-- Locked amount display -->
             <div id="lockedAmountInfo" class="mt-2" style="display: none;">
               <div class="alert alert-warning py-2 px-3 mb-0">
@@ -290,7 +289,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               </div>
             </div>
             <?php if ($prePopulatedLoan): ?>
-              <small class="text-muted" id="amountHelper">Weekly payment: ₱<?= number_format($prePopulatedLoan['total_loan_amount'] / 17, 2) ?></small>
+              <small class="text-muted" id="amountHelper">Weekly payment: ₱<?= number_format($prePopulatedLoan['total_loan_amount'] / ($prePopulatedLoan['term_weeks'] ?? 17), 2) ?></small>
             <?php else: ?>
               <small class="text-muted" id="amountHelper">Will be auto-filled when loan is selected</small>
             <?php endif; ?>
@@ -503,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.loans.forEach(loan => {
                         // Double-check that loan status is active (case-insensitive)
                         if (loan.status && loan.status.toLowerCase() === 'active') {
-                            const weeklyPayment = (loan.total_loan_amount / loan.term_weeks).toFixed(2);
+                            const weeklyPayment = (loan.total_loan_amount / (loan.term_weeks || 17)).toFixed(2);
                             const option = document.createElement('option');
                             option.value = loan.id;
                             option.textContent = `Loan #${loan.id} - ₱${parseFloat(loan.principal).toFixed(2)} (Weekly: ₱${weeklyPayment})`;

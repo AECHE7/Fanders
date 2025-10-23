@@ -223,7 +223,7 @@ class CollectionSheetService extends BaseService {
 
         // Default amount to weekly payment if not provided
         if ($amount === null) {
-            $amount = $loan['total_loan_amount'] / 17; // Weekly payment
+            $amount = $loan['total_loan_amount'] / ($loan['term_weeks'] ?? 17); // Weekly payment
         }
 
         // Add item to sheet
@@ -263,7 +263,7 @@ class CollectionSheetService extends BaseService {
         }
 
         // Add calculated weekly payment amount
-        $loan['weekly_payment'] = $loan['total_loan_amount'] / 17;
+        $loan['weekly_payment'] = $loan['total_loan_amount'] / ($loan['term_weeks'] ?? 17);
         $loan['collection_eligible'] = true;
 
         return $loan;
@@ -460,8 +460,8 @@ class CollectionSheetService extends BaseService {
         }
 
         // Auto-calculate weekly payment amount
-        $amount = $options['auto_calculate'] ? 
-            ($loan['total_loan_amount'] / ($loan['term_weeks'] ?? 17)) : 
+        $amount = $options['auto_calculate'] ?
+            ($loan['total_loan_amount'] / ($loan['term_weeks'] ?? 17)) :
             $loan['weekly_payment'] ?? 0;
 
         // Generate automatic notes
