@@ -31,13 +31,14 @@ try {
     $totalPages = ceil($totalTransactions / $filters['limit']);
 
     // Get transaction statistics
-    $stats = $transactionService->getTransactionStats(date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
+    $rawStats = $transactionService->getTransactionStats(date('Y-m-d', strtotime('-30 days')), date('Y-m-d'));
 
     // Format stats for display
+    $dailyCounts = $rawStats['daily_counts'] ?? [];
     $stats = [
-        'total_transactions' => $stats['total'] ?? 0,
-        'recent_transactions' => $stats['daily'][count($stats['daily']) - 1]['count'] ?? 0,
-        'transactions_by_type' => $stats['by_type'] ?? [],
+        'total_transactions' => $totalTransactions,
+        'recent_transactions' => !empty($dailyCounts) ? end($dailyCounts)['count'] ?? 0 : 0,
+        'transactions_by_type' => $rawStats['by_entity_type'] ?? [],
         'total_amount' => 0 // This would need to be calculated from actual financial transactions
     ];
 
