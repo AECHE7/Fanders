@@ -46,7 +46,7 @@ class SLRService extends BaseService {
      * @return array|false SLR document record or false on failure
      */
     public function generateSLR($loanId, $generatedBy, $trigger = 'manual') {
-        return $this->executeTransaction(function() use ($loanId, $generatedBy, $trigger) {
+        return $this->transaction(function() use ($loanId, $generatedBy, $trigger) {
             // Get loan details
             $loan = $this->loanModel->getLoanWithClient($loanId);
             if (!$loan) {
@@ -267,7 +267,7 @@ class SLRService extends BaseService {
      * @return bool
      */
     public function archiveSLR($slrId, $userId, $reason = '') {
-        return $this->executeTransaction(function() use ($slrId, $userId, $reason) {
+        return $this->transaction(function() use ($slrId, $userId, $reason) {
             $slr = $this->getSLRById($slrId);
             if (!$slr) {
                 $this->setErrorMessage('SLR document not found.');
