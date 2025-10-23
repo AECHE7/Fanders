@@ -148,7 +148,8 @@ class UserService extends BaseService {
             // 9. Log transaction for audit trail
             if (class_exists('TransactionService')) {
                 $transactionService = new TransactionService();
-                $transactionService->logUserTransaction('created', $newId, $createdBy, [
+                // Correct parameter order: (action, acting_user_id, target_user_id)
+                $transactionService->logUserTransaction('created', $createdBy, $newId, [
                     'user_data' => array_diff_key($userData, ['password' => '']) // Exclude password from logs
                 ]);
             }
@@ -197,7 +198,8 @@ class UserService extends BaseService {
             if ($result && class_exists('TransactionService')) {
                 $transactionService = new TransactionService();
                 $updatedFields = array_keys($userData);
-                $transactionService->logGeneric('user_updated', $_SESSION['user_id'] ?? null, $id, [
+                // Use user-specific logger with correct target id
+                $transactionService->logUserTransaction('updated', $_SESSION['user_id'] ?? null, $id, [
                     'user_id' => $id,
                     'updated_fields' => $updatedFields,
                     'password_changed' => in_array('password', $updatedFields)
@@ -286,7 +288,8 @@ class UserService extends BaseService {
                 // Log password reset transaction
                 if (class_exists('TransactionService')) {
                     $transactionService = new TransactionService();
-                    $transactionService->logGeneric('password_reset', $_SESSION['user_id'] ?? null, $id, [
+                    // Use user-specific logger with target user id
+                    $transactionService->logUserTransaction('password_reset', $_SESSION['user_id'] ?? null, $id, [
                         'target_user_id' => $id,
                         'target_username' => $user['username'] ?? 'Unknown',
                         'reset_by' => $_SESSION['user_id'] ?? null

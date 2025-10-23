@@ -246,7 +246,8 @@ class ClientService extends BaseService {
         // 6. Log transaction for audit trail
         if (class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logClientTransaction('created', $newId, $createdBy, [
+            // Correct parameter order: (action, acting_user_id, client_id)
+            $transactionService->logClientTransaction('created', $createdBy, $newId, [
                 'client_data' => $clientData
             ]);
         }
@@ -288,7 +289,8 @@ class ClientService extends BaseService {
         // 5. Log client update transaction
         if ($result && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logClientTransaction('updated', $id, $_SESSION['user_id'] ?? null, [
+            // Correct parameter order: (action, acting_user_id, client_id)
+            $transactionService->logClientTransaction('updated', $_SESSION['user_id'] ?? null, $id, [
                 'client_id' => $id,
                 'updated_fields' => array_keys($clientData)
             ]);
@@ -308,7 +310,8 @@ class ClientService extends BaseService {
         // Log client activation
         if ($result && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logClientTransaction('status_changed', $id, $_SESSION['user_id'] ?? null, [
+            // Correct parameter order: (action, acting_user_id, client_id)
+            $transactionService->logClientTransaction('status_changed', $_SESSION['user_id'] ?? null, $id, [
                 'client_id' => $id,
                 'new_status' => 'active',
                 'action' => 'activated'
@@ -329,7 +332,8 @@ class ClientService extends BaseService {
         // Log client deactivation
         if ($result && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logClientTransaction('status_changed', $id, $_SESSION['user_id'] ?? null, [
+            // Correct parameter order: (action, acting_user_id, client_id)
+            $transactionService->logClientTransaction('status_changed', $_SESSION['user_id'] ?? null, $id, [
                 'client_id' => $id,
                 'new_status' => 'inactive',
                 'action' => 'deactivated'
@@ -350,7 +354,8 @@ class ClientService extends BaseService {
         // Log client blacklisting
         if ($result && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logClientTransaction('status_changed', $id, $_SESSION['user_id'] ?? null, [
+            // Correct parameter order: (action, acting_user_id, client_id)
+            $transactionService->logClientTransaction('status_changed', $_SESSION['user_id'] ?? null, $id, [
                 'client_id' => $id,
                 'new_status' => 'blacklisted',
                 'action' => 'blacklisted'
@@ -380,7 +385,8 @@ class ClientService extends BaseService {
         // Log client deletion transaction
         if ($result && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logClientTransaction('deleted', $id, $_SESSION['user_id'] ?? null, [
+            // Correct parameter order: (action, acting_user_id, client_id)
+            $transactionService->logClientTransaction('deleted', $_SESSION['user_id'] ?? null, $id, [
                 'client_id' => $id,
                 'client_name' => $client['name'] ?? 'Unknown'
             ]);

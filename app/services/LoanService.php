@@ -272,7 +272,8 @@ class LoanService extends BaseService {
         // 5. Log transaction for audit trail
         if (class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logLoanTransaction('created', $newId, $userId, [
+            // Correct parameter order: (action, acting_user_id, loan_id)
+            $transactionService->logLoanTransaction('created', $userId, $newId, [
                 'principal' => $principal,
                 'client_id' => $clientId
             ]);
@@ -289,7 +290,8 @@ class LoanService extends BaseService {
         // Log loan update transaction
         if ($result && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logLoanTransaction('updated', $id, $_SESSION['user_id'] ?? null, [
+            // Correct parameter order: (action, acting_user_id, loan_id)
+            $transactionService->logLoanTransaction('updated', $_SESSION['user_id'] ?? null, $id, [
                 'loan_id' => $id,
                 'updated_fields' => array_keys($loanData)
             ]);
@@ -406,7 +408,8 @@ class LoanService extends BaseService {
         // Log loan approval transaction
         if ($approvalSuccess && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logLoanTransaction('approved', $id, $approvedBy, [
+            // Correct parameter order: (action, acting_user_id, loan_id)
+            $transactionService->logLoanTransaction('approved', $approvedBy, $id, [
                 'loan_id' => $id,
                 'approved_by' => $approvedBy,
                 'principal' => $loanWithClient['principal'] ?? 0,
@@ -539,7 +542,8 @@ class LoanService extends BaseService {
         // Log transaction for audit trail
         if ($success && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logLoanTransaction('completed', $id, null, [
+            // Correct parameter order: (action, acting_user_id, loan_id)
+            $transactionService->logLoanTransaction('completed', $_SESSION['user_id'] ?? null, $id, [
                 'completion_date' => date('Y-m-d H:i:s')
             ]);
         }
@@ -571,7 +575,8 @@ class LoanService extends BaseService {
         // Log loan cancellation transaction
         if ($result && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logLoanTransaction('cancelled', $id, $cancelledBy, [
+            // Correct parameter order: (action, acting_user_id, loan_id)
+            $transactionService->logLoanTransaction('cancelled', $cancelledBy, $id, [
                 'loan_id' => $id,
                 'cancelled_by' => $cancelledBy,
                 'principal' => $loan['principal'] ?? 0
@@ -603,7 +608,8 @@ class LoanService extends BaseService {
         // Log loan restoration transaction
         if ($result && class_exists('TransactionService')) {
             $transactionService = new TransactionService();
-            $transactionService->logLoanTransaction('restored', $id, $_SESSION['user_id'] ?? null, [
+            // Correct parameter order: (action, acting_user_id, loan_id)
+            $transactionService->logLoanTransaction('restored', $_SESSION['user_id'] ?? null, $id, [
                 'loan_id' => $id,
                 'restored_by' => $_SESSION['user_id'] ?? null,
                 'principal' => $loan['principal'] ?? 0
