@@ -19,6 +19,19 @@ if (!$auth->isLoggedIn()) {
 $clientId = isset($_GET['client_id']) ? (int)$_GET['client_id'] : 0;
 $status = isset($_GET['status']) ? $_GET['status'] : 'active';
 
+// Convert status to proper case for LoanModel constants
+if (strtolower($status) === 'active') {
+    $status = 'Active';
+} elseif (strtolower($status) === 'completed') {
+    $status = 'Completed';
+} elseif (strtolower($status) === 'approved') {
+    $status = 'Approved';
+} elseif (strtolower($status) === 'application') {
+    $status = 'Application';
+} elseif (strtolower($status) === 'defaulted') {
+    $status = 'Defaulted';
+}
+
 if (!$clientId) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Client ID is required']);

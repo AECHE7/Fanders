@@ -127,7 +127,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                                     </button>
                                 <?php endif; ?>
 
-                                <?php if ($status === 'active'): ?>
+                                <?php if (strtolower($status) === 'active'): ?>
                                     <!-- Enhanced Payment Options (Direct Payment vs Collection Sheet) -->
                                     <div class="btn-group" role="group">
                                         <a href="<?= APP_URL ?>/public/payments/approvals.php?loan_id=<?= $loan['id'] ?>" 

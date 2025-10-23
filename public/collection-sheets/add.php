@@ -76,8 +76,8 @@ $autoAdded = false;
 
 if ($prePopulateLoanId > 0) {
     $prePopulatedLoan = $loanService->getLoanWithClient($prePopulateLoanId);
-    // Only allow active loans to be pre-populated
-    if (!$prePopulatedLoan || $prePopulatedLoan['status'] !== 'active') {
+    // Only allow active loans to be pre-populated (check for both 'Active' and 'active')
+    if (!$prePopulatedLoan || (strtolower($prePopulatedLoan['status']) !== 'active')) {
         $prePopulatedLoan = null;
         $session->setFlash('warning', 'Loan not found or not active for collection.');
     } else if ($autoAdd && $sheet['status'] === 'draft') {
@@ -326,22 +326,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success && data.loans && data.loans.length > 0) {
                     loanSelect.innerHTML = '<option value="">-- Select Loan --</option>';
                     data.loans.forEach(loan => {
-                        const weeklyPayment = (loan.total_loan_amount / loan.term_weeks).toFixed(2);
-                        const option = document.createElement('option');
-                        option.value = loan.id;
-                        option.textContent = `Loan #${loan.id} - ₱${parseFloat(loan.principal).toFixed(2)} (Weekly: ₱${weeklyPayment})`;
-                        option.dataset.weeklyPayment = weeklyPayment;
-                        
-                        // Pre-select if this is the intended loan
-                        if (preSelectedLoanId && loan.id == preSelectedLoanId) {
-                            option.selected = true;
-                            // Auto-fill amount
-                            if (amountInput) {
-                                amountInput.value = weeklyPayment;
+                        // Double-check that loan status is active (case-insensitive)
+                        if (loan.status && loan.status.toLowerCase() === 'active') {
+                            const weeklyPayment = (loan.total_loan_amount / loan.term_weeks).toFixed(2);
+                            const option = document.createElement('option');
+                            option.value = loan.id;
+                            option.textContent = `Loan #${loan.id} - ₱${parseFloat(loan.principal).toFixed(2)} (Weekly: ₱${weeklyPayment})`;
+                            option.dataset.weeklyPayment = weeklyPayment;
+                            
+                            // Pre-select if this is the intended loan
+                            if (preSelectedLoanId && loan.id == preSelectedLoanId) {
+                                option.selected = true;
+                                // Auto-fill amount
+                                if (amountInput) {
+                                    amountInput.value = weeklyPayment;
+                                }
                             }
+                            
+                            loanSelect.appendChild(option);
                         }
-                        
-                        loanSelect.appendChild(option);
+                    });
                     });
                     loanSelect.disabled = false;
                 } else {
