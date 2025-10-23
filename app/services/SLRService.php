@@ -98,9 +98,7 @@ class SLRService extends BaseService {
                 'file_name' => $fileName,
                 'file_size' => strlen($pdfContent),
                 'content_hash' => $contentHash,
-                'client_signature_required' => $this->requiresSignature($trigger),
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s')
+                'client_signature_required' => $this->requiresSignature($trigger)
             ];
 
             $slrId = $this->createSLRRecord($slrData);
@@ -611,8 +609,8 @@ class SLRService extends BaseService {
         $sql = "INSERT INTO slr_documents (
                     loan_id, document_number, generated_by, generation_trigger,
                     file_path, file_name, file_size, content_hash,
-                    client_signature_required, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    client_signature_required
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $params = [
             $data['loan_id'],
@@ -623,9 +621,7 @@ class SLRService extends BaseService {
             $data['file_name'],
             $data['file_size'],
             $data['content_hash'],
-            $data['client_signature_required'] ? 1 : 0,
-            $data['created_at'],
-            $data['updated_at']
+            $data['client_signature_required'] ? 1 : 0
         ];
         
         if ($this->db->query($sql, $params)) {
