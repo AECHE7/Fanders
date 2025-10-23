@@ -45,74 +45,55 @@
         <div class="notion-divider flex-grow-1"></div>
     </div>
     <div class="row g-4 dashboard-stats-container">
-        <!-- Total Loans -->
         <div class="col-md-3">
-            <div class="p-4 rounded" style="background-color: #F5F4FF;">
-                <div class="d-flex mb-3 align-items-center">
-                    <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #9d71ea; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="file-text" style="width: 20px; height: 20px; color: white;"></i>
+            <div class="card card-contrast shadow-sm metric-card metric-accent-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Total Loans</h6>
+                            <h3 class="mb-0"><?= $stats['total_loans'] ?? 0 ?></h3>
+                        </div>
+                        <i data-feather="file-text" class="icon-lg" style="width:3rem;height:3rem;color:#0d6efd;"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0">Total Loans</h6>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['total_loans'] ?? 0 ?></p>
-                    <p class="card-text text-muted mb-0 small">All loans</p>
                 </div>
             </div>
         </div>
-
-        <!-- Active Loans -->
         <div class="col-md-3">
-            <div class="p-4 rounded" style="background-color: #E0F2FE;">
-                <div class="d-flex mb-3 align-items-center">
-                    <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #0b76ef; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="activity" style="width: 20px; height: 20px; color: white;"></i>
+            <div class="card card-contrast shadow-sm metric-card metric-accent-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Active Loans</h6>
+                            <h3 class="mb-0"><?= $stats['active_loans'] ?? 0 ?></h3>
+                        </div>
+                        <i data-feather="activity" class="icon-lg" style="width:3rem;height:3rem;color:#0dcaf0;"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0">Active Loans</h6>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['active_loans'] ?? 0 ?></p>
-                    <p class="card-text text-muted mb-0 small">Currently active</p>
                 </div>
             </div>
         </div>
-
-        <!-- Overdue Payments -->
         <div class="col-md-3">
-            <div class="p-4 rounded" style="background-color: #FEF3E4;">
-                <div class="d-flex mb-3 align-items-center">
-                    <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #ec7211; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="alert-circle" style="width: 20px; height: 20px; color: white;"></i>
+            <div class="card card-contrast shadow-sm metric-card metric-accent-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Overdue Payments</h6>
+                            <h3 class="mb-0"><?= $stats['overdue_returns'] ?? 0 ?></h3>
+                        </div>
+                        <i data-feather="alert-circle" class="icon-lg" style="width:3rem;height:3rem;color:#ffc107;"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0">Overdue Payments</h6>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['overdue_returns'] ?? 0 ?></p>
-                    <p class="card-text text-muted mb-0 small">Past due date</p>
                 </div>
             </div>
         </div>
-
-        <!-- Total Portfolio -->
         <div class="col-md-3">
-            <div class="p-4 rounded" style="background-color: #FEE2E2;">
-                <div class="d-flex mb-3 align-items-center">
-                    <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #dc2626; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="dollar-sign" style="width: 20px; height: 20px; color: white;"></i>
+            <div class="card card-contrast shadow-sm metric-card metric-accent-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Total Portfolio</h6>
+                            <h3 class="mb-0">₱<?= number_format($stats['total_disbursed'] ?? 0, 2) ?></h3>
+                        </div>
+                        <i data-feather="dollar-sign" class="icon-lg" style="width:3rem;height:3rem;color:#dc3545;"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0">Total Portfolio</h6>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0">₱<?= number_format($stats['total_disbursed'] ?? 0, 2) ?></p>
-                    <p class="card-text text-muted mb-0 small">Outstanding balance</p>
                 </div>
             </div>
         </div>
@@ -127,74 +108,55 @@
         <div class="notion-divider flex-grow-1"></div>
     </div>
     <div class="row g-4">
-        <!-- Total Students -->
         <div class="col-md-3">
-            <div class="p-4 rounded" style="background-color: #F0FDF4;">
-                <div class="d-flex mb-3 align-items-center">
-                    <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #16a34a; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="users" style="width: 20px; height: 20px; color: white;"></i>
+            <div class="card card-contrast shadow-sm metric-card metric-accent-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Total Students</h6>
+                            <h3 class="mb-0"><?= $stats['total_students'] ?? 0 ?></h3>
+                        </div>
+                        <i data-feather="users" class="icon-lg" style="width:3rem;height:3rem;color:#198754;"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0">Total Students</h6>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['total_students'] ?? 0 ?></p>
-                    <p class="card-text text-muted mb-0 small">Student users</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Total Staff -->
         <div class="col-md-3">
-            <div class="p-4 rounded" style="background-color: #F0F7FF;">
-                <div class="d-flex mb-3 align-items-center">
-                    <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #2563eb; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="user-check" style="width: 20px; height: 20px; color: white;"></i>
+            <div class="card card-contrast shadow-sm metric-card metric-accent-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Total Staff</h6>
+                            <h3 class="mb-0"><?= $stats['total_staff'] ?? 0 ?></h3>
+                        </div>
+                        <i data-feather="user-check" class="icon-lg" style="width:3rem;height:3rem;color:#0d6efd;"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0">Total Staff</h6>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['total_staff'] ?? 0 ?></p>
-                    <p class="card-text text-muted mb-0 small">Staff users</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Total Admins -->
         <div class="col-md-3">
-            <div class="p-4 rounded" style="background-color: #FDF4FF;">
-                <div class="d-flex mb-3 align-items-center">
-                    <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #9333ea; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="shield" style="width: 20px; height: 20px; color: white;"></i>
+            <div class="card card-contrast shadow-sm metric-card metric-accent-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Total Admins</h6>
+                            <h3 class="mb-0"><?= $stats['total_admins'] ?? 0 ?></h3>
+                        </div>
+                        <i data-feather="shield" class="icon-lg" style="width:3rem;height:3rem;color:#0dcaf0;"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0">Total Admins</h6>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['total_admins'] ?? 0 ?></p>
-                    <p class="card-text text-muted mb-0 small">Admin users</p>
                 </div>
             </div>
         </div>
-        
-        <!-- Total Others -->
         <div class="col-md-3">
-            <div class="p-4 rounded" style="background-color: #FEF3F2;">
-                <div class="d-flex mb-3 align-items-center">
-                    <div class="rounded me-3" style="width: 40px; height: 40px; background-color: #ea580c; display: flex; align-items: center; justify-content: center;">
-                        <i data-feather="user" style="width: 20px; height: 20px; color: white;"></i>
+            <div class="card card-contrast shadow-sm metric-card metric-accent-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Total Others</h6>
+                            <h3 class="mb-0"><?= $stats['total_others'] ?? 0 ?></h3>
+                        </div>
+                        <i data-feather="user" class="icon-lg" style="width:3rem;height:3rem;color:#ffc107;"></i>
                     </div>
-                    <div>
-                        <h6 class="mb-0">Total Others</h6>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-end">
-                    <p class="stat-value display-5 fw-bold mb-0"><?= $stats['total_others'] ?? 0 ?></p>
-                    <p class="card-text text-muted mb-0 small">Other users</p>
                 </div>
             </div>
         </div>
