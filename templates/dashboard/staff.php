@@ -387,15 +387,8 @@
         </div>
         <div class="card-body p-0">
             <?php 
-            // Get recent clients for staff dashboard
-            $recentClients = [];
-            try {
-                $clientService = new ClientService();
-                $clientStats = $clientService->getClientStats(false);
-                $recentClients = $clientStats['recent_clients'] ?? [];
-            } catch (Exception $e) {
-                error_log('Recent clients fetch error: ' . $e->getMessage());
-            }
+            // Use recent clients from stats passed by dashboard index
+            $recentClients = $stats['recent_clients'] ?? [];
             if (!empty($recentClients) && is_array($recentClients)): 
             ?>
             <div class="table-responsive">

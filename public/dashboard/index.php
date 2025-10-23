@@ -113,6 +113,20 @@ $userService = new UserService();
         $clientsFilter = [];
         $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
 
+        // Get recent clients for Recent Clients section
+        $recentClientsData = $clientService->getAllClients();
+        $stats['recent_clients'] = is_array($recentClientsData) ? array_slice($recentClientsData, 0, 5) : [];
+
+        // Get total staff count for Client & Approvals Overview
+        $userStats = $userService->getUserStats();
+        if (is_array($userStats) && isset($userStats['role_counts'])) {
+            $stats['total_staff'] = ($userStats['role_counts'][UserModel::$ROLE_ACCOUNT_OFFICER] ?? 0) +
+                                   ($userStats['role_counts'][UserModel::$ROLE_CASHIER] ?? 0) +
+                                   ($userStats['role_counts'][UserModel::$ROLE_MANAGER] ?? 0);
+        } else {
+            $stats['total_staff'] = 0;
+        }
+
         if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
             // Additional super admin data - User role counts
             $userStats = $userService->getUserStats();
@@ -174,6 +188,20 @@ $userService = new UserService();
         // Get total clients count
         $clientsFilter = [];
         $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
+
+        // Get recent clients for Recent Clients section
+        $recentClientsData = $clientService->getAllClients();
+        $stats['recent_clients'] = is_array($recentClientsData) ? array_slice($recentClientsData, 0, 5) : [];
+
+        // Get total staff count (staff can see this for context)
+        $userStats = $userService->getUserStats();
+        if (is_array($userStats) && isset($userStats['role_counts'])) {
+            $stats['total_staff'] = ($userStats['role_counts'][UserModel::$ROLE_ACCOUNT_OFFICER] ?? 0) +
+                                   ($userStats['role_counts'][UserModel::$ROLE_CASHIER] ?? 0) +
+                                   ($userStats['role_counts'][UserModel::$ROLE_MANAGER] ?? 0);
+        } else {
+            $stats['total_staff'] = 0;
+        }
 
         $dashboardTemplate = BASE_PATH . '/templates/dashboard/staff.php';
     } else {
