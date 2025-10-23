@@ -198,8 +198,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </div>
         </div>
         <div>
-          <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-sm btn-outline-secondary">
-            <i data-feather="arrow-left" style="width: 14px; height: 14px;" class="me-1"></i> Back to List
+          <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-outline-primary btn-lg px-4 py-2 shadow-sm" style="border-radius: 8px; font-weight: 500; transition: all 0.2s ease;">
+            <i data-feather="arrow-left" style="width: 16px; height: 16px;" class="me-2"></i>
+            <span class="d-none d-sm-inline">Back to </span>Collection Sheets
           </a>
         </div>
       </div>
