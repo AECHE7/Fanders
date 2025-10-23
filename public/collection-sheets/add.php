@@ -160,6 +160,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
       </div>
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
+    <?php elseif ($prePopulateLoanId > 0 && !$prePopulatedLoan): ?>
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+      <div class="d-flex align-items-center">
+        <i data-feather="alert-triangle" style="width: 18px; height: 18px;" class="me-2"></i>
+        <div>
+          <strong>Note:</strong> Loan #<?= $prePopulateLoanId ?> could not be loaded for pre-population. Please select manually.
+        </div>
+      </div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
     <?php endif; ?>
     
     <div class="card shadow-sm mb-4">
@@ -297,15 +307,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const amountInput = document.getElementById('amountInput');
     
     if (clientSelect && loanSelect) {
-        clientSelect.addEventListener('change', async function() {
-            const clientId = this.value;
-            loanSelect.disabled = true;
-            loanSelect.innerHTML = '<option value="">Loading...</option>';
-            
+        // Function to load loans for a client
+        async function loadLoansForClient(clientId, preSelectedLoanId = null) {
             if (!clientId) {
                 loanSelect.innerHTML = '<option value="">-- Select client first --</option>';
+                loanSelect.disabled = true;
                 return;
             }
+            
+            loanSelect.disabled = true;
+            loanSelect.innerHTML = '<option value="">Loading...</option>';
             
             try {
                 // Fetch active loans for the selected client
@@ -320,6 +331,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         option.value = loan.id;
                         option.textContent = `Loan #${loan.id} - ₱${parseFloat(loan.principal).toFixed(2)} (Weekly: ₱${weeklyPayment})`;
                         option.dataset.weeklyPayment = weeklyPayment;
+                        
+                        // Pre-select if this is the intended loan
+                        if (preSelectedLoanId && loan.id == preSelectedLoanId) {
+                            option.selected = true;
+                            // Auto-fill amount
+                            if (amountInput) {
+                                amountInput.value = weeklyPayment;
+                            }
+                        }
+                        
                         loanSelect.appendChild(option);
                     });
                     loanSelect.disabled = false;
@@ -330,6 +351,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error fetching loans:', error);
                 loanSelect.innerHTML = '<option value="">Error loading loans</option>';
             }
+        }
+        
+        // Event listener for client selection changes
+        clientSelect.addEventListener('change', function() {
+            loadLoansForClient(this.value);
         });
         
         // Auto-fill amount when loan is selected
@@ -339,6 +365,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 amountInput.value = selectedOption.dataset.weeklyPayment;
             }
         });
+        
+        // If a client is pre-selected, load their loans automatically
+        <?php if ($prePopulatedLoan && !$autoAdded): ?>
+        const preSelectedClientId = <?= (int)$prePopulatedLoan['client_id'] ?>;
+        const preSelectedLoanId = <?= (int)$prePopulatedLoan['id'] ?>;
+        if (preSelectedClientId && preSelectedLoanId) {
+            // Small delay to ensure DOM is fully loaded
+            setTimeout(() => {
+                loadLoansForClient(preSelectedClientId, preSelectedLoanId);
+            }, 100);
+        }
+        <?php endif; ?>
     }
 });
 </script>
