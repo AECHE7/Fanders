@@ -501,10 +501,11 @@ document.addEventListener('DOMContentLoaded', function() {
             lockedWeeklyAmount.textContent = selectedLoanData.weekly_payment;
             lockedAmountValue.textContent = selectedLoanData.weekly_payment;
             
-            // Show auto-collect button
+            // Keep submit button enabled for locked form
             autoCollectBtn.style.display = 'inline-block';
-            addItemBtn.textContent = 'Locked - Use Auto-Collect';
-            addItemBtn.disabled = true;
+            addItemBtn.textContent = 'Add Locked Item to Sheet';
+            addItemBtn.disabled = false;
+            addItemBtn.className = 'btn btn-warning';
             clearFormBtn.textContent = 'Unlock Form';
         } else {
             // Show original form elements
@@ -524,6 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
             autoCollectBtn.style.display = 'none';
             addItemBtn.textContent = 'Add to Collection Sheet';
             addItemBtn.disabled = false;
+            addItemBtn.className = 'btn btn-primary';
             clearFormBtn.textContent = 'Clear Form';
         }
     }
