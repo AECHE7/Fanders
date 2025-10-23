@@ -365,54 +365,155 @@
     </div>
 </div>
 
-<!-- Monthly Performance Summary -->
+<!-- Recent Clients Section -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">📊 Monthly Performance</h5>
+        <h5 class="mb-0 me-2">🆕 Recent Clients</h5>
         <div class="notion-divider flex-grow-1"></div>
     </div>
-
-    <div class="p-4 rounded" style="background-color: #f3f4f6;">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="d-flex align-items-center">
-                <div class="rounded me-3" style="width: 32px; height: 32px; background-color: #0b76ef; display: flex; align-items: center; justify-content: center;">
-                    <i data-feather="trending-up" style="width: 16px; height: 16px; color: white;"></i>
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent py-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="rounded d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; background-color: #198754;">
+                        <i data-feather="user-plus" style="width: 14px; height: 14px; color: white;"></i>
+                    </div>
+                    <h5 class="card-title mb-0">Recently Registered</h5>
                 </div>
-                <div>
-                    <h6 class="mb-0">Performance Summary</h6>
-                    <small class="text-muted">
-                        Key metrics for <?= date('F Y') ?>
-                    </small>
-                </div>
-            </div>
-            <div class="custom-filter-tabs">
-                <button type="button" class="btn btn-sm px-3 me-1 active">This Month</button>
-                <button type="button" class="btn btn-sm px-3">Last Month</button>
+                <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-sm btn-outline-primary">
+                    <i data-feather="arrow-right" style="width: 14px; height: 14px;"></i> View All
+                </a>
             </div>
         </div>
-
-        <div class="row g-4 mt-2">
-            <?php
-            $performanceMetrics = $analytics['monthly'] ?? [
-                ['label' => 'New Loans Disbursed', 'value' => 0, 'bg' => '#edf2fc', 'dot' => '#0b76ef'],
-                ['label' => 'Payments Collected', 'value' => '₱0.00', 'bg' => '#f1ebfc', 'dot' => '#9d71ea'],
-                ['label' => 'New Clients', 'value' => 0, 'bg' => '#fff3e9', 'dot' => '#ec7211'],
-                ['label' => 'Portfolio Growth', 'value' => '₱0.00', 'bg' => '#ebfef6', 'dot' => '#0ca789']
-            ];
-            foreach ($performanceMetrics as $metric):
+        <div class="card-body p-0">
+            <?php 
+            // Get recent clients for staff dashboard
+            $recentClients = [];
+            try {
+                $clientService = new ClientService();
+                $clientStats = $clientService->getClientStats(false);
+                $recentClients = $clientStats['recent_clients'] ?? [];
+            } catch (Exception $e) {
+                error_log('Recent clients fetch error: ' . $e->getMessage());
+            }
+            if (!empty($recentClients) && is_array($recentClients)): 
             ?>
-                <div class="col-md-3">
-                    <div class="p-3 rounded" style="background-color: <?= htmlspecialchars($metric['bg']) ?>;">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="rounded-circle me-2"
-                                 style="width: 8px; height: 8px; background-color: <?= htmlspecialchars($metric['dot']) ?>;">
-                            </div>
-                            <p class="mb-0 small"><?= htmlspecialchars($metric['label']) ?></p>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Name</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Registered</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach (array_slice($recentClients, 0, 5) as $client): ?>
+                        <tr>
+                            <td class="ps-4"><?= htmlspecialchars($client['name']) ?></td>
+                            <td><?= htmlspecialchars($client['phone_number'] ?? 'N/A') ?></td>
+                            <td>
+                                <span class="badge bg-<?= ($client['status'] ?? 'active') === 'active' ? 'success' : 'secondary' ?>">
+                                    <?= ucfirst($client['status'] ?? 'active') ?>
+                                </span>
+                            </td>
+                            <td><?= date('M d, Y', strtotime($client['created_at'])) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php else: ?>
+            <div class="text-center p-4 text-muted">
+                <i data-feather="user-plus" style="width: 24px; height: 24px;" class="mb-2"></i>
+                <p>No recent clients.</p>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- Cash Flow Summary -->
+<div class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <h5 class="mb-0 me-2">💰 Cash Flow Summary</h5>
+        <div class="notion-divider flex-grow-1"></div>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Total Disbursed</h6>
+                            <h3 class="mb-0">₱<?= number_format($stats['total_portfolio'] ?? 0, 2) ?></h3>
                         </div>
-                        <h3 class="mb-0"><?= htmlspecialchars($metric['value']) ?></h3>
+                        <i data-feather="trending-up" class="icon-lg" style="width:3rem;height:3rem;color:#198754;"></i>
                     </div>
                 </div>
-            <?php endforeach; ?>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">Collections Today</h6>
+                            <?php
+                            // Get today's payments total
+                            $todayAmount = 0;
+                            try {
+                                $paymentService = new PaymentService();
+                                $today = date('Y-m-d');
+                                $todayPayments = $paymentService->getPaymentsByDateRange($today, $today);
+                                if (is_array($todayPayments)) {
+                                    foreach ($todayPayments as $p) {
+                                        $todayAmount += (float)($p['amount'] ?? 0);
+                                    }
+                                }
+                            } catch (Exception $e) {
+                                error_log('Today payments error: ' . $e->getMessage());
+                            }
+                            ?>
+                            <h3 class="mb-0">₱<?= number_format($todayAmount, 2) ?></h3>
+                        </div>
+                        <i data-feather="dollar-sign" class="icon-lg" style="width:3rem;height:3rem;color:#0d6efd;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-contrast shadow-sm metric-card metric-accent-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-uppercase small">This Month Collections</h6>
+                            <?php
+                            // Get this month's payments total
+                            $monthAmount = 0;
+                            try {
+                                if (!isset($paymentService)) {
+                                    $paymentService = new PaymentService();
+                                }
+                                $monthStart = date('Y-m-01');
+                                $monthEnd = date('Y-m-t');
+                                $monthPayments = $paymentService->getPaymentsByDateRange($monthStart, $monthEnd);
+                                if (is_array($monthPayments)) {
+                                    foreach ($monthPayments as $p) {
+                                        $monthAmount += (float)($p['amount'] ?? 0);
+                                    }
+                                }
+                            } catch (Exception $e) {
+                                error_log('Month payments error: ' . $e->getMessage());
+                            }
+                            ?>
+                            <h3 class="mb-0">₱<?= number_format($monthAmount, 2) ?></h3>
+                        </div>
+                        <i data-feather="calendar" class="icon-lg" style="width:3rem;height:3rem;color:#0dcaf0;"></i>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
