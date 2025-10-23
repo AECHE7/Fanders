@@ -727,4 +727,66 @@ class CollectionSheetService extends BaseService {
             return true;
         });
     }
+
+    /**
+     * Get collection sheet statistics with optional filters
+     * @param array $filters Optional filters: date_range, officer_id, status, etc.
+     * @return array Statistics array with totals and breakdowns
+     */
+    public function getCollectionSheetStatistics($filters = []) {
+        $stats = [
+            'total_sheets' => 0,
+            'total_amount' => 0.00,
+            'sheets_by_status' => [],
+            'amounts_by_officer' => [],
+            'sheets_by_officer' => [],
+            'monthly_totals' => [],
+            'status_distribution' => []
+        ];
+
+        // Get all sheets with filters
+        $sheets = $this->listSheets($filters);
+
+        foreach ($sheets as $sheet) {
+            $stats['total_sheets']++;
+            $stats['total_amount'] += (float)$sheet['total_amount'];
+
+            // Count by status
+            $status = $sheet['status'];
+            if (!isset($stats['sheets_by_status'][$status])) {
+                $stats['sheets_by_status'][$status] = 0;
+            }
+            $stats['sheets_by_status'][$status]++;
+
+            // Count by officer
+            $officerId = $sheet['officer_id'];
+            if (!isset($stats['sheets_by_officer'][$officerId])) {
+                $stats['sheets_by_officer'][$officerId] = 0;
+                $stats['amounts_by_officer'][$officerId] = 0.00;
+            }
+            $stats['sheets_by_officer'][$officerId]++;
+            $stats['amounts_by_officer'][$officerId] += (float)$sheet['total_amount'];
+
+            // Monthly totals
+            $month = date('Y-m', strtotime($sheet['sheet_date']));
+            if (!isset($stats['monthly_totals'][$month])) {
+                $stats['monthly_totals'][$month] = [
+                    'sheets' => 0,
+                    'amount' => 0.00
+                ];
+            }
+            $stats['monthly_totals'][$month]['sheets']++;
+            $stats['monthly_totals'][$month]['amount'] += (float)$sheet['total_amount'];
+        }
+
+        // Calculate status distribution percentages
+        foreach ($stats['sheets_by_status'] as $status => $count) {
+            $stats['status_distribution'][$status] = [
+                'count' => $count,
+                'percentage' => $stats['total_sheets'] > 0 ? round(($count / $stats['total_sheets']) * 100, 2) : 0
+            ];
+        }
+
+        return $stats;
+    }
 }
