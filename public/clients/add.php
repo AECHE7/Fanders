@@ -48,8 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'date_of_birth' => trim($_POST['date_of_birth'] ?? ''),
         'identification_type' => trim($_POST['identification_type'] ?? ''),
         'identification_number' => trim($_POST['identification_number'] ?? ''),
-        // Status is forced to active upon creation
-        'status' => ClientModel::STATUS_ACTIVE,
+        'status' => trim($_POST['status'] ?? ClientModel::STATUS_ACTIVE),
     ];
 
     // 3. Attempt to create client via service

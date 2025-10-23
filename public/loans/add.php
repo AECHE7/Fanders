@@ -29,8 +29,19 @@ $loanCalculation = null;
 $error = $session->getFlash('error'); // Retrieve any previous error
 $clients = $clientService->getAllForSelect(); // Fetch active clients for dropdown
 
-// If a client_id is passed, check if they are eligible for a loan
+// Get pre-selected client details for display
+$preSelectedClientData = null;
 if (!empty($loan['client_id'])) {
+    $preSelectedClientData = $clientService->getById($loan['client_id']);
+    
+    // Check if client exists
+    if (!$preSelectedClientData) {
+        $session->setFlash('error', 'Selected client not found.');
+        header('Location: ' . APP_URL . '/public/loans/add.php');
+        exit;
+    }
+    
+    // Check if they are eligible for a loan
     if (!$loanService->canClientApplyForLoan($loan['client_id'])) {
         $session->setFlash('error', $loanService->getErrorMessage() ?: "Client is ineligible for a new loan.");
         header('Location: ' . APP_URL . '/public/clients/view.php?id=' . $loan['client_id']);
@@ -136,7 +147,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // --- 3. Display View ---
-$pageTitle = "New Loan Application";
+$pageTitle = $preSelectedClientData 
+    ? "New Loan Application for " . htmlspecialchars($preSelectedClientData['name'])
+    : "New Loan Application";
 include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
@@ -144,7 +157,30 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 <main class="main-content">
     <div class="content-wrapper">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">New Loan Application (4-52 Week Terms)</h1>
+        <div>
+            <h1 class="h2">
+                <?php if ($preSelectedClientData): ?>
+                    New Loan for <?= htmlspecialchars($preSelectedClientData['name']) ?>
+                <?php else: ?>
+                    New Loan Application (4-52 Week Terms)
+                <?php endif; ?>
+            </h1>
+            <?php if ($preSelectedClientData): ?>
+                <p class="text-muted mb-0">
+                    <small>
+                        <i data-feather="phone" style="width: 14px; height: 14px;"></i> 
+                        <?= htmlspecialchars($preSelectedClientData['phone_number'] ?? 'N/A') ?>
+                        <span class="mx-2">•</span>
+                        <i data-feather="mail" style="width: 14px; height: 14px;"></i> 
+                        <?= htmlspecialchars($preSelectedClientData['email'] ?? 'N/A') ?>
+                        <span class="mx-2">•</span>
+                        <a href="<?= APP_URL ?>/public/clients/view.php?id=<?= $loan['client_id'] ?>" class="text-decoration-none">
+                            <i data-feather="arrow-left" style="width: 14px; height: 14px;"></i> Back to Client Profile
+                        </a>
+                    </small>
+                </p>
+            <?php endif; ?>
+        </div>
         <div class="btn-toolbar mb-2 mb-md-0">
             <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-secondary">
                 <i data-feather="arrow-left"></i> Back to Loans List

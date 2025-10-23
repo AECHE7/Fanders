@@ -31,28 +31,69 @@ $isLocked = isset($loanCalculation) && !empty($loanCalculation) && empty($error)
             <h2 class="mb-0 me-2 h6 text-primary">Required Details</h2>
             <div class="notion-divider flex-grow-1"></div>
         </div>
+        
+        <?php 
+        // Check if client is pre-selected from URL and get client details
+        $preSelectedClient = null;
+        if (!empty($loan['client_id'])) {
+            foreach ($clients as $client) {
+                if ($client['id'] == $loan['client_id']) {
+                    $preSelectedClient = $client;
+                    break;
+                }
+            }
+        }
+        ?>
+        
+        <?php if ($preSelectedClient): ?>
+        <!-- Pre-selected Client Display -->
+        <div class="alert alert-info mb-4 d-flex align-items-center" role="alert">
+            <i data-feather="user-check" class="me-2" style="width: 20px; height: 20px;"></i>
+            <div>
+                <strong>Client Selected:</strong> <?= htmlspecialchars($preSelectedClient['name']) ?> (ID: <?= $preSelectedClient['id'] ?>)
+                <br>
+                <small class="text-muted">Loan application will be created for this client</small>
+            </div>
+        </div>
+        <?php endif; ?>
+        
         <div class="row g-3 stagger-fade-in">
             <!-- Client Selection -->
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
-                    <select
-                        class="notion-form-select form-select custom-select-animated"
-                        id="client_id"
-                        name="client_id"
-                        <?= $isLocked ? 'disabled' : '' ?>
-                        required
-                        aria-required="true">
-                        <option value="">Select a client...</option>
-                        <?php foreach ($clients as $client): ?>
-                            <option value="<?= $client['id'] ?>" <?= (isset($loan['client_id']) && $loan['client_id'] == $client['id']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($client['name']) ?> (ID: <?= $client['id'] ?>)
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <?php if ($isLocked): ?>
+                    <?php if ($preSelectedClient && !$isLocked): ?>
+                        <!-- Show read-only display when pre-selected -->
+                        <div class="form-control bg-light d-flex align-items-center" style="height: 46px;">
+                            <i data-feather="user" class="me-2" style="width: 16px; height: 16px; color: #9d71ea;"></i>
+                            <span><?= htmlspecialchars($preSelectedClient['name']) ?> (ID: <?= $preSelectedClient['id'] ?>)</span>
+                        </div>
                         <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
+                        <small class="form-text text-muted">
+                            <a href="<?= APP_URL ?>/public/loans/add.php" class="text-decoration-none">
+                                <i data-feather="refresh-cw" style="width: 12px; height: 12px;"></i> Choose different client
+                            </a>
+                        </small>
+                    <?php else: ?>
+                        <!-- Show dropdown for manual selection -->
+                        <select
+                            class="notion-form-select form-select custom-select-animated"
+                            id="client_id"
+                            name="client_id"
+                            <?= $isLocked ? 'disabled' : '' ?>
+                            required
+                            aria-required="true">
+                            <option value="">Select a client...</option>
+                            <?php foreach ($clients as $client): ?>
+                                <option value="<?= $client['id'] ?>" <?= (isset($loan['client_id']) && $loan['client_id'] == $client['id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($client['name']) ?> (ID: <?= $client['id'] ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php if ($isLocked): ?>
+                            <input type="hidden" name="client_id" value="<?= htmlspecialchars($loan['client_id']) ?>">
+                        <?php endif; ?>
+                        <div class="invalid-feedback">Please select a client.</div>
                     <?php endif; ?>
-                    <div class="invalid-feedback">Please select a client.</div>
                 </div>
             </div>
             <!-- Loan Amount -->
