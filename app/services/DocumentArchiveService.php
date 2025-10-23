@@ -80,7 +80,7 @@ class DocumentArchiveService extends BaseService {
     }
 
     /**
-     * Get archived documents with filters
+     * Get archived documents with filters (includes both legacy and new SLR documents)
      * @param array $filters Search filters
      * @return array
      */
@@ -126,8 +126,108 @@ class DocumentArchiveService extends BaseService {
 
             $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
 
+            // First get legacy documents from document_archive table
             $sql = "SELECT 
                         da.*,
+                        l.principal,
+                        l.total_loan_amount,
+                        l.status as loan_status,
+                        COALESCE(c.full_name, CONCAT(c.first_name, ' ', c.last_name)) as client_name,
+                        u.username as generated_by_username,
+                        u2.username as downloaded_by_username,
+                        'legacy' as source_table
+                    FROM document_archive da
+                    LEFT JOIN loans l ON da.loan_id = l.id
+                    LEFT JOIN clients c ON l.client_id = c.id
+                    LEFT JOIN users u ON da.generated_by = u.id
+                    LEFT JOIN users u2 ON da.last_downloaded_by = u2.id
+                    {$whereClause}";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $legacyDocuments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Then get new SLR documents from slr_documents table
+            $slrWhereConditions = [];
+            $slrParams = [];
+
+            // Convert filters to match slr_documents table structure
+            if (!empty($filters['loan_id'])) {
+                $slrWhereConditions[] = "slr.loan_id = ?";
+                $slrParams[] = $filters['loan_id'];
+            }
+
+            if (!empty($filters['date_from'])) {
+                $slrWhereConditions[] = "DATE(slr.generated_at) >= ?";
+                $slrParams[] = $filters['date_from'];
+            }
+
+            if (!empty($filters['date_to'])) {
+                $slrWhereConditions[] = "DATE(slr.generated_at) <= ?";
+                $slrParams[] = $filters['date_to'];
+            }
+
+            if (!empty($filters['status'])) {
+                $slrWhereConditions[] = "slr.status = ?";
+                $slrParams[] = $filters['status'];
+            }
+
+            if (!empty($filters['generated_by'])) {
+                $slrWhereConditions[] = "slr.generated_by = ?";
+                $slrParams[] = $filters['generated_by'];
+            }
+
+            $slrWhereClause = !empty($slrWhereConditions) ? 'WHERE ' . implode(' AND ', $slrWhereConditions) : '';
+
+            $slrSql = "SELECT 
+                        slr.id,
+                        'SLR' as document_type,
+                        slr.loan_id,
+                        slr.document_number,
+                        slr.file_name,
+                        slr.file_path,
+                        slr.file_size,
+                        slr.generated_by,
+                        slr.generated_at,
+                        slr.download_count,
+                        slr.last_downloaded_at,
+                        slr.last_downloaded_by,
+                        slr.status,
+                        slr.notes,
+                        l.principal,
+                        l.total_loan_amount,
+                        l.status as loan_status,
+                        COALESCE(c.full_name, CONCAT(c.first_name, ' ', c.last_name)) as client_name,
+                        u.username as generated_by_username,
+                        u2.username as downloaded_by_username,
+                        'slr_documents' as source_table
+                    FROM slr_documents slr
+                    LEFT JOIN loans l ON slr.loan_id = l.id
+                    LEFT JOIN clients c ON l.client_id = c.id
+                    LEFT JOIN users u ON slr.generated_by = u.id
+                    LEFT JOIN users u2 ON slr.last_downloaded_by = u2.id
+                    {$slrWhereClause}";
+
+            $stmt = $this->db->prepare($slrSql);
+            $stmt->execute($slrParams);
+            $slrDocuments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Combine both results and sort by generated_at descending
+            $allDocuments = array_merge($legacyDocuments, $slrDocuments);
+            
+            // Sort by generated_at descending
+            usort($allDocuments, function($a, $b) {
+                return strtotime($b['generated_at']) - strtotime($a['generated_at']);
+            });
+
+            return $allDocuments;
+
+        } catch (PDOException $e) {
+            error_log('Get Archived Documents Error: ' . $e->getMessage());
+            $this->setErrorMessage('Failed to retrieve archived documents.');
+            return [];
+        }
+    }
                         l.principal,
                         l.total_loan_amount,
                         l.status as loan_status,
@@ -310,25 +410,65 @@ class DocumentArchiveService extends BaseService {
     }
 
     /**
-     * Get document statistics
+     * Get document statistics (includes both legacy and new SLR documents)
      * @return array
      */
     public function getDocumentStatistics() {
         try {
+            // Get legacy document statistics
             $sql = "SELECT 
                         document_type,
                         status,
                         COUNT(*) as count,
                         SUM(file_size) as total_size,
-                        SUM(download_count) as total_downloads
+                        SUM(download_count) as total_downloads,
+                        'legacy' as source_table
                     FROM document_archive
                     GROUP BY document_type, status
                     ORDER BY document_type, status";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
+            $legacyStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get new SLR document statistics
+            $slrSql = "SELECT 
+                        'SLR' as document_type,
+                        status,
+                        COUNT(*) as count,
+                        SUM(file_size) as total_size,
+                        SUM(download_count) as total_downloads,
+                        'slr_documents' as source_table
+                    FROM slr_documents
+                    GROUP BY status
+                    ORDER BY status";
+
+            $stmt = $this->db->prepare($slrSql);
+            $stmt->execute();
+            $slrStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Combine and aggregate statistics
+            $combinedStats = array_merge($legacyStats, $slrStats);
             
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            // Aggregate by document_type and status
+            $aggregated = [];
+            foreach ($combinedStats as $stat) {
+                $key = $stat['document_type'] . '_' . $stat['status'];
+                if (!isset($aggregated[$key])) {
+                    $aggregated[$key] = [
+                        'document_type' => $stat['document_type'],
+                        'status' => $stat['status'],
+                        'count' => 0,
+                        'total_size' => 0,
+                        'total_downloads' => 0
+                    ];
+                }
+                $aggregated[$key]['count'] += $stat['count'];
+                $aggregated[$key]['total_size'] += $stat['total_size'];
+                $aggregated[$key]['total_downloads'] += $stat['total_downloads'];
+            }
+
+            return array_values($aggregated);
 
         } catch (PDOException $e) {
             error_log('Get Document Statistics Error: ' . $e->getMessage());

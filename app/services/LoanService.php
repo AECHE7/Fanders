@@ -411,6 +411,38 @@ class LoanService extends BaseService {
         }
 
         // 4. Generate SLR (Summary of Loan Release) document - FR-007, FR-008
+        // Use the enhanced SLRService for automatic generation on disbursement
+        if (class_exists('SLRService')) {
+            try {
+                require_once __DIR__ . '/SLRService.php';
+                $slrService = new SLRService();
+                
+                // Check if auto-generation is enabled for disbursement
+                $sql = "SELECT auto_generate FROM slr_generation_rules 
+                        WHERE trigger_event = 'loan_disbursement' AND is_active = true LIMIT 1";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute();
+                $rule = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($rule && $rule['auto_generate']) {
+                    // Auto-generate SLR on disbursement
+                    $slrDocument = $slrService->generateSLR($id, $_SESSION['user_id'] ?? 1, 'loan_disbursement');
+                    
+                    if ($slrDocument) {
+                        error_log('SLR document auto-generated on disbursement for loan ID ' . $id . ': ' . $slrDocument['document_number']);
+                    } else {
+                        error_log('Failed to auto-generate SLR on disbursement for loan ID ' . $id . ': ' . $slrService->getErrorMessage());
+                    }
+                } else {
+                    error_log('SLR auto-generation disabled for disbursement - loan ID ' . $id . ' requires manual generation');
+                }
+            } catch (Exception $e) {
+                // Log the error but don't fail the disbursement
+                error_log('Exception while generating SLR for loan ID ' . $id . ': ' . $e->getMessage());
+            }
+        }
+
+        // Legacy SLR generation (fallback for compatibility)
         if (class_exists('LoanReleaseService')) {
             try {
                 require_once __DIR__ . '/LoanReleaseService.php';
@@ -420,13 +452,13 @@ class LoanService extends BaseService {
                 $slrPath = $loanReleaseService->generateAndSaveSLR($id);
                 
                 if ($slrPath) {
-                    error_log('SLR document generated successfully for loan ID ' . $id . ': ' . $slrPath);
+                    error_log('Legacy SLR document generated successfully for loan ID ' . $id . ': ' . $slrPath);
                 } else {
-                    error_log('Failed to generate SLR document for loan ID ' . $id . ': ' . $loanReleaseService->getErrorMessage());
+                    error_log('Failed to generate legacy SLR document for loan ID ' . $id . ': ' . $loanReleaseService->getErrorMessage());
                 }
             } catch (Exception $e) {
                 // Log the error but don't fail the disbursement
-                error_log('Exception while generating SLR for loan ID ' . $id . ': ' . $e->getMessage());
+                error_log('Exception while generating legacy SLR for loan ID ' . $id . ': ' . $e->getMessage());
             }
         }
 
