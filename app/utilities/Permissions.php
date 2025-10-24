@@ -172,7 +172,12 @@ class Permissions {
     }
 
     public static function canRecordPayment($role) {
-        return self::isCashier($role);
+        // Cashier can always record payments
+        // Account Officers can record payments via collection sheets
+        return self::isAllowed($role, [
+            UserModel::$ROLE_CASHIER,
+            UserModel::$ROLE_ACCOUNT_OFFICER,
+        ]);
     }
 
     // --- User management rules ---

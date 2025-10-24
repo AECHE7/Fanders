@@ -7,8 +7,8 @@
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
 require_once '../../public/init.php';
 
-// Enforce role-based access control (Only Admin/Manager can create new clients)
-$auth->checkRoleAccess(['super-admin', 'admin', 'manager']);
+// Enforce role-based access control (Admin/Manager/Account Officer can create new clients)
+$auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account-officer']);
 
 // Initialize client service
 $clientService = new ClientService();
