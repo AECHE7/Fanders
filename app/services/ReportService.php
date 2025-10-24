@@ -938,10 +938,24 @@ class ReportService extends BaseService {
             
             // Extract values safely with comprehensive null coalescing
             $username = $u['username'] ?? $u['user_name'] ?? '';
-            $fullName = $u['full_name'] ?? $u['name'] ?? $u['first_name'] . ' ' . $u['last_name'] ?? '';
+            // Build full name safely without undefined index notices
+            $fullName = $u['full_name']
+                ?? ($u['name'] ?? null)
+                ?? trim(($u['first_name'] ?? '') . ' ' . ($u['last_name'] ?? ''));
             $email = $u['email'] ?? '';
             $role = $u['role'] ?? $u['user_role'] ?? 'unknown';
-            $isActive = $u['is_active'] ?? $u['active'] ?? $u['status'] ?? false;
+            // Normalize active status from various shapes (bool/int/string)
+            if (array_key_exists('is_active', $u)) {
+                $isActive = (bool)$u['is_active'];
+            } elseif (array_key_exists('active', $u)) {
+                $isActive = filter_var($u['active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                $isActive = $isActive === null ? (bool)$u['active'] : $isActive;
+            } elseif (array_key_exists('status', $u)) {
+                $statusVal = is_string($u['status']) ? strtolower((string)$u['status']) : $u['status'];
+                $isActive = ($statusVal === 'active' || $statusVal === 1 || $statusVal === true);
+            } else {
+                $isActive = false;
+            }
             
             // Skip records with no identifiable username
             if (empty($username)) {
@@ -950,7 +964,7 @@ class ReportService extends BaseService {
             
             $rows[] = [
                 $username,
-                trim($fullName),
+                trim((string)$fullName),
                 $email,
                 ucfirst((string)$role),
                 $isActive ? 'Active' : 'Inactive'

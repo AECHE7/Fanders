@@ -178,8 +178,25 @@ class PDFGenerator {
         if ($filename === null) {
             $filename = $this->title . ' - ' . date('Y-m-d') . '.pdf';
         }
+
+        // Lazy-load SafeExportWrapper via autoloader if available
+        $useSafeWrapper = in_array($disposition, ['I', 'D'], true) && class_exists('SafeExportWrapper');
+
+        if ($useSafeWrapper) {
+            // Begin safe export (suppresses warnings, clears buffers)
+            SafeExportWrapper::beginSafeExport();
+        }
         
-        return $this->pdf->Output($filename, $disposition);
+        $result = $this->pdf->Output($filename, $disposition);
+
+        if ($useSafeWrapper) {
+            // End safe export and terminate output for browser deliveries
+            SafeExportWrapper::endSafeExport();
+            // For inline/download outputs, stop further script execution to avoid content contamination
+            exit;
+        }
+
+        return $result;
     }
 
 

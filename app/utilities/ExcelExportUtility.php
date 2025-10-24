@@ -2,6 +2,15 @@
 
 class ExcelExportUtility
 {
+    private static function sanitizeFilename(string $filename, string $fallback = 'export.xls'): string
+    {
+        // Prevent header injection and strip path characters
+        $sanitized = str_replace(["\r", "\n"], '', $filename);
+        $sanitized = basename($sanitized);
+        // Remove any remaining dangerous characters
+        $sanitized = preg_replace('/[^A-Za-z0-9._\- ]+/', '', $sanitized) ?: $fallback;
+        return $sanitized;
+    }
     private static function xmlHeader(): string
     {
         return "<?xml version=\"1.0\"?>\n" .
@@ -36,14 +45,17 @@ class ExcelExportUtility
         
         try {
             // Send headers for Excel
-            header('Content-Type: application/vnd.ms-excel');
-            header('Content-Disposition: attachment; filename=' . $filename);
+            $fname = self::sanitizeFilename($filename);
+            header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+            header('Content-Transfer-Encoding: binary');
+            // RFC 6266 / RFC 5987 for UTF-8 filenames support
+            header('Content-Disposition: attachment; filename="' . $fname . '"; filename*=UTF-8\'' . rawurlencode($fname) . "'");
             header('Cache-Control: max-age=0');
             header('Pragma: no-cache');
 
             // Begin XML
             echo self::xmlHeader();
-        echo '<Worksheet ss:Name="' . self::escape($sheetName) . '">';
+    echo '<Worksheet ss:Name="' . self::escape($sheetName) . '">';
         echo '<Table>'; 
 
         // Header row

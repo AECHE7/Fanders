@@ -8,12 +8,15 @@ class SafeExportWrapper
 {
     private static $originalErrorReporting;
     private static $originalErrorHandler;
+    private static $exportStarted = false;
     
     /**
      * Initialize safe export environment
      */
     public static function beginSafeExport(): void
     {
+        // Mark export started
+        self::$exportStarted = true;
         // Store original settings
         self::$originalErrorReporting = error_reporting();
         
@@ -29,6 +32,14 @@ class SafeExportWrapper
         // Suppress all warnings and notices
         error_reporting(E_ERROR | E_PARSE);
         
+        // Ensure binary-safe output and enough resources for large exports
+        @ini_set('zlib.output_compression', '0');
+        @ini_set('output_buffering', '0');
+        @ini_set('implicit_flush', '1');
+        @ini_set('memory_limit', '256M');
+        @set_time_limit(120);
+        @ignore_user_abort(true);
+        
         // Clear any existing output buffers
         while (ob_get_level()) {
             ob_end_clean();
@@ -40,6 +51,9 @@ class SafeExportWrapper
      */
     public static function endSafeExport(): void
     {
+        if (!self::$exportStarted) {
+            return;
+        }
         // Restore original error reporting
         if (self::$originalErrorReporting !== null) {
             error_reporting(self::$originalErrorReporting);
@@ -49,6 +63,8 @@ class SafeExportWrapper
         if (self::$originalErrorHandler !== null) {
             restore_error_handler();
         }
+
+        self::$exportStarted = false;
     }
     
     /**
