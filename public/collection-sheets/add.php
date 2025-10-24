@@ -3,14 +3,14 @@
  * Collection Sheets - Add/Edit Draft
  */
 require_once __DIR__ . '/../init.php';
-$auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account_officer']);
+$auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account-officer']);
 
 $service = new CollectionSheetService();
 $pageTitle = 'New Collection Sheet';
 
 // Resolve sheet id: if none and AO/Super Admin, create today's draft
 $sheetId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-if ($sheetId === 0 && in_array($userRole, ['super-admin', 'account_officer'])) {
+if ($sheetId === 0 && in_array($userRole, ['super-admin', 'account-officer'])) {
     $draft = $service->createDraftSheet($user['id'], date('Y-m-d'));
     if ($draft) { 
         // Preserve loan_id parameter if present
@@ -187,7 +187,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div><?php endif; ?>
 
     <!-- Add Item Form (Only for Draft Status) -->
-    <?php if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account_officer'])): ?>
+  <?php if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account-officer'])): ?>
     
     <!-- Pre-populated Loan Alert (if loan_id in URL) -->
     <?php if ($prePopulatedLoan && !$autoAdded): ?>
@@ -347,7 +347,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <strong>Items</strong>
         <div>
           <span class="me-3">Total: <strong>₱<?= number_format((float)$sheet['total_amount'], 2) ?></strong></span>
-          <?php if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account_officer'])): ?>
+          <?php if ($sheet['status'] === 'draft' && in_array($userRole, ['super-admin', 'account-officer'])): ?>
             <form method="post" class="d-inline">
               <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
               <input type="hidden" name="action" value="submit_sheet">
