@@ -187,7 +187,6 @@ $userService = new UserService();
 include_once BASE_PATH . '/templates/layout/header.php';
 
 ?>
-?>
 
 <main class="main-content">
     <div class="content-wrapper">

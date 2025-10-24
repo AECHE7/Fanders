@@ -130,29 +130,27 @@ body {
 
 /* Main content adjustment - full width by default */
 .main-content {
-    width: 100%;
-    margin-left: 0;
-    padding-left: 0;
+    width: 100% !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
     transition: all 0.3s ease;
 }
 
 .content-wrapper {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
 }
 
-/* Apply margin when body has sidebar-visible class (desktop) */
-@media (min-width: 768px) {
-    body.sidebar-visible .main-content {
-        margin-left: 280px;
-        width: calc(100% - 280px);
-    }
+/* Only apply margin when sidebar is expanded */
+.sidebar-expanded + .main-content {
+    margin-left: 280px !important;
+    width: calc(100% - 280px) !important;
+}
 
-    /* Ensure full width when sidebar is hidden */
-    body.sidebar-hidden .main-content {
-        margin-left: 0;
-        width: 100%;
-    }
+/* Ensure full width when sidebar is collapsed */
+.sidebar-collapsed + .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
 }
 
 /* Responsive adjustments */
