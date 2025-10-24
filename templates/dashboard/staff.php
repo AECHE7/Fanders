@@ -38,8 +38,9 @@
 <!-- Stats Overview with Color-coded Icons like Notion -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">📈 Microfinance Statistics</h5>
-        <div class="notion-divider flex-grow-1"></div>
+        <i data-feather="trending-up" class="me-2" style="width: 20px; height: 20px; color: #0d6efd;"></i>
+        <h5 class="mb-0">Microfinance Statistics</h5>
+        <div class="notion-divider flex-grow-1 ms-2"></div>
     </div>
     <div class="row g-4 dashboard-stats-container">
         <div class="col-md-3">
@@ -101,8 +102,9 @@
 <!-- Administrative Statistics -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">👥 Administrative Overview</h5>
-        <div class="notion-divider flex-grow-1"></div>
+        <i data-feather="users" class="me-2" style="width: 20px; height: 20px; color: #198754;"></i>
+        <h5 class="mb-0">Administrative Overview</h5>
+        <div class="notion-divider flex-grow-1 ms-2"></div>
     </div>
     <div class="row g-4">
         <!-- Total Clients -->
@@ -183,8 +185,9 @@
 <!-- Recent Activity -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">🔍 Recent Activity</h5>
-        <div class="notion-divider flex-grow-1"></div>
+        <i data-feather="activity" class="me-2" style="width: 20px; height: 20px; color: #6c757d;"></i>
+        <h5 class="mb-0">Recent Activity</h5>
+        <div class="notion-divider flex-grow-1 ms-2"></div>
     </div>
     <div class="row g-4">
         <!-- Recent Payments -->
@@ -387,8 +390,15 @@
         </div>
         <div class="card-body p-0">
             <?php 
-            // Use recent clients from stats passed by dashboard index
-            $recentClients = $stats['recent_clients'] ?? [];
+            // Get recent clients for staff dashboard
+            $recentClients = [];
+            try {
+                $clientService = new ClientService();
+                $clientStats = $clientService->getClientStats(false);
+                $recentClients = $clientStats['recent_clients'] ?? [];
+            } catch (Exception $e) {
+                error_log('Recent clients fetch error: ' . $e->getMessage());
+            }
             if (!empty($recentClients) && is_array($recentClients)): 
             ?>
             <div class="table-responsive">

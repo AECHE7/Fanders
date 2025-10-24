@@ -41,8 +41,9 @@
 <!-- Stats Overview with Color-coded Icons like Notion -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">📈 Microfinance Statistics</h5>
-        <div class="notion-divider flex-grow-1"></div>
+        <i data-feather="trending-up" class="me-2" style="width: 20px; height: 20px; color: #0d6efd;"></i>
+        <h5 class="mb-0">Microfinance Statistics</h5>
+        <div class="notion-divider flex-grow-1 ms-2"></div>
     </div>
     <div class="row g-4 dashboard-stats-container">
         <div class="col-md-3">
@@ -103,8 +104,9 @@
 <!-- Client & Approvals Overview -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">👥 Client & Approvals Overview</h5>
-        <div class="notion-divider flex-grow-1"></div>
+        <i data-feather="users" class="me-2" style="width: 20px; height: 20px; color: #198754;"></i>
+        <h5 class="mb-0">Client & Approvals Overview</h5>
+        <div class="notion-divider flex-grow-1 ms-2"></div>
     </div>
     <div class="row g-4">
         <div class="col-md-3">
@@ -192,7 +194,10 @@
                     <i data-feather="alert-triangle" style="width: 24px; height: 24px; color: white;"></i>
                 </div>
                 <div>
-                    <h5 class="mb-1 text-danger fw-bold">⚠️ <?= $stats['overdue_returns'] ?? 0 ?> Overdue Payment<?= ($stats['overdue_returns'] ?? 0) > 1 ? 's' : '' ?> Require Attention</h5>
+                    <h5 class="mb-1 text-danger fw-bold">
+                        <i data-feather="alert-triangle" style="width: 18px; height: 18px;" class="me-1"></i>
+                        <?= $stats['overdue_returns'] ?? 0 ?> Overdue Payment<?= ($stats['overdue_returns'] ?? 0) > 1 ? 's' : '' ?> Require Attention
+                    </h5>
                     <p class="mb-0 text-dark small">These loans have passed their due date and need immediate follow-up.</p>
                 </div>
             </div>
@@ -207,8 +212,9 @@
 <!-- Recent Activity -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">🔍 Recent Activity</h5>
-        <div class="notion-divider flex-grow-1"></div>
+        <i data-feather="activity" class="me-2" style="width: 20px; height: 20px; color: #6c757d;"></i>
+        <h5 class="mb-0">Recent Activity</h5>
+        <div class="notion-divider flex-grow-1 ms-2"></div>
     </div>
     <div class="row g-4">
         <!-- Recent Payments -->
@@ -334,8 +340,9 @@
 <!-- Quick Action Section with Notion-style colored blocks -->
 <div class="mb-5 animate-on-scroll">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">📌 Quick Actions</h5>
-        <div class="notion-divider flex-grow-1"></div>
+        <i data-feather="zap" class="me-2" style="width: 20px; height: 20px; color: #ffc107;"></i>
+        <h5 class="mb-0">Quick Actions</h5>
+        <div class="notion-divider flex-grow-1 ms-2"></div>
     </div>
     <div class="row g-3 stagger-fade-in">
         <div class="col-md-3">
