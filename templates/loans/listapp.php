@@ -31,14 +31,15 @@ if (!function_exists('getLoanStatusBadgeClass')) {
     .loans-approval-table {
         border-collapse: separate;
         border-spacing: 0;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        border-radius: 8px;
-        overflow: hidden;
+        width: 100%;
     }
     
     .loans-approval-table thead {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
     
     .loans-approval-table thead th {
@@ -51,15 +52,23 @@ if (!function_exists('getLoanStatusBadgeClass')) {
         vertical-align: middle;
     }
     
+    .loans-approval-table thead th:first-child {
+        border-top-left-radius: 0;
+    }
+    
+    .loans-approval-table thead th:last-child {
+        border-top-right-radius: 0;
+    }
+    
     .loans-approval-table tbody tr {
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
         border-bottom: 1px solid #e9ecef;
+        background-color: white;
     }
     
     .loans-approval-table tbody tr:hover {
         background-color: #f8f9fe;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.08);
     }
     
     .loans-approval-table tbody td {
@@ -68,8 +77,12 @@ if (!function_exists('getLoanStatusBadgeClass')) {
         border: none;
     }
     
-    .loans-approval-table tbody tr:last-child {
-        border-bottom: none;
+    .loans-approval-table tbody tr:last-child td:first-child {
+        border-bottom-left-radius: 0;
+    }
+    
+    .loans-approval-table tbody tr:last-child td:last-child {
+        border-bottom-right-radius: 0;
     }
     
     .loan-id-badge {
@@ -78,8 +91,9 @@ if (!function_exists('getLoanStatusBadgeClass')) {
         color: white;
         padding: 0.35rem 0.75rem;
         border-radius: 20px;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.85rem;
+        letter-spacing: 0.5px;
     }
     
     .client-info-cell {
@@ -92,68 +106,131 @@ if (!function_exists('getLoanStatusBadgeClass')) {
         color: #2d3748;
         font-weight: 600;
         text-decoration: none;
-        transition: color 0.3s ease;
+        transition: color 0.2s ease;
+        font-size: 0.95rem;
     }
     
     .client-name-link:hover {
         color: #667eea;
+        text-decoration: underline;
     }
     
     .client-phone {
         color: #718096;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
     
     .amount-cell {
-        font-weight: 600;
+        font-weight: 700;
         color: #2d3748;
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
     
     .status-badge-custom {
         padding: 0.4rem 0.9rem;
         border-radius: 20px;
         font-weight: 600;
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         display: inline-block;
+        white-space: nowrap;
     }
     
-    .status-active { background: #48bb78; color: white; }
-    .status-application { background: #ed8936; color: white; }
-    .status-approved { background: #4299e1; color: white; }
-    .status-completed { background: #9f7aea; color: white; }
-    .status-defaulted { background: #f56565; color: white; }
-    .status-secondary { background: #a0aec0; color: white; }
+    .status-active { 
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%); 
+        color: white; 
+        box-shadow: 0 2px 4px rgba(72, 187, 120, 0.3);
+    }
+    .status-application { 
+        background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); 
+        color: white; 
+        box-shadow: 0 2px 4px rgba(66, 153, 225, 0.3);
+    }
+    .status-approved { 
+        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%); 
+        color: white; 
+        box-shadow: 0 2px 4px rgba(237, 137, 54, 0.3);
+    }
+    .status-completed { 
+        background: linear-gradient(135deg, #9f7aea 0%, #805ad5 100%); 
+        color: white; 
+        box-shadow: 0 2px 4px rgba(159, 122, 234, 0.3);
+    }
+    .status-defaulted { 
+        background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%); 
+        color: white; 
+        box-shadow: 0 2px 4px rgba(245, 101, 101, 0.3);
+    }
+    .status-secondary { 
+        background: #a0aec0; 
+        color: white; 
+    }
     
     .date-cell {
         color: #718096;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
     }
     
     .action-btn-group {
         display: flex;
         gap: 0.4rem;
-        justify-content: center;
+        justify-content: flex-start;
+        flex-wrap: wrap;
     }
     
     .action-btn-group .btn {
-        border-radius: 6px;
-        transition: all 0.3s ease;
+        border-radius: 8px;
+        transition: all 0.2s ease;
         border: 2px solid transparent;
+        padding: 0.375rem 0.75rem;
     }
     
     .action-btn-group .btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .action-btn-group .btn-outline-info:hover {
+        background-color: #0dcaf0;
+        border-color: #0dcaf0;
+        color: white;
+    }
+    
+    .action-btn-group .btn-outline-success:hover {
+        background-color: #198754;
+        border-color: #198754;
+        color: white;
+    }
+    
+    .action-btn-group .btn-outline-danger:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+    
+    .action-btn-group .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+    }
+    
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 </style>
 
 <!-- Loans List Table -->
 <?php if (empty($loans)): ?>
-    <div class="alert alert-info" role="alert">
-        <i data-feather="info"></i> No loans found matching the current filters.
+    <div class="alert alert-info m-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i data-feather="info" class="me-2"></i>
+            <div>
+                <strong>No loans found</strong>
+                <p class="mb-0 small">Try adjusting your filters or search criteria to find more results.</p>
+            </div>
+        </div>
     </div>
 <?php else: ?>
     <div class="table-responsive">
@@ -180,22 +257,35 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                                 <a href="<?= APP_URL ?>/public/clients/view.php?id=<?= $loan['client_id'] ?>" class="client-name-link">
                                     <?= htmlspecialchars($loan['client_name'] ?? 'N/A') ?>
                                 </a>
-                                <span class="client-phone"><?= htmlspecialchars($loan['phone_number'] ?? 'N/A') ?></span>
+                                <span class="client-phone">
+                                    <i data-feather="phone" style="width: 12px; height: 12px;"></i>
+                                    <?= htmlspecialchars($loan['phone_number'] ?? 'N/A') ?>
+                                </span>
                             </div>
                         </td>
                         <td class="amount-cell">₱<?= number_format($loan['principal'], 2) ?></td>
-                        <td class="amount-cell">₱<?= number_format($loan['total_loan_amount'] / $loan['term_weeks'], 2) ?></td>
+                        <?php 
+                            $termWeeks = (int)($loan['term_weeks'] ?? 0);
+                            $weeklyPay = $termWeeks > 0 ? ($loan['total_loan_amount'] / $termWeeks) : 0;
+                        ?>
+                        <td class="amount-cell">₱<?= number_format($weeklyPay, 2) ?></td>
                         <td>
                             <span class="status-badge-custom status-<?= strtolower($loan['status']) ?>">
                                 <?= htmlspecialchars(ucfirst($loan['status'])) ?>
                             </span>
                         </td>
-                        <td class="date-cell"><?= htmlspecialchars(date('M d, Y', strtotime($loan['application_date']))) ?></td>
+                        <td class="date-cell">
+                            <i data-feather="calendar" style="width: 14px; height: 14px;"></i>
+                            <?= htmlspecialchars(date('M d, Y', strtotime($loan['application_date']))) ?>
+                        </td>
                         <td>
                             <div class="action-btn-group">
                                 <!-- View Details -->
-                                <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="btn btn-sm btn-outline-info" title="View Loan Details">
-                                    <i data-feather="eye"></i>
+                                <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" 
+                                   class="btn btn-sm btn-outline-info" 
+                                   title="View Loan Details"
+                                   data-bs-toggle="tooltip">
+                                    <i data-feather="eye" style="width: 14px; height: 14px;"></i>
                                 </a>
 
                                 <?php 
@@ -206,22 +296,34 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 
                                 <?php if ($canManage && $status === 'application'): ?>
                                     <!-- Approve Button (Manager/Admin action) -->
-                                    <button type="button" class="btn btn-sm btn-outline-success btn-loan-action"
-                                            data-action="approve" data-id="<?= $loan['id'] ?>" title="Approve Loan">
-                                        <i data-feather="check"></i>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-success btn-loan-action"
+                                            data-action="approve" 
+                                            data-id="<?= $loan['id'] ?>" 
+                                            title="Approve Loan"
+                                            data-bs-toggle="tooltip">
+                                        <i data-feather="check" style="width: 14px; height: 14px;"></i> Approve
                                     </button>
                                     <!-- Cancel Button -->
-                                    <button type="button" class="btn btn-sm btn-outline-danger btn-loan-action"
-                                            data-action="cancel" data-id="<?= $loan['id'] ?>" title="Cancel Application">
-                                        <i data-feather="x-circle"></i>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger btn-loan-action"
+                                            data-action="cancel" 
+                                            data-id="<?= $loan['id'] ?>" 
+                                            title="Cancel Application"
+                                            data-bs-toggle="tooltip">
+                                        <i data-feather="x-circle" style="width: 14px; height: 14px;"></i>
                                     </button>
                                 <?php endif; ?>
 
                                 <?php if ($canManage && $status === 'approved'): ?>
                                     <!-- Disburse Button (Manager/Admin action) -->
-                                    <button type="button" class="btn btn-sm btn-outline-primary btn-loan-action"
-                                            data-action="disburse" data-id="<?= $loan['id'] ?>" title="Disburse Funds (Activate Loan)">
-                                        <i data-feather="send"></i> Disburse
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-primary btn-loan-action"
+                                            data-action="disburse" 
+                                            data-id="<?= $loan['id'] ?>" 
+                                            title="Disburse Funds (Activate Loan)"
+                                            data-bs-toggle="tooltip">
+                                        <i data-feather="send" style="width: 14px; height: 14px;"></i> Disburse
                                     </button>
                                 <?php endif; ?>
                                 
@@ -235,13 +337,13 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 <?php endif; ?>
 
 <!-- Pagination -->
-<?php if ($totalPages > 1): ?>
-    <div class="d-flex justify-content-between align-items-center mt-3">
-        <div class="text-muted">
-            <?= $pagination->getInfo() ?>
+<?php if (isset($totalPages) && $totalPages > 1): ?>
+    <div class="d-flex justify-content-between align-items-center mt-4 px-3 pb-3">
+        <div class="text-muted small">
+            <?= isset($pagination) ? $pagination->getInfo() : "Page {$page} of {$totalPages}" ?>
         </div>
         <nav aria-label="Loans pagination">
-            <?= $pagination->render() ?>
+            <?= isset($pagination) ? $pagination->render() : '' ?>
         </nav>
     </div>
 <?php endif; ?>
@@ -249,30 +351,48 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 <!-- Approval Confirmation Modal -->
 <div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);">
                 <h5 class="modal-title" id="approvalModalLabel">
-                    <i data-feather="check-circle"></i> Confirm Loan Approval
+                    <i data-feather="check-circle" class="me-2"></i> Confirm Loan Approval
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-info mb-3">
-                    <i data-feather="info"></i>
-                    <strong>Note:</strong> After confirming this approval, a loan agreement will be automatically generated and saved to the system.
+            <div class="modal-body p-4">
+                <div class="alert alert-info border-0 shadow-sm mb-3">
+                    <div class="d-flex align-items-start">
+                        <i data-feather="info" class="me-2 mt-1"></i>
+                        <div>
+                            <strong>Note:</strong> After confirming this approval, a loan agreement will be automatically generated and saved to the system.
+                        </div>
+                    </div>
                 </div>
-                <p class="mb-2">You are about to approve:</p>
-                <ul class="list-unstyled ms-3">
-                    <li><strong>Loan ID:</strong> <span id="modalLoanId"></span></li>
-                    <li><strong>Client:</strong> <span id="modalClientName"></span></li>
-                    <li><strong>Principal Amount:</strong> <span id="modalPrincipal"></span></li>
-                </ul>
-                <p class="text-muted small mt-3">This action cannot be easily undone. Please verify all details before proceeding.</p>
+                <p class="mb-3 fw-semibold">You are about to approve:</p>
+                <div class="bg-light p-3 rounded">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <small class="text-muted">Loan ID:</small>
+                            <p class="mb-1 fw-bold">#<span id="modalLoanId"></span></p>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted">Client:</small>
+                            <p class="mb-1 fw-bold"><span id="modalClientName"></span></p>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted">Principal Amount:</small>
+                            <p class="mb-0 fw-bold"><span id="modalPrincipal"></span></p>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-muted small mt-3 mb-0">
+                    <i data-feather="alert-circle" style="width: 14px; height: 14px;"></i>
+                    This action cannot be easily undone. Please verify all details before proceeding.
+                </p>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer border-0 bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success" id="confirmApprovalBtn">
-                    <i data-feather="check"></i> Confirm Approval
+                    <i data-feather="check" class="me-1"></i> Confirm Approval
                 </button>
             </div>
         </div>
@@ -282,26 +402,44 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 <!-- Disburse Confirmation Modal -->
 <div class="modal fade" id="disburseModal" tabindex="-1" aria-labelledby="disburseModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);">
                 <h5 class="modal-title" id="disburseModalLabel">
-                    <i data-feather="send"></i> Confirm Loan Disbursement
+                    <i data-feather="send" class="me-2"></i> Confirm Loan Disbursement
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p class="mb-2">You are about to disburse funds for:</p>
-                <ul class="list-unstyled ms-3">
-                    <li><strong>Loan ID:</strong> <span id="modalDisburseLoanId"></span></li>
-                    <li><strong>Client:</strong> <span id="modalDisburseClientName"></span></li>
-                    <li><strong>Amount to Disburse:</strong> <span id="modalDisbursePrincipal"></span></li>
-                </ul>
-                <p class="text-warning small mt-3">This will activate the payment schedule. Please ensure funds are ready.</p>
+            <div class="modal-body p-4">
+                <p class="mb-3 fw-semibold">You are about to disburse funds for:</p>
+                <div class="bg-light p-3 rounded">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <small class="text-muted">Loan ID:</small>
+                            <p class="mb-1 fw-bold">#<span id="modalDisburseLoanId"></span></p>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted">Client:</small>
+                            <p class="mb-1 fw-bold"><span id="modalDisburseClientName"></span></p>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted">Amount to Disburse:</small>
+                            <p class="mb-0 fw-bold"><span id="modalDisbursePrincipal"></span></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-warning border-0 shadow-sm mt-3 mb-0">
+                    <div class="d-flex align-items-start">
+                        <i data-feather="alert-triangle" class="me-2 mt-1"></i>
+                        <div>
+                            <small>This will activate the payment schedule. Please ensure funds are ready for disbursement.</small>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer border-0 bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="confirmDisburseBtn">
-                    <i data-feather="send"></i> Confirm Disbursement
+                    <i data-feather="send" class="me-1"></i> Confirm Disbursement
                 </button>
             </div>
         </div>
@@ -311,28 +449,40 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 <!-- Cancel Confirmation Modal -->
 <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header text-white" style="background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);">
                 <h5 class="modal-title" id="cancelModalLabel">
-                    <i data-feather="x-circle"></i> Confirm Loan Cancellation
+                    <i data-feather="x-circle" class="me-2"></i> Confirm Loan Cancellation
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i data-feather="alert-triangle"></i>
-                    <strong>Warning:</strong> This action will cancel the loan application.
+            <div class="modal-body p-4">
+                <div class="alert alert-warning border-0 shadow-sm mb-3">
+                    <div class="d-flex align-items-start">
+                        <i data-feather="alert-triangle" class="me-2 mt-1"></i>
+                        <div>
+                            <strong>Warning:</strong> This action will cancel the loan application permanently.
+                        </div>
+                    </div>
                 </div>
-                <p class="mb-2">You are about to cancel:</p>
-                <ul class="list-unstyled ms-3">
-                    <li><strong>Loan ID:</strong> <span id="modalCancelLoanId"></span></li>
-                    <li><strong>Client:</strong> <span id="modalCancelClientName"></span></li>
-                </ul>
+                <p class="mb-3 fw-semibold">You are about to cancel:</p>
+                <div class="bg-light p-3 rounded">
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <small class="text-muted">Loan ID:</small>
+                            <p class="mb-1 fw-bold">#<span id="modalCancelLoanId"></span></p>
+                        </div>
+                        <div class="col-12">
+                            <small class="text-muted">Client:</small>
+                            <p class="mb-0 fw-bold"><span id="modalCancelClientName"></span></p>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer border-0 bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" class="btn btn-danger" id="confirmCancelBtn">
-                    <i data-feather="x-circle"></i> Confirm Cancellation
+                    <i data-feather="x-circle" class="me-1"></i> Confirm Cancellation
                 </button>
             </div>
         </div>
@@ -340,7 +490,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 </div>
 
 <!-- Hidden Form for POST Actions (Approve/Disburse/Cancel) -->
-<form id="loanActionForm" method="POST" action="<?= APP_URL ?>/public/loans/index.php" style="display:none;">
+<form id="loanActionForm" method="POST" action="<?= APP_URL ?>/public/loans/approvals.php" style="display:none;">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '') ?>">
     <input type="hidden" name="id" id="loanActionId">
     <input type="hidden" name="action" id="loanActionType">

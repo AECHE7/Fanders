@@ -632,4 +632,45 @@ class LoanService extends BaseService {
 
         return true;
     }
+
+    /**
+     * Get count of loans disbursed today
+     * @return int
+     */
+    public function getDisbursedTodayCount() {
+        try {
+            $today = date('Y-m-d');
+            $query = "SELECT COUNT(*) as count FROM loans 
+                      WHERE DATE(disbursement_date) = :today 
+                      AND status IN ('active', 'completed')";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['today' => $today]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)($result['count'] ?? 0);
+        } catch (Exception $e) {
+            error_log("Error getting disbursed today count: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Get count of loans approved this week
+     * @return int
+     */
+    public function getApprovedThisWeekCount() {
+        try {
+            $startOfWeek = date('Y-m-d', strtotime('monday this week'));
+            $endOfWeek = date('Y-m-d', strtotime('sunday this week'));
+            $query = "SELECT COUNT(*) as count FROM loans 
+                      WHERE DATE(approval_date) BETWEEN :start AND :end 
+                      AND status IN ('approved', 'active', 'completed')";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['start' => $startOfWeek, 'end' => $endOfWeek]);
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)($result['count'] ?? 0);
+        } catch (Exception $e) {
+            error_log("Error getting approved this week count: " . $e->getMessage());
+            return 0;
+        }
+    }
 }
