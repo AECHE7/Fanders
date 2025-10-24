@@ -440,8 +440,9 @@
 <!-- Cash Flow Summary -->
 <div class="mb-5">
     <div class="d-flex align-items-center mb-3">
-        <h5 class="mb-0 me-2">💰 Cash Flow Summary</h5>
-        <div class="notion-divider flex-grow-1"></div>
+        <i data-feather="dollar-sign" class="me-2" style="width: 20px; height: 20px; color: #198754;"></i>
+        <h5 class="mb-0">Cash Flow Summary</h5>
+        <div class="notion-divider flex-grow-1 ms-2"></div>
     </div>
     <div class="row g-4">
         <div class="col-md-4">

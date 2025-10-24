@@ -113,6 +113,12 @@ $userService = new UserService();
         $clientsFilter = [];
         $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
 
+        // Get client stats including recent clients
+        $clientStats = $clientService->getClientStats(false);
+        if (is_array($clientStats) && isset($clientStats['recent_clients'])) {
+            $stats['recent_clients'] = $clientStats['recent_clients'];
+        }
+
         if ($userRole === UserModel::$ROLE_SUPER_ADMIN) {
             // Additional super admin data - User role counts
             $userStats = $userService->getUserStats();
@@ -174,6 +180,12 @@ $userService = new UserService();
         // Get total clients count
         $clientsFilter = [];
         $stats['total_clients'] = $clientService->getTotalClientsCount($clientsFilter);
+
+        // Get client stats including recent clients (staff dashboard also shows this)
+        $clientStats = $clientService->getClientStats(false);
+        if (is_array($clientStats) && isset($clientStats['recent_clients'])) {
+            $stats['recent_clients'] = $clientStats['recent_clients'];
+        }
 
         $dashboardTemplate = BASE_PATH . '/templates/dashboard/staff.php';
     } else {

@@ -257,8 +257,8 @@ class ClientModel extends BaseModel {
         $result = $this->db->resultSet($sql);
         $stats['clients_by_status'] = $result ?: [];
 
-        // Recently added clients
-        $sql = "SELECT id, name, created_at, status FROM {$this->table} ORDER BY created_at DESC LIMIT 5";
+        // Recently added clients (with phone number for dashboard display)
+        $sql = "SELECT id, name, phone_number, created_at, status FROM {$this->table} ORDER BY created_at DESC LIMIT 5";
         $stats['recent_clients'] = $this->db->resultSet($sql);
 
         return $stats;
