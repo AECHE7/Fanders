@@ -185,17 +185,17 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-<?= getActionBadgeClass($transaction['action']) ?>">
-                                            <?= ucfirst(str_replace('_', ' ', $transaction['action'])) ?>
+                                        <span class="badge bg-<?= getActionBadgeClass($transaction['action'] ?? '') ?>">
+                                            <?= ucfirst(str_replace('_', ' ', ($transaction['action'] ?? ''))) ?>
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary">
-                                            <?= ucfirst($transaction['entity_type']) ?>
+                                            <?= ucfirst((string)($transaction['entity_type'] ?? 'system')) ?>
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-primary">#<?= $transaction['entity_id'] ?></span>
+                                        <span class="badge bg-primary">#<?= htmlspecialchars((string)($transaction['entity_id'] ?? '-')) ?></span>
                                     </td>
                                     <td>
                                         <?php

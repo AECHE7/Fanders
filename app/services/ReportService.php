@@ -584,26 +584,33 @@ class ReportService extends BaseService {
         // Transform transaction data to match report template expectations
         $transformedData = [];
         foreach ($transactions as $transaction) {
-            $details = json_decode($transaction['details'], true) ?: [];
+            // Parse details, tolerate missing/null strings
+            $rawDetails = $transaction['details'] ?? '';
+            $details = is_string($rawDetails) ? (json_decode($rawDetails, true) ?: []) : (is_array($rawDetails) ? $rawDetails : []);
 
-            // Determine entity type from transaction type
-            $entityType = $this->getEntityTypeFromTransactionType($transaction['transaction_type']);
+            // Normalize transaction type and entity/reference id
+            $txType = $transaction['transaction_type'] ?? ($details['transaction_type'] ?? 'system');
+            $entityType = $this->getEntityTypeFromTransactionType($txType);
+            $entityId = $transaction['reference_id'] ?? ($details['reference_id'] ?? null);
 
-            // Get user information
-            $userInfo = $this->getUserInfo($transaction['user_id']);
+            // Get user information (safe for null IDs)
+            $userInfo = $this->getUserInfo($transaction['user_id'] ?? null);
+
+            // Determine action (prefer explicit detail action)
+            $action = $details['action'] ?? $this->getActionFromTransactionType($txType);
 
             $transformedData[] = [
-                'timestamp' => $transaction['created_at'],
+                'timestamp' => $transaction['created_at'] ?? ($transaction['timestamp'] ?? date('Y-m-d H:i:s')),
                 // Use single name field from users table
-                'user_name' => $userInfo['name'] ?? null,
-                'role' => $userInfo['role'] ?? null,
-                'action' => $details['action'] ?? $this->getActionFromTransactionType($transaction['transaction_type']),
+                'user_name' => $userInfo['name'] ?? '',
+                'role' => $userInfo['role'] ?? '',
+                'action' => $action,
                 'entity_type' => $entityType,
-                'entity_id' => $transaction['reference_id'],
-                'details' => $transaction['details'],
-                'transaction_type' => $transaction['transaction_type'],
+                'entity_id' => $entityId ?? '-',
+                'details' => is_string($rawDetails) ? $rawDetails : json_encode($details),
+                'transaction_type' => $txType,
                 'user_email' => $transaction['user_email'] ?? null,
-                'created_at' => $transaction['created_at']
+                'created_at' => $transaction['created_at'] ?? null
             ];
         }
 
