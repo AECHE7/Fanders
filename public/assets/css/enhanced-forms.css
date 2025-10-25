@@ -1,0 +1,616 @@
+/**
+ * Enhanced Forms Styling
+ * Modern, consistent design for all forms across the Fanders application
+ * Matches the index page design language with gradients, smooth animations, and visual hierarchy
+ */
+
+/* ========================================
+   FORM CONTAINER & STRUCTURE
+   ======================================== */
+
+.enhanced-form-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.enhanced-form {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 0;
+    overflow: hidden;
+    animation: slideInUp 0.4s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========================================
+   FORM HEADER
+   ======================================== */
+
+.enhanced-form-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 2rem 2.5rem;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.enhanced-form-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    transform: translate(30%, -30%);
+}
+
+.enhanced-form-header-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.enhanced-form-header-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.enhanced-form-header-subtitle {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.95rem;
+    opacity: 0.9;
+    font-weight: 400;
+    position: relative;
+    z-index: 1;
+}
+
+/* ========================================
+   FORM BODY
+   ======================================== */
+
+.enhanced-form-body {
+    padding: 2.5rem;
+}
+
+/* ========================================
+   FORM SECTIONS
+   ======================================== */
+
+.enhanced-form-section {
+    margin-bottom: 2.5rem;
+    animation: fadeInSection 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.enhanced-form-section:nth-child(1) { animation-delay: 0.1s; }
+.enhanced-form-section:nth-child(2) { animation-delay: 0.2s; }
+.enhanced-form-section:nth-child(3) { animation-delay: 0.3s; }
+.enhanced-form-section:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes fadeInSection {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.enhanced-form-section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.enhanced-form-section-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.enhanced-form-section-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.enhanced-form-section-divider {
+    flex-grow: 1;
+    height: 2px;
+    background: linear-gradient(to right, #e2e8f0 0%, transparent 100%);
+}
+
+/* ========================================
+   FORM GROUPS & INPUTS
+   ======================================== */
+
+.enhanced-form-group {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.enhanced-form-label {
+    display: block;
+    font-weight: 600;
+    color: #4a5568;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    text-transform: none;
+    letter-spacing: 0.01em;
+}
+
+.enhanced-form-label.required::after {
+    content: ' *';
+    color: #e53e3e;
+    font-weight: 700;
+}
+
+.enhanced-form-control,
+.enhanced-form-select,
+.enhanced-form-textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: #2d3748;
+    background-color: #f7fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.enhanced-form-control:focus,
+.enhanced-form-select:focus,
+.enhanced-form-textarea:focus {
+    outline: none;
+    background-color: white;
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    transform: translateY(-1px);
+}
+
+.enhanced-form-control:hover:not(:focus):not(:disabled),
+.enhanced-form-select:hover:not(:focus):not(:disabled),
+.enhanced-form-textarea:hover:not(:focus):not(:disabled) {
+    border-color: #cbd5e0;
+    background-color: #edf2f7;
+}
+
+.enhanced-form-control::placeholder {
+    color: #a0aec0;
+    font-style: italic;
+}
+
+.enhanced-form-control:disabled,
+.enhanced-form-select:disabled,
+.enhanced-form-textarea:disabled {
+    background-color: #edf2f7;
+    color: #a0aec0;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.enhanced-form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Input with Icon */
+.enhanced-input-icon-wrapper {
+    position: relative;
+}
+
+.enhanced-input-icon-wrapper .enhanced-form-control {
+    padding-left: 3rem;
+}
+
+.enhanced-input-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #718096;
+    pointer-events: none;
+}
+
+/* ========================================
+   FLOATING LABEL STYLE (Optional)
+   ======================================== */
+
+.enhanced-floating-label {
+    position: relative;
+}
+
+.enhanced-floating-label .enhanced-form-control {
+    padding-top: 1.25rem;
+    padding-bottom: 0.5rem;
+}
+
+.enhanced-floating-label .enhanced-form-label {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: all 0.3s ease;
+    pointer-events: none;
+    color: #a0aec0;
+    font-weight: 500;
+    margin: 0;
+}
+
+.enhanced-floating-label .enhanced-form-control:focus + .enhanced-form-label,
+.enhanced-floating-label .enhanced-form-control:not(:placeholder-shown) + .enhanced-form-label {
+    top: 0.5rem;
+    font-size: 0.75rem;
+    color: #667eea;
+    transform: translateY(0);
+}
+
+/* ========================================
+   FORM HELP TEXT
+   ======================================== */
+
+.enhanced-form-help {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #718096;
+    line-height: 1.4;
+}
+
+.enhanced-form-help-icon {
+    width: 14px;
+    height: 14px;
+    vertical-align: text-bottom;
+    margin-right: 0.25rem;
+}
+
+/* ========================================
+   VALIDATION STATES
+   ======================================== */
+
+.enhanced-form-control.is-valid,
+.enhanced-form-select.is-valid,
+.enhanced-form-textarea.is-valid {
+    border-color: #48bb78;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2348bb78' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px;
+    padding-right: 3rem;
+}
+
+.enhanced-form-control.is-invalid,
+.enhanced-form-select.is-invalid,
+.enhanced-form-textarea.is-invalid {
+    border-color: #f56565;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f56565' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='15' y1='9' x2='9' y2='15'%3E%3C/line%3E%3Cline x1='9' y1='9' x2='15' y2='15'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 16px;
+    padding-right: 3rem;
+}
+
+.invalid-feedback,
+.valid-feedback {
+    display: none;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.invalid-feedback {
+    color: #e53e3e;
+}
+
+.valid-feedback {
+    color: #38a169;
+}
+
+.was-validated .enhanced-form-control:invalid ~ .invalid-feedback,
+.was-validated .enhanced-form-select:invalid ~ .invalid-feedback,
+.was-validated .enhanced-form-textarea:invalid ~ .invalid-feedback,
+.enhanced-form-control.is-invalid ~ .invalid-feedback,
+.enhanced-form-select.is-invalid ~ .invalid-feedback,
+.enhanced-form-textarea.is-invalid ~ .invalid-feedback {
+    display: block;
+}
+
+.was-validated .enhanced-form-control:valid ~ .valid-feedback,
+.was-validated .enhanced-form-select:valid ~ .valid-feedback,
+.enhanced-form-control.is-valid ~ .valid-feedback,
+.enhanced-form-select.is-valid ~ .valid-feedback {
+    display: block;
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.enhanced-form-group.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* ========================================
+   RADIO & CHECKBOX
+   ======================================== */
+
+.enhanced-form-check {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.enhanced-form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.75rem;
+    cursor: pointer;
+    accent-color: #667eea;
+}
+
+.enhanced-form-check-label {
+    font-size: 0.95rem;
+    color: #4a5568;
+    cursor: pointer;
+    margin: 0;
+}
+
+/* ========================================
+   FORM ACTIONS / BUTTONS
+   ======================================== */
+
+.enhanced-form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem 2.5rem;
+    background: #f7fafc;
+    border-top: 2px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+
+.enhanced-form-actions-left {
+    display: flex;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.enhanced-form-actions-right {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.enhanced-btn {
+    padding: 0.75rem 1.75rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    line-height: 1.5;
+}
+
+.enhanced-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.enhanced-btn:active {
+    transform: translateY(0);
+}
+
+.enhanced-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.enhanced-btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.enhanced-btn-success {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+    color: white;
+}
+
+.enhanced-btn-success:hover {
+    box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+}
+
+.enhanced-btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.enhanced-btn-secondary:hover {
+    background: #cbd5e0;
+}
+
+.enhanced-btn-outline {
+    background: white;
+    border-color: #cbd5e0;
+    color: #4a5568;
+}
+
+.enhanced-btn-outline:hover {
+    background: #f7fafc;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.enhanced-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.enhanced-btn-icon {
+    width: 18px;
+    height: 18px;
+}
+
+/* ========================================
+   ALERT / INFO BOXES
+   ======================================== */
+
+.enhanced-form-alert {
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    border-left: 4px solid;
+}
+
+.enhanced-form-alert-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.enhanced-form-alert-info {
+    background: #ebf8ff;
+    border-left-color: #4299e1;
+    color: #2c5282;
+}
+
+.enhanced-form-alert-success {
+    background: #f0fff4;
+    border-left-color: #48bb78;
+    color: #22543d;
+}
+
+.enhanced-form-alert-warning {
+    background: #fffaf0;
+    border-left-color: #ed8936;
+    color: #7c2d12;
+}
+
+.enhanced-form-alert-danger {
+    background: #fff5f5;
+    border-left-color: #f56565;
+    color: #742a2a;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (max-width: 768px) {
+    .enhanced-form-header {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .enhanced-form-header-title {
+        font-size: 1.4rem;
+    }
+
+    .enhanced-form-body {
+        padding: 1.5rem 1.25rem;
+    }
+
+    .enhanced-form-actions {
+        padding: 1.5rem 1.25rem;
+        flex-direction: column;
+    }
+
+    .enhanced-form-actions-left,
+    .enhanced-form-actions-right {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .enhanced-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ========================================
+   UTILITIES
+   ======================================== */
+
+.enhanced-form-required-note {
+    font-size: 0.85rem;
+    color: #718096;
+    margin-top: 1rem;
+    font-style: italic;
+}
+
+.enhanced-form-required-note::before {
+    content: '* ';
+    color: #e53e3e;
+    font-weight: 700;
+}
+
+/* Input Group for addons */
+.enhanced-input-group {
+    display: flex;
+    gap: 0;
+}
+
+.enhanced-input-group .enhanced-form-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.enhanced-input-group-addon {
+    padding: 0.75rem 1rem;
+    background: #e2e8f0;
+    border: 2px solid #e2e8f0;
+    border-left: none;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    display: flex;
+    align-items: center;
+    color: #4a5568;
+    font-weight: 600;
+}
