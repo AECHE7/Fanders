@@ -55,20 +55,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$csrf->validateRequest(false)) {
         $error = 'Invalid security token. Please refresh and try again.';
     } else {
-        // Gather and sanitize input
+        // Gather raw input (keep raw values for better validation messaging)
+        $loanAmountRaw = $_POST['loan_amount'] ?? '';
+        $loanTermRaw = $_POST['loan_term'] ?? '';
+
+        // Sanitize into typed values where possible, but keep raw values for validation
         $loan = [
             'client_id' => isset($_POST['client_id']) ? (int)$_POST['client_id'] : '',
-            'loan_amount' => isset($_POST['loan_amount']) ? (float)$_POST['loan_amount'] : '',
-            'loan_term' => isset($_POST['loan_term']) ? (int)$_POST['loan_term'] : 17
+            'loan_amount' => is_numeric($loanAmountRaw) ? (float)$loanAmountRaw : $loanAmountRaw,
+            'loan_term' => is_numeric($loanTermRaw) ? (int)$loanTermRaw : $loanTermRaw
         ];
 
-        // --- Calculate Preview (Run regardless of submission type) ---
-        if ($loan['loan_amount'] > 0) {
-            $loanCalculation = $loanCalculationService->calculateLoan($loan['loan_amount'], $loan['loan_term']);
+        // --- Calculate Preview (Run only when inputs are valid) ---
+        // Prevent calling the heavy calculation process if principal amount or term inputs are invalid.
+        $canCalculate = true;
+
+        // Validate principal amount using the service helper (gives consistent error messages)
+        if (!$loanCalculationService->validateLoanAmount($loanAmountRaw)) {
+            $error = $loanCalculationService->getErrorMessage();
+            $canCalculate = false;
+        }
+
+        // Validate term (must be numeric and within business bounds)
+        if (!is_numeric($loanTermRaw) || (int)$loanTermRaw < 4 || (int)$loanTermRaw > 52) {
+            $termMsg = 'Loan term must be a number between 4 and 52 weeks.';
+            $error = !empty($error) ? trim($error . ' ' . $termMsg) : $termMsg;
+            $canCalculate = false;
+        }
+
+        if ($canCalculate) {
+            $loanCalculation = $loanCalculationService->calculateLoan((float)$loanAmountRaw, (int)$loanTermRaw);
             if (!$loanCalculation) {
                 $error = $loanCalculationService->getErrorMessage() ?: "Failed to calculate loan details.";
                 // Log calculation error for debugging
-                error_log("Loan calculation error on add.php: " . $error . " (amount: " . $loan['loan_amount'] . ", term: " . $loan['loan_term'] . ")");
+                error_log("Loan calculation error on add.php: " . $error . " (amount: " . $loanAmountRaw . ", term: " . $loanTermRaw . ")");
             } else {
                 // Do NOT regenerate CSRF token here on calculate - keep token consistent until final submission
                 // The submit action will rely on the same token generated for the initial form render
