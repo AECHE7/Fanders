@@ -58,7 +58,7 @@
         <?php include_once BASE_PATH . '/templates/layout/user_menu.php'; ?>
     </header>
         <!-- Layout wrapper holds sidebar and main content -->
-        <div class="layout">
+        <!-- <div class="layout"> -->
             <!-- Sidebar will be included here -->
             <?php include_once BASE_PATH . '/templates/layout/navbar.php'; ?>
 
