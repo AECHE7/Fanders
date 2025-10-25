@@ -105,15 +105,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php endif; ?>
     
     <!-- Client Edit Form -->
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <?php
-            // Pass the existing client data to the form template
-            $clientData['is_editing'] = true; // Flag for form template logic if needed
-            include_once BASE_PATH . '/templates/clients/form.php';
-            ?>
-        </div>
-    </div>
+    <?php
+    // The enhanced client form template handles its own styling and layout
+    $clientData['is_editing'] = true; // Flag for form template logic if needed
+    include_once BASE_PATH . '/templates/clients/form.php';
+    ?>
     </div>
 </main>
 

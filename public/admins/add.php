@@ -169,19 +169,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         </div>
     <?php endif; ?>
     
-    <!-- User Form -->
-    <div class="card">
-        <div class="card-body">
-            <?php
-            $formPath = BASE_PATH . '/templates/admins/form.php';
-            if (file_exists($formPath)) {
-                include_once $formPath;
-            } else {
-                echo '<div class="alert alert-danger">Staff user form template is missing: ' . htmlspecialchars($formPath) . '</div>';
-            }
-            ?>
-        </div>
-    </div>
+    <!-- Admin Form -->
+    <?php
+    // The enhanced admin form template handles its own styling and layout
+    $formPath = BASE_PATH . '/templates/admins/form.php';
+    if (file_exists($formPath)) {
+        include_once $formPath;
+    } else {
+        echo '<div class="alert alert-danger">Staff user form template is missing: ' . htmlspecialchars($formPath) . '</div>';
+    }
+    ?>
     </div>
 </main>
 
