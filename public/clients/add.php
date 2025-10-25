@@ -82,11 +82,23 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="main-content">
     <div class="content-wrapper">
-        <!-- Navigation (floating action) -->
-        <div class="position-fixed" style="top: 80px; right: 20px; z-index: 1000;">
-            <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-sm btn-outline-secondary">
-                <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Clients
-            </a>
+        <!-- Page Header with Icon -->
+        <div class="notion-page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #e3f2fd;">
+                            <i data-feather="user-plus" style="width: 24px; height: 24px; color: rgb(33, 150, 243);"></i>
+                        </div>
+                    </div>
+                    <h1 class="notion-page-title mb-0">Add New Client Account</h1>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Clients
+                    </a>
+                </div>
+            </div>
         </div>
     
     <?php if ($session->hasFlash('error')): ?>
@@ -96,11 +108,15 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php endif; ?>
     
     <!-- Client Form -->
-    <?php
-    // The enhanced client form template handles its own styling and layout
-    $clientData = $newClient;
-    include_once BASE_PATH . '/templates/clients/form.php';
-    ?>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <?php
+            // The form template expects $clientData, so we assign $newClient to $clientData
+            $clientData = $newClient;
+            include_once BASE_PATH . '/templates/clients/form.php';
+            ?>
+        </div>
+    </div>
     </div>
 </main>
 

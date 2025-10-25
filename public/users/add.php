@@ -170,15 +170,18 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php endif; ?>
     
     <!-- User Form -->
-    <?php
-    // The enhanced user form template handles its own styling and layout
-    $formPath = BASE_PATH . '/templates/users/form.php';
-    if (file_exists($formPath)) {
-        include_once $formPath;
-    } else {
-        echo '<div class="alert alert-danger">User form template is missing: ' . htmlspecialchars($formPath) . '</div>';
-    }
-    ?>
+    <div class="card">
+        <div class="card-body">
+            <?php
+            $formPath = BASE_PATH . '/templates/users/form.php';
+            if (file_exists($formPath)) {
+                include_once $formPath;
+            } else {
+                echo '<div class="alert alert-danger">User form template is missing: ' . htmlspecialchars($formPath) . '</div>';
+            }
+            ?>
+        </div>
+    </div>
     </div>
 </main>
 

@@ -4,304 +4,217 @@
  */
 ?>
 
-<div class="enhanced-form-wrapper">
-    <form action="" method="post" class="enhanced-form needs-validation" novalidate>
-        <?= $csrf->getTokenField() ?>
-        
-        <!-- Enhanced Form Header -->
-        <div class="enhanced-form-header">
-            <div class="enhanced-form-header-icon">
-                <i data-feather="user-plus"></i>
-            </div>
-            <h1 class="enhanced-form-header-title">
-                <?= isset($editUser['id']) ? 'Edit Staff Account' : 'Create Staff Account' ?>
-            </h1>
-            <p class="enhanced-form-header-subtitle">
-                <?= isset($editUser['id']) ? 'Update staff member information and access level' : 'Create a new staff account for the system' ?>
-            </p>
-        </div>
-
-        <!-- Enhanced Form Body -->
-        <div class="enhanced-form-body">
+<form action="" method="post" class="notion-form needs-validation" novalidate>
+    <?= $csrf->getTokenField() ?>
     
-            <!-- Account Information Section -->
-            <section class="enhanced-form-section">
-                <div class="enhanced-form-section-header">
-                    <div class="enhanced-form-section-icon">
-                        <i data-feather="user-check"></i>
-                    </div>
-                    <h2 class="enhanced-form-section-title">Account Information</h2>
-                    <div class="enhanced-form-section-divider"></div>
+    <!-- Form Title with Icon -->
+    <div class="notion-form-header mb-4">
+        <div class="d-flex align-items-center">
+            <div class="rounded d-flex align-items-center justify-content-center me-3" style="width: 38px; height: 38px; background-color: #eaf8f6;">
+                <i data-feather="user" style="width: 20px; height: 20px; color: #0ca789;"></i>
+            </div>
+            <h5 class="mb-0"><?= isset($editUser['id']) ? 'Edit Staff Account' : 'Create Staff Account' ?></h5>
+        </div>
+    </div>
+    
+    <!-- Basic Information Section -->
+    <div class="mb-4 animate-on-scroll">
+        <div class="d-flex align-items-center mb-3">
+            <h6 class="mb-0 me-2">Account Information</h6>
+            <div class="notion-divider flex-grow-1"></div>
+        </div>
+        
+        <div class="row g-3 stagger-fade-in">
+            <!-- Full Name Field -->
+            <div class="col-md-12">
+                <div class="notion-form-group interactive-form-field">
+                    <input type="text" class="notion-form-control" id="name" name="name"
+                        value="<?= htmlspecialchars($editUser['name'] ?? '') ?>" required placeholder=" ">
+                    <label for="name" class="notion-form-label">Full Name</label>
+                    <div class="invalid-feedback">Please enter your full name.</div>
                 </div>
+            </div>
 
-                <div class="enhanced-form-grid">
-                    <!-- Full Name Field -->
-                    <div class="enhanced-form-group">
-                        <label for="name" class="enhanced-form-label required">Full Name</label>
-                        <div class="enhanced-form-input-wrapper">
-                            <input type="text" 
-                                class="enhanced-form-control" 
-                                id="name" 
-                                name="name"
-                                value="<?= htmlspecialchars($editUser['name'] ?? '') ?>" 
-                                required 
-                                placeholder="Enter full name">
-                            <div class="enhanced-form-icon">
-                                <i data-feather="user"></i>
-                            </div>
-                        </div>
-                        <div class="enhanced-form-error">Please enter your full name.</div>
-                    </div>
-
-                    <!-- Email Field -->
-                    <div class="enhanced-form-group">
-                        <label for="email" class="enhanced-form-label required">Email Address</label>
-                        <div class="enhanced-form-input-wrapper">
-                            <input type="email" 
-                                class="enhanced-form-control" 
-                                id="email" 
-                                name="email"
-                                value="<?= htmlspecialchars($editUser['email'] ?? '') ?>" 
-                                required 
-                                placeholder="Enter email address">
-                            <div class="enhanced-form-icon">
-                                <i data-feather="mail"></i>
-                            </div>
-                        </div>
-                        <div class="enhanced-form-error">Please enter a valid and unique email address.</div>
-                    </div>
-
-                    <!-- Phone Field -->
-                    <div class="enhanced-form-group">
-                        <label for="phone_number" class="enhanced-form-label required">Phone Number</label>
-                        <div class="enhanced-form-input-wrapper">
-                            <input type="text" 
-                                class="enhanced-form-control" 
-                                id="phone_number" 
-                                name="phone_number"
-                                value="<?= htmlspecialchars($editUser['phone_number'] ?? '') ?>" 
-                                required 
-                                pattern="\d{8,15}" 
-                                placeholder="Enter phone number">
-                            <div class="enhanced-form-icon">
-                                <i data-feather="phone"></i>
-                            </div>
-                        </div>
-                        <div class="enhanced-form-error">Please enter a valid and unique phone number.</div>
-                    </div>
-
-                    <!-- Password Field -->
-                    <div class="enhanced-form-group">
-                        <label for="password" class="enhanced-form-label <?= isset($editUser['id']) ? '' : 'required' ?>">Password</label>
-                        <div class="enhanced-form-input-wrapper">
-                            <input type="password" 
-                                class="enhanced-form-control" 
-                                id="password" 
-                                name="password"
-                                <?= isset($editUser['id']) ? '' : 'required' ?> 
-                                placeholder="Enter password">
-                            <button class="enhanced-form-addon" type="button" id="toggle-password"
-                                onclick="togglePasswordVisibility('password')">
-                                <i data-feather="eye" id="password-toggle-icon"></i>
-                            </button>
-                        </div>
-                        <div class="enhanced-form-error">Please enter a password.</div>
-                        <div class="enhanced-form-help">
-                            <?= isset($editUser['id']) ? 'Leave empty to keep current password.' : 'Must enter password.' ?>
-                        </div>
-                    </div>
-
-                    <!-- Confirm Password Field -->
-                    <div class="enhanced-form-group">
-                        <label for="password_confirmation" class="enhanced-form-label <?= isset($editUser['id']) ? '' : 'required' ?>">Confirm Password</label>
-                        <div class="enhanced-form-input-wrapper">
-                            <input type="password" 
-                                class="enhanced-form-control" 
-                                id="password_confirmation" 
-                                name="password_confirmation"
-                                <?= isset($editUser['id']) ? '' : 'required' ?> 
-                                placeholder="Confirm password">
-                            <div class="enhanced-form-icon">
-                                <i data-feather="lock"></i>
-                            </div>
-                        </div>
-                        <div class="enhanced-form-error">Passwords do not match.</div>
-                    </div>
-
+            <!-- Email Field -->
+            <div class="col-md-6">
+                <div class="notion-form-group interactive-form-field">
+                    <input type="email" class="notion-form-control" id="email" name="email"
+                        value="<?= htmlspecialchars($editUser['email'] ?? '') ?>" required placeholder=" ">
+                    <label for="email" class="notion-form-label">Email Address</label>
+                    <div class="invalid-feedback">Please enter a valid and unique email address.</div>
                 </div>
-            </section>
+            </div>
 
-            <!-- Permissions & Access Section -->
-            <section class="enhanced-form-section">
-                <div class="enhanced-form-section-header">
-                    <div class="enhanced-form-section-icon">
-                        <i data-feather="shield"></i>
-                    </div>
-                    <h2 class="enhanced-form-section-title">Permissions & Access</h2>
-                    <div class="enhanced-form-section-divider"></div>
+            <!-- Phone Field -->
+            <div class="col-md-6">
+                <div class="notion-form-group interactive-form-field">
+                    <input type="text" class="notion-form-control" id="phone_number" name="phone_number"
+                        value="<?= htmlspecialchars($editUser['phone_number'] ?? '') ?>" required pattern="\d{8,15}" placeholder=" ">
+                    <label for="phone_number" class="notion-form-label">Phone Number</label>
+                    <div class="invalid-feedback">Please enter a valid and unique phone number.</div>
                 </div>
+            </div>
 
-                <div class="enhanced-form-grid">
-                    <?php if (in_array($userRole, ['super-admin', 'admin'])): ?>
-                        <!-- Role Field -->
-                        <div class="enhanced-form-group">
-                            <label for="role" class="enhanced-form-label required">Role</label>
-                            <div class="enhanced-form-input-wrapper">
-                                <select class="enhanced-form-control enhanced-form-select" id="role" name="role" required>
-                                    <option value="">Select role...</option>
-                                    <?php if ($userRole === 'super-admin'): ?>
-                                        <option value="super-admin" <?= ($editUser['role'] ?? '') === 'super-admin' ? 'selected' : '' ?>>Super Admin</option>
-                                        <option value="admin" <?= ($editUser['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
-                                        <option value="manager" <?= ($editUser['role'] ?? '') === 'manager' ? 'selected' : '' ?>>Manager</option>
-                                    <?php endif; ?>
-                                    <option value="account_officer" <?= ($editUser['role'] ?? '') === 'account_officer' ? 'selected' : '' ?>>Account Officer</option>
-                                    <option value="cashier" <?= ($editUser['role'] ?? '') === 'cashier' ? 'selected' : '' ?>>Cashier</option>
-                                </select>
-                                <div class="enhanced-form-icon">
-                                    <i data-feather="users"></i>
-                                </div>
-                            </div>
-                            <div class="enhanced-form-error">Please select a role.</div>
-                            <?php if ($userRole === 'admin'): ?>
-                                <div class="enhanced-form-help">Admins can only add limited staff accounts (Account Officers or Cashiers).</div>
-                            <?php endif; ?>
-                        </div>
+            <!-- Password Field -->
+            <div class="col-md-6">
+                <div class="notion-form-group interactive-form-field">
+                    <div class="input-group">
+                        <input type="password" class="notion-form-control" id="password" name="password"
+                            <?= isset($editUser['id']) ? '' : 'required' ?> placeholder=" ">
+                        <button class="btn btn-outline-secondary" type="button" id="toggle-password"
+                            onclick="togglePasswordVisibility('password')">
+                            <i data-feather="eye" id="password-toggle-icon"></i>
+                        </button>
+                    </div>
+                    <label for="password" class="notion-form-label">Password</label>
+                    <div class="invalid-feedback">Please enter a password.</div>
+                    <small class="form-text text-muted">
+                        <?= isset($editUser['id']) ? 'Leave empty to keep current password.' : 'Must enter password.' ?>
+                    </small>
+                </div>
+            </div>
 
-                        <!-- Account Status Field -->
-                        <div class="enhanced-form-group">
-                            <label for="status" class="enhanced-form-label required">Account Status</label>
-                            <div class="enhanced-form-input-wrapper">
-                                <select class="enhanced-form-control enhanced-form-select" id="status" name="status" required>
-                                    <option value="">Select status...</option>
-                                    <option value="active" <?= ($editUser['status'] ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
-                                    <option value="inactive" <?= ($editUser['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive</option>
-                                </select>
-                                <div class="enhanced-form-icon">
-                                    <i data-feather="activity"></i>
-                                </div>
-                            </div>
-                            <div class="enhanced-form-error">Please select account status.</div>
-                        </div>
+            <!-- Confirm Password Field -->
+            <div class="col-md-6">
+                <div class="notion-form-group interactive-form-field">
+                    <input type="password" class="notion-form-control" id="password_confirmation" name="password_confirmation"
+                        <?= isset($editUser['id']) ? '' : 'required' ?> placeholder=" ">
+                    <label for="password_confirmation" class="notion-form-label">Confirm Password</label>
+                    <div class="invalid-feedback">Passwords do not match.</div>
+                </div>
+            </div>
 
-                        <?php if (isset($editUser['created_at'])): ?>
-                            <!-- Account Created Info -->
-                            <div class="enhanced-form-group">
-                                <div class="enhanced-alert enhanced-alert-success">
-                                    <div class="enhanced-alert-icon">
-                                        <i data-feather="calendar"></i>
-                                    </div>
-                                    <div class="enhanced-alert-content">
-                                        <strong>Account Created:</strong> <?= date('F d, Y \a\t g:i A', strtotime($editUser['created_at'])) ?>
-                                    </div>
-                                </div>
-                            </div>
+            <!-- Role Dropdown -->
+            <?php if (in_array($userRole, ['super-admin', 'admin'])): ?>
+            <div class="col-md-6">
+                <div class="notion-form-group">
+                    <label for="role" class="notion-form-label">Role</label>
+                    <select class="notion-form-select form-select" id="role" name="role" required>
+                        <option value="">Select role...</option>
+                        <?php if ($userRole === 'super-admin'): ?>
+                            <option value="super-admin" <?= ($editUser['role'] ?? '') === 'super-admin' ? 'selected' : '' ?>>Super Admin</option>
+                            <option value="admin" <?= ($editUser['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
+                            <option value="manager" <?= ($editUser['role'] ?? '') === 'manager' ? 'selected' : '' ?>>Manager</option>
                         <?php endif; ?>
+                        <option value="account_officer" <?= ($editUser['role'] ?? '') === 'account_officer' ? 'selected' : '' ?>>Account Officer</option>
+                        <option value="cashier" <?= ($editUser['role'] ?? '') === 'cashier' ? 'selected' : '' ?>>Cashier</option>
+                    </select>
+                    <div class="invalid-feedback">Please select a role.</div>
+                    <?php if ($userRole === 'admin'): ?>
+                        <small class="form-text text-muted">Admins can only add limited staff accounts (Account Officers or Cashiers).</small>
                     <?php endif; ?>
                 </div>
-            </section>
+            </div>
 
-        </div> <!-- .enhanced-form-body -->
-        <!-- Form Actions -->
-        <div class="enhanced-form-actions">
-            <a href="<?= APP_URL ?>/public/admins/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
-            <button type="submit" class="btn btn-primary px-4 ripple-effect">
-                <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
-                <?= isset($editUser['id']) ? 'Update Account' : 'Create Account' ?>
-            </button>
+            <!-- Account Status Dropdown -->
+            <div class="col-md-6">
+                <div class="notion-form-group">
+                    <label for="status" class="notion-form-label">Account Status</label>
+                    <select class="notion-form-select form-select" id="status" name="status" required>
+                        <option value="">Select status...</option>
+                        <option value="active" <?= ($editUser['status'] ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
+                        <option value="inactive" <?= ($editUser['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                    </select>
+                    <div class="invalid-feedback">Please select account status.</div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
-
-    </form>
-</div>
+    </div>
+    
+    <!-- Form Actions -->
+    <div class="d-flex justify-content-end mt-4">
+        <a href="<?= APP_URL ?>/public/admins/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
+        <button type="submit" class="btn btn-primary px-4 ripple-effect">
+            <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
+            <?= isset($editUser['id']) ? 'Update Account' : 'Create Account' ?>
+        </button>
+    </div>
+</form>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('.enhanced-form');
-    const passwordInput = document.getElementById('password');
-    const confirmPasswordInput = document.getElementById('password_confirmation');
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('.notion-form');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('password_confirmation');
 
-    // Replace feather icons (if available)
-    if (typeof feather !== 'undefined') {
+        // Form validation
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                let valid = true;
+
+                if (passwordInput && confirmPasswordInput) {
+                    if(passwordInput.value !== confirmPasswordInput.value) {
+                        confirmPasswordInput.setCustomValidity("Passwords do not match.");
+                        valid = false;
+                    } else {
+                        confirmPasswordInput.setCustomValidity("");
+                    }
+                }
+
+                if (!form.checkValidity() || !valid) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const invalidField = form.querySelector(':invalid');
+                    if (invalidField) {
+                        invalidField.focus();
+                        const fieldGroup = invalidField.closest('.notion-form-group');
+                        if (fieldGroup) {
+                            fieldGroup.classList.add('shake-animation');
+                            setTimeout(() => {
+                                fieldGroup.classList.remove('shake-animation');
+                            }, 820);
+                        }
+                    }
+                }
+                form.classList.add('was-validated');
+            });
+
+            if(passwordInput && confirmPasswordInput) {
+                confirmPasswordInput.addEventListener('input', function() {
+                    if(passwordInput.value !== confirmPasswordInput.value) {
+                        confirmPasswordInput.setCustomValidity("Passwords do not match.");
+                    } else {
+                        confirmPasswordInput.setCustomValidity("");
+                    }
+                });
+            }
+        }
+    });
+
+    // Password visibility toggle
+    function togglePasswordVisibility(inputId) {
+        const passwordInput = document.getElementById(inputId);
+        const toggleIcon = document.getElementById(inputId + '-toggle-icon');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.setAttribute('data-feather', 'eye-off');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.setAttribute('data-feather', 'eye');
+        }
         feather.replace();
     }
 
-    // Form validation
-    if (form) {
-        form.addEventListener('submit', function(event) {
-            let valid = true;
-
-            if (passwordInput && confirmPasswordInput) {
-                if (passwordInput.value !== confirmPasswordInput.value) {
-                    confirmPasswordInput.setCustomValidity("Passwords do not match.");
-                    valid = false;
-                } else {
-                    confirmPasswordInput.setCustomValidity("");
-                }
-            }
-
-            if (!form.checkValidity() || !valid) {
-                event.preventDefault();
-                event.stopPropagation();
-                const invalidField = form.querySelector(':invalid');
-                if (invalidField) {
-                    invalidField.focus();
-                    const fieldGroup = invalidField.closest('.enhanced-form-group');
-                    if (fieldGroup) {
-                        fieldGroup.classList.add('shake-animation');
-                        setTimeout(() => {
-                            fieldGroup.classList.remove('shake-animation');
-                        }, 820);
-                    }
-                }
-            }
-            form.classList.add('was-validated');
-        });
-
-        if (passwordInput && confirmPasswordInput) {
-            confirmPasswordInput.addEventListener('input', function() {
-                if (passwordInput.value !== confirmPasswordInput.value) {
-                    confirmPasswordInput.setCustomValidity("Passwords do not match.");
-                } else {
-                    confirmPasswordInput.setCustomValidity("");
-                }
-            });
-        }
-    }
-
     // Add ripple effect to buttons
-    const buttons = document.querySelectorAll('.ripple-effect');
-    buttons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            const rect = this.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const ripple = document.createElement('span');
-            ripple.className = 'ripple-animation';
-            ripple.style.left = `${x}px`;
-            ripple.style.top = `${y}px`;
-            this.appendChild(ripple);
-            setTimeout(() => {
-                ripple.remove();
-            }, 600);
+    document.addEventListener('DOMContentLoaded', function() {
+        const buttons = document.querySelectorAll('.ripple-effect');
+        buttons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const x = e.clientX - e.target.getBoundingClientRect().left;
+                const y = e.clientY - e.target.getBoundingClientRect().top;
+                const ripple = document.createElement('span');
+                ripple.className = 'ripple-animation';
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                this.appendChild(ripple);
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
         });
     });
-});
-
-// Password visibility toggle
-function togglePasswordVisibility(inputId) {
-    const passwordInput = document.getElementById(inputId);
-    const toggleIcon = document.getElementById(inputId + '-toggle-icon');
-
-    if (!passwordInput) return;
-
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        if (toggleIcon) toggleIcon.setAttribute('data-feather', 'eye-off');
-    } else {
-        passwordInput.type = 'password';
-        if (toggleIcon) toggleIcon.setAttribute('data-feather', 'eye');
-    }
-    if (typeof feather !== 'undefined') feather.replace();
-}
 </script>
 
 <style>

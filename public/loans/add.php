@@ -156,11 +156,36 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="main-content">
     <div class="content-wrapper">
-    <!-- Navigation (floating action) -->
-    <div class="position-fixed" style="top: 80px; right: 20px; z-index: 1000;">
-        <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-secondary">
-            <i data-feather="arrow-left"></i> Back to Loans List
-        </a>
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <div>
+            <h1 class="h2">
+                <?php if ($preSelectedClientData): ?>
+                    New Loan for <?= htmlspecialchars($preSelectedClientData['name']) ?>
+                <?php else: ?>
+                    New Loan Application (4-52 Week Terms)
+                <?php endif; ?>
+            </h1>
+            <?php if ($preSelectedClientData): ?>
+                <p class="text-muted mb-0">
+                    <small>
+                        <i data-feather="phone" style="width: 14px; height: 14px;"></i> 
+                        <?= htmlspecialchars($preSelectedClientData['phone_number'] ?? 'N/A') ?>
+                        <span class="mx-2">•</span>
+                        <i data-feather="mail" style="width: 14px; height: 14px;"></i> 
+                        <?= htmlspecialchars($preSelectedClientData['email'] ?? 'N/A') ?>
+                        <span class="mx-2">•</span>
+                        <a href="<?= APP_URL ?>/public/clients/view.php?id=<?= $loan['client_id'] ?>" class="text-decoration-none">
+                            <i data-feather="arrow-left" style="width: 14px; height: 14px;"></i> Back to Client Profile
+                        </a>
+                    </small>
+                </p>
+            <?php endif; ?>
+        </div>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-secondary">
+                <i data-feather="arrow-left"></i> Back to Loans List
+            </a>
+        </div>
     </div>
     
     <!-- Flash Messages -->
@@ -206,10 +231,14 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     <?php endif; ?>
 
     <!-- Loan Application Form -->
-    <?php 
-    // The enhanced loan form template handles its own styling and layout
-    include_once BASE_PATH . '/templates/loans/form.php'; 
-    ?>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <?php 
+            // The loan form template handles the input and the final submission.
+            include_once BASE_PATH . '/templates/loans/form.php'; 
+            ?>
+        </div>
+    </div>
 
     <!-- Loan Calculation Preview (Displayed only if successful calculation exists) -->
     <?php 
