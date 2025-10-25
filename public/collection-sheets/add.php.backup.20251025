@@ -214,207 +214,129 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div>
     <?php endif; ?>
     
-    <!-- Enhanced Collection Item Form -->
-    <div class="enhanced-form-wrapper">
-        <form method="post" class="enhanced-form" id="addItemForm">
-            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-            <input type="hidden" name="action" value="add_item">
-            <input type="hidden" name="sheet_id" value="<?= (int)$sheet['id'] ?>">
-
-            <!-- Enhanced Form Header -->
-            <div class="enhanced-form-header">
-                <div class="enhanced-form-header-icon">
-                    <i data-feather="plus-circle"></i>
-                </div>
-                <h1 class="enhanced-form-header-title">Add Collection Item</h1>
-                <p class="enhanced-form-header-subtitle">
-                    Add a new payment entry to Collection Sheet #<?= $sheet['id'] ?>
-                </p>
+    <div class="card shadow-sm mb-4">
+      <div class="card-header bg-primary text-white">
+        <div class="d-flex align-items-center">
+          <i data-feather="plus-circle" style="width: 18px; height: 18px;" class="me-2"></i>
+          <strong>Add Collection Item</strong>
+        </div>
+      </div>
+      <div class="card-body">
+        <form method="post" class="row g-3" id="addItemForm">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+          <input type="hidden" name="action" value="add_item">
+          <input type="hidden" name="sheet_id" value="<?= (int)$sheet['id'] ?>">
+          
+          <div class="col-md-6">
+            <label class="form-label">
+              <i data-feather="user" style="width: 14px; height: 14px;"></i> Client *
+            </label>
+            <select class="form-select" name="client_id" id="clientSelect" required>
+              <option value="">-- Select Client --</option>
+              <?php foreach ($activeClients as $client): ?>
+                <option value="<?= $client['id'] ?>" 
+                        data-name="<?= htmlspecialchars($client['name']) ?>"
+                        <?= ($prePopulatedLoan && $prePopulatedLoan['client_id'] == $client['id']) ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($client['name']) ?> - <?= htmlspecialchars($client['phone_number'] ?? 'No phone') ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <!-- Locked client info display -->
+            <div id="lockedClientInfo" class="mt-2" style="display: none;">
+              <div class="alert alert-success py-2 px-3 mb-0">
+                <i data-feather="lock" style="width: 14px; height: 14px;" class="me-1"></i>
+                <strong>Selected Client:</strong> <span id="lockedClientName"></span>
+                <small class="text-muted d-block">Fields are locked for this collection entry</small>
+              </div>
             </div>
-
-            <!-- Enhanced Form Body -->
-            <div class="enhanced-form-body">
-                <!-- Client & Loan Selection Section -->
-                <section class="enhanced-form-section">
-                    <div class="enhanced-form-section-header">
-                        <div class="enhanced-form-section-icon">
-                            <i data-feather="users"></i>
-                        </div>
-                        <h2 class="enhanced-form-section-title">Client & Loan Selection</h2>
-                        <div class="enhanced-form-section-divider"></div>
-                    </div>
-
-                    <div class="enhanced-form-grid">
-                        <!-- Client Selection -->
-                        <div class="enhanced-form-group">
-                            <label class="enhanced-form-label required" for="clientSelect">Client</label>
-                            <div class="enhanced-form-input-wrapper">
-                                <select class="enhanced-form-control enhanced-form-select" name="client_id" id="clientSelect" required>
-                                    <option value="">-- Select Client --</option>
-                                    <?php foreach ($activeClients as $client): ?>
-                                        <option value="<?= $client['id'] ?>" 
-                                                data-name="<?= htmlspecialchars($client['name']) ?>"
-                                                <?= ($prePopulatedLoan && $prePopulatedLoan['client_id'] == $client['id']) ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($client['name']) ?> - <?= htmlspecialchars($client['phone_number'] ?? 'No phone') ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <div class="enhanced-form-icon">
-                                    <i data-feather="user"></i>
-                                </div>
-                            </div>
-                            <div class="enhanced-form-error">Please select a client.</div>
-                            <!-- Locked client info display -->
-                            <div id="lockedClientInfo" class="enhanced-alert enhanced-alert-success mt-2" style="display: none;">
-                                <div class="enhanced-alert-icon">
-                                    <i data-feather="lock"></i>
-                                </div>
-                                <div class="enhanced-alert-content">
-                                    <strong>Selected Client:</strong> <span id="lockedClientName"></span><br>
-                                    <small>Fields are locked for this collection entry</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Loan Selection -->
-                        <div class="enhanced-form-group">
-                            <label class="enhanced-form-label required" for="loanSelect">Loan</label>
-                            <div class="enhanced-form-input-wrapper">
-                                <select class="enhanced-form-control enhanced-form-select" name="loan_id" id="loanSelect" required <?= $prePopulatedLoan ? '' : 'disabled' ?>>
-                                    <?php if ($prePopulatedLoan): ?>
-                                        <option value="<?= $prePopulatedLoan['id'] ?>" selected>
-                                            Loan #<?= $prePopulatedLoan['id'] ?> - ₱<?= number_format($prePopulatedLoan['principal'], 2) ?>
-                                        </option>
-                                    <?php else: ?>
-                                        <option value="">-- Select client first --</option>
-                                    <?php endif; ?>
-                                </select>
-                                <div class="enhanced-form-icon">
-                                    <i data-feather="file-text"></i>
-                                </div>
-                            </div>
-                            <div class="enhanced-form-error">Please select a loan.</div>
-                            <div class="enhanced-form-help" id="loanSelectHelper">Active loans for selected client</div>
-                            <!-- Locked loan info display -->
-                            <div id="lockedLoanInfo" class="enhanced-alert enhanced-alert-info mt-2" style="display: none;">
-                                <div class="enhanced-alert-icon">
-                                    <i data-feather="lock"></i>
-                                </div>
-                                <div class="enhanced-alert-content">
-                                    <strong>Loan:</strong> <span id="lockedLoanDetails"></span><br>
-                                    <small>Weekly Payment: ₱<span id="lockedWeeklyAmount"></span></small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Payment Details Section -->
-                <section class="enhanced-form-section">
-                    <div class="enhanced-form-section-header">
-                        <div class="enhanced-form-section-icon">
-                            <i data-feather="dollar-sign"></i>
-                        </div>
-                        <h2 class="enhanced-form-section-title">Payment Details</h2>
-                        <div class="enhanced-form-section-divider"></div>
-                    </div>
-
-                    <div class="enhanced-form-grid">
-                        <!-- Payment Amount -->
-                        <div class="enhanced-form-group">
-                            <label class="enhanced-form-label required" for="amountInput">Payment Amount (₱)</label>
-                            <div class="enhanced-form-input-wrapper">
-                                <input type="number" 
-                                    step="0.01" 
-                                    min="0.01" 
-                                    class="enhanced-form-control" 
-                                    name="amount" 
-                                    id="amountInput"
-                                    placeholder="0.00" 
-                                    required
-                                    <?= $prePopulatedLoan ? 'value="' . number_format($prePopulatedLoan['total_loan_amount'] / ($prePopulatedLoan['term_weeks'] ?? 17), 2, '.', '') . '"' : '' ?>>
-                                <div class="enhanced-form-icon">
-                                    <i data-feather="dollar-sign"></i>
-                                </div>
-                            </div>
-                            <div class="enhanced-form-error">Please enter a valid payment amount.</div>
-                            <div class="enhanced-form-help" id="amountHelper">
-                                <?php if ($prePopulatedLoan): ?>
-                                    Weekly payment: ₱<?= number_format($prePopulatedLoan['total_loan_amount'] / ($prePopulatedLoan['term_weeks'] ?? 17), 2) ?>
-                                <?php else: ?>
-                                    Will be auto-filled when loan is selected
-                                <?php endif; ?>
-                            </div>
-                            <!-- Locked amount display -->
-                            <div id="lockedAmountInfo" class="enhanced-alert enhanced-alert-warning mt-2" style="display: none;">
-                                <div class="enhanced-alert-icon">
-                                    <i data-feather="lock"></i>
-                                </div>
-                                <div class="enhanced-alert-content">
-                                    <strong>Auto-calculated:</strong> ₱<span id="lockedAmountValue"></span><br>
-                                    <small>Based on weekly payment schedule</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Notes -->
-                        <div class="enhanced-form-group">
-                            <label class="enhanced-form-label" for="notesInput">Notes</label>
-                            <div class="enhanced-form-input-wrapper">
-                                <input type="text" 
-                                    class="enhanced-form-control" 
-                                    name="notes" 
-                                    id="notesInput" 
-                                    placeholder="Add any remarks or notes"
-                                    maxlength="255"
-                                    value="<?= $prePopulatedLoan ? 'Auto-populated from loan selection' : '' ?>">
-                                <div class="enhanced-form-icon">
-                                    <i data-feather="message-circle"></i>
-                                </div>
-                            </div>
-                            <div class="enhanced-form-help">Optional notes about this collection entry</div>
-                        </div>
-
-                        <!-- Auto-fill Options -->
-                        <div class="enhanced-form-group">
-                            <div class="enhanced-form-checkboxes">
-                                <div class="enhanced-form-checkbox">
-                                    <input class="enhanced-form-checkbox-input" type="checkbox" id="autoFillNotes" <?= $prePopulatedLoan ? 'checked' : '' ?>>
-                                    <label class="enhanced-form-checkbox-label" for="autoFillNotes">
-                                        Auto-fill collection notes
-                                    </label>
-                                </div>
-                                <div class="enhanced-form-checkbox">
-                                    <input class="enhanced-form-checkbox-input" type="checkbox" id="lockAfterAdd" checked>
-                                    <label class="enhanced-form-checkbox-label" for="lockAfterAdd">
-                                        Lock form after adding loan (prevents manual changes)
-                                    </label>
-                                </div>
-                                <div class="enhanced-form-checkbox">
-                                    <input class="enhanced-form-checkbox-input" type="checkbox" id="autoSubmitEnabled">
-                                    <label class="enhanced-form-checkbox-label" for="autoSubmitEnabled">
-                                        Auto-submit collection sheet when complete
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">
+              <i data-feather="file-text" style="width: 14px; height: 14px;"></i> Loan *
+            </label>
+            <select class="form-select" name="loan_id" id="loanSelect" required <?= $prePopulatedLoan ? '' : 'disabled' ?>>
+              <?php if ($prePopulatedLoan): ?>
+                <option value="<?= $prePopulatedLoan['id'] ?>" selected>
+                  Loan #<?= $prePopulatedLoan['id'] ?> - ₱<?= number_format($prePopulatedLoan['principal'], 2) ?>
+                </option>
+              <?php else: ?>
+                <option value="">-- Select client first --</option>
+              <?php endif; ?>
+            </select>
+            <!-- Locked loan info display -->
+            <div id="lockedLoanInfo" class="mt-2" style="display: none;">
+              <div class="alert alert-info py-2 px-3 mb-0">
+                <i data-feather="lock" style="width: 14px; height: 14px;" class="me-1"></i>
+                <strong>Loan:</strong> <span id="lockedLoanDetails"></span>
+                <small class="text-muted d-block">Weekly Payment: ₱<span id="lockedWeeklyAmount"></span></small>
+              </div>
             </div>
-
-            <!-- Form Actions -->
-            <div class="enhanced-form-actions">
-                <button type="reset" class="btn btn-outline-secondary" id="clearFormBtn">
-                    <i data-feather="x" class="me-1" style="width: 16px; height: 16px;"></i> Clear Form
-                </button>
-                <button type="button" class="btn btn-success me-2" id="autoCollectBtn" style="display: none;">
-                    <i data-feather="zap" class="me-1" style="width: 16px; height: 16px;"></i> Auto-Collect Payment
-                </button>
-                <button type="submit" class="btn btn-primary px-4" id="addItemBtn">
-                    <i data-feather="plus" class="me-1" style="width: 16px; height: 16px;"></i> Add to Collection Sheet
-                </button>
+            <small class="text-muted" id="loanSelectHelper">Active loans for selected client</small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">
+              <i data-feather="dollar-sign" style="width: 14px; height: 14px;"></i> Payment Amount (₱) *
+            </label>
+            <input type="number" step="0.01" min="0.01" class="form-control" name="amount" id="amountInput"
+                   placeholder="0.00" required
+                   <?= $prePopulatedLoan ? 'value="' . number_format($prePopulatedLoan['total_loan_amount'] / ($prePopulatedLoan['term_weeks'] ?? 17), 2, '.', '') . '"' : '' ?>>
+            <!-- Locked amount display -->
+            <div id="lockedAmountInfo" class="mt-2" style="display: none;">
+              <div class="alert alert-warning py-2 px-3 mb-0">
+                <i data-feather="lock" style="width: 14px; height: 14px;" class="me-1"></i>
+                <strong>Auto-calculated:</strong> ₱<span id="lockedAmountValue"></span>
+                <small class="text-muted d-block">Based on weekly payment schedule</small>
+              </div>
             </div>
+            <?php if ($prePopulatedLoan): ?>
+              <small class="text-muted" id="amountHelper">Weekly payment: ₱<?= number_format($prePopulatedLoan['total_loan_amount'] / ($prePopulatedLoan['term_weeks'] ?? 17), 2) ?></small>
+            <?php else: ?>
+              <small class="text-muted" id="amountHelper">Will be auto-filled when loan is selected</small>
+            <?php endif; ?>
+          </div>
 
+          <div class="col-md-8">
+            <label class="form-label">
+              <i data-feather="message-circle" style="width: 14px; height: 14px;"></i> Notes
+            </label>
+            <input type="text" class="form-control" name="notes" id="notesInput" placeholder="Add any remarks or notes"
+                   value="<?= $prePopulatedLoan ? 'Auto-populated from loan selection' : '' ?>">
+            <!-- Auto-fill notes toggle -->
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="autoFillNotes" <?= $prePopulatedLoan ? 'checked' : '' ?>>
+              <label class="form-check-label" for="autoFillNotes">
+                Auto-fill collection notes
+              </label>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary" id="addItemBtn">
+              <i data-feather="plus" style="width: 14px; height: 14px;" class="me-1"></i> Add to Collection Sheet
+            </button>
+            <button type="reset" class="btn btn-outline-secondary" id="clearFormBtn">
+              <i data-feather="x" style="width: 14px; height: 14px;" class="me-1"></i> Clear Form
+            </button>
+            <button type="button" class="btn btn-success" id="autoCollectBtn" style="display: none;">
+              <i data-feather="zap" style="width: 14px; height: 14px;" class="me-1"></i> Auto-Collect Payment
+            </button>
+            <!-- Automation Controls -->
+            <div class="mt-3">
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="lockAfterAdd" checked>
+                <label class="form-check-label" for="lockAfterAdd">
+                  Lock form after adding loan (prevents manual changes)
+                </label>
+              </div>
+              <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="autoSubmitEnabled">
+                <label class="form-check-label" for="autoSubmitEnabled">
+                  Auto-submit collection sheet when complete
+                </label>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
     </div>
