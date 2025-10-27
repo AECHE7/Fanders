@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Loan Form Validation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; background-color: #f8f9fa; }
+        .container { max-width: 600px; }
+        
+        /* Notion Form Control Styles */
+        .notion-form-group { position: relative; margin-bottom: 1.5rem; }
+        .notion-form-control, .notion-form-select {
+            padding: 0.75rem 1rem; border: 1px solid #e0e0e0; border-radius: 8px;
+            transition: all 0.3s ease; width: 100%; font-size: 1rem; line-height: 1.5;
+            background-color: #fff;
+        }
+        .notion-form-control:focus, .notion-form-select:focus {
+            border-color: #9d71ea; box-shadow: 0 0 0 0.2rem rgba(157, 113, 234, 0.25); outline: none;
+        }
+        .notion-form-label {
+            position: absolute; top: 0.75rem; left: 1rem; padding: 0 0.25rem;
+            pointer-events: none; transition: all 0.3s ease; background-color: white;
+            color: #6c757d; font-size: 1rem;
+        }
+        .notion-form-group input:focus ~ .notion-form-label,
+        .notion-form-group input:not(:placeholder-shown) ~ .notion-form-label,
+        .notion-form-group textarea:focus ~ .notion-form-label,
+        .notion-form-group textarea:not(:placeholder-shown) ~ .notion-form-label {
+            top: -0.65rem; font-size: 0.8rem; color: #9d71ea;
+        }
+        
+        /* Enhanced validation styles */
+        .notion-form-control.is-invalid, .notion-form-select.is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
+        .notion-form-control.is-valid, .notion-form-select.is-valid {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+        .invalid-feedback {
+            display: block;
+            width: 100%;
+            margin-top: 0.25rem;
+            font-size: 0.875em;
+            color: #dc3545;
+        }
+        .validation-error-alert {
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+            animation: fadeInDown 0.3s ease-out;
+        }
+        
+        @keyframes shake { 0%,100%{transform:translateX(0);}10%,30%,50%,70%,90%{transform:translateX(-5px);}20%,40%,60%,80%{transform:translateX(5px);} }
+        .shake-animation { animation: shake 0.8s ease; }
+        
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .text-primary { color: #9d71ea !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="text-primary mb-4">Test Loan Form Validation</h2>
+                
+                <form class="notion-form" novalidate>
+                    <!-- Principal Amount -->
+                    <div class="notion-form-group">
+                        <input type="number" 
+                               id="loan_amount" 
+                               name="loan_amount" 
+                               class="notion-form-control" 
+                               placeholder=" "
+                               min="1000" 
+                               max="50000" 
+                               step="100"
+                               required>
+                        <label for="loan_amount" class="notion-form-label">Principal Amount (₱)</label>
+                        <div class="form-text mt-1">
+                            <small class="text-muted">Minimum ₱1,000 - Maximum ₱50,000</small>
+                        </div>
+                    </div>
+
+                    <!-- Loan Term -->
+                    <div class="notion-form-group">
+                        <input type="number" 
+                               id="loan_term" 
+                               name="loan_term" 
+                               class="notion-form-control" 
+                               placeholder=" "
+                               min="4" 
+                               max="52" 
+                               step="1"
+                               required>
+                        <label for="loan_term" class="notion-form-label">Loan Term (Weeks)</label>
+                        <div class="form-text mt-1">
+                            <small class="text-muted">Minimum 4 weeks - Maximum 52 weeks</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button id="calculateBtn" type="submit" name="calculate" class="btn btn-outline-info me-2">
+                            Calculate
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="clearForm()">
+                            Clear
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="mt-4">
+                    <h5>Test Instructions:</h5>
+                    <ul>
+                        <li>Try entering amounts below ₱1,000 or above ₱50,000</li>
+                        <li>Try entering terms below 4 weeks or above 52 weeks</li>
+                        <li>Notice real-time validation as you type</li>
+                        <li>Try clicking Calculate with invalid values</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Enhanced validation setup with limit checking
+            const form = document.querySelector('.notion-form');
+            if(form) {
+                form.addEventListener('submit', function(event) {
+                    const isCalculateButton = event.submitter && event.submitter.name === 'calculate';
+                    
+                    // If it's the calculate button, perform custom validation
+                    if (isCalculateButton) {
+                        const loanAmount = parseFloat(document.getElementById('loan_amount').value);
+                        const loanTerm = parseInt(document.getElementById('loan_term').value);
+                        
+                        let hasErrors = false;
+                        let errorMessages = [];
+                        
+                        // Check Principal Amount limits (₱1,000 - ₱50,000)
+                        if (isNaN(loanAmount) || loanAmount < 1000 || loanAmount > 50000) {
+                            hasErrors = true;
+                            errorMessages.push('Principal Amount must be between ₱1,000 and ₱50,000');
+                            const amountGroup = document.getElementById('loan_amount').closest('.notion-form-group');
+                            if (amountGroup) {
+                                amountGroup.classList.add('shake-animation');
+                                setTimeout(() => amountGroup.classList.remove('shake-animation'), 820);
+                            }
+                        }
+                        
+                        // Check Term limits (4 - 52 weeks)
+                        if (isNaN(loanTerm) || loanTerm < 4 || loanTerm > 52) {
+                            hasErrors = true;
+                            errorMessages.push('Term must be between 4 and 52 weeks');
+                            const termGroup = document.getElementById('loan_term').closest('.notion-form-group');
+                            if (termGroup) {
+                                termGroup.classList.add('shake-animation');
+                                setTimeout(() => termGroup.classList.remove('shake-animation'), 820);
+                            }
+                        }
+                        
+                        // If there are validation errors, prevent submission
+                        if (hasErrors) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            
+                            // Show error messages
+                            showValidationErrors(errorMessages);
+                            return false;
+                        } else {
+                            // Successful validation
+                            event.preventDefault();
+                            showSuccessMessage();
+                        }
+                    }
+
+                    form.classList.add('was-validated');
+                });
+            }
+
+            // Function to show validation error messages
+            function showValidationErrors(messages) {
+                // Remove any existing error alerts
+                const existingAlerts = document.querySelectorAll('.validation-error-alert');
+                existingAlerts.forEach(alert => alert.remove());
+                
+                // Create and show error alert
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-danger validation-error-alert mt-3';
+                alertDiv.innerHTML = `
+                    <strong>Validation Error:</strong><br>
+                    ${messages.join('<br>')}
+                `;
+                
+                // Insert the alert before the form buttons
+                const formActions = document.querySelector('.d-flex.justify-content-end');
+                if (formActions) {
+                    formActions.parentNode.insertBefore(alertDiv, formActions);
+                }
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 5000);
+            }
+
+            // Function to show success message
+            function showSuccessMessage() {
+                const existingAlerts = document.querySelectorAll('.validation-error-alert, .validation-success-alert');
+                existingAlerts.forEach(alert => alert.remove());
+                
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success validation-success-alert mt-3';
+                alertDiv.innerHTML = `
+                    <strong>Validation Passed!</strong><br>
+                    The form would now proceed to calculation.
+                `;
+                
+                const formActions = document.querySelector('.d-flex.justify-content-end');
+                if (formActions) {
+                    formActions.parentNode.insertBefore(alertDiv, formActions);
+                }
+                
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, 3000);
+            }
+
+            // Real-time validation for loan amount and term
+            const loanAmountInput = document.getElementById('loan_amount');
+            const loanTermInput = document.getElementById('loan_term');
+            
+            if (loanAmountInput) {
+                loanAmountInput.addEventListener('input', function() {
+                    validateLoanAmount(this);
+                });
+            }
+            
+            if (loanTermInput) {
+                loanTermInput.addEventListener('input', function() {
+                    validateLoanTerm(this);
+                });
+            }
+
+            // Real-time validation functions
+            function validateLoanAmount(input) {
+                const value = parseFloat(input.value);
+                const group = input.closest('.notion-form-group');
+                const existingFeedback = group.querySelector('.invalid-feedback');
+                
+                // Remove existing feedback
+                if (existingFeedback) {
+                    existingFeedback.remove();
+                }
+                
+                // Remove previous validation classes
+                input.classList.remove('is-invalid', 'is-valid');
+                
+                if (input.value === '') {
+                    return; // Don't validate empty field
+                }
+                
+                if (isNaN(value) || value < 1000 || value > 50000) {
+                    input.classList.add('is-invalid');
+                    const feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    feedback.textContent = 'Amount must be between ₱1,000 and ₱50,000';
+                    group.appendChild(feedback);
+                } else {
+                    input.classList.add('is-valid');
+                }
+            }
+            
+            function validateLoanTerm(input) {
+                const value = parseInt(input.value);
+                const group = input.closest('.notion-form-group');
+                const existingFeedback = group.querySelector('.invalid-feedback');
+                
+                // Remove existing feedback
+                if (existingFeedback) {
+                    existingFeedback.remove();
+                }
+                
+                // Remove previous validation classes
+                input.classList.remove('is-invalid', 'is-valid');
+                
+                if (input.value === '') {
+                    return; // Don't validate empty field
+                }
+                
+                if (isNaN(value) || value < 4 || value > 52) {
+                    input.classList.add('is-invalid');
+                    const feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    feedback.textContent = 'Term must be between 4 and 52 weeks';
+                    group.appendChild(feedback);
+                } else {
+                    input.classList.add('is-valid');
+                }
+            }
+        });
+
+        // Helper function to clear the form
+        function clearForm() {
+            document.querySelector('.notion-form').reset();
+            document.querySelectorAll('.is-invalid, .is-valid').forEach(el => {
+                el.classList.remove('is-invalid', 'is-valid');
+            });
+            document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+            document.querySelectorAll('.validation-error-alert, .validation-success-alert').forEach(el => el.remove());
+        }
+    </script>
+</body>
+</html>
