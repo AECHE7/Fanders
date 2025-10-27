@@ -107,12 +107,6 @@ if (!function_exists('getClientStatusBadgeClass')) {
                                                 </button>
                                             <?php endif; ?>
 
-                                            <!-- Delete Button -->
-                                            <button type="button" class="btn btn-outline-danger btn-delete-action"
-                                                    data-id="<?= $client['id'] ?>" data-name="<?= htmlspecialchars($client['name'] ?? '') ?>" title="Delete Client">
-                                                <i data-feather="trash-2"></i>
-                                            </button>
-
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -137,7 +131,7 @@ if (!function_exists('getClientStatusBadgeClass')) {
     </div>
 <?php endif; ?>
 
-<!-- Hidden Form for POST Actions (Status Change, Delete) -->
+<!-- Hidden Form for POST Actions (Status Change) -->
 <form id="actionForm" method="POST" action="<?= APP_URL ?>/public/clients/index.php" style="display:none;">
     <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
     <input type="hidden" name="id" id="actionId">
@@ -171,22 +165,6 @@ if (!function_exists('getClientStatusBadgeClass')) {
                 if (confirm(message)) {
                     actionIdInput.value = clientId;
                     actionTypeInput.value = action;
-                    actionForm.submit();
-                }
-            });
-        });
-
-        // Delete Button Handler
-        document.querySelectorAll('.btn-delete-action').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const clientId = this.getAttribute('data-id');
-                const clientName = this.getAttribute('data-name');
-                const message = `Are you absolutely sure you want to permanently delete the record for Client: ${clientName} (ID: ${clientId})?\n\nWARNING: This action is irreversible and requires the client to have NO active or pending loans.`;
-
-                if (confirm(message)) {
-                    actionIdInput.value = clientId;
-                    actionTypeInput.value = 'delete';
                     actionForm.submit();
                 }
             });

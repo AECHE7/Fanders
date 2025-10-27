@@ -1,7 +1,7 @@
 <?php
 /**
  * Client List Controller (index.php)
- * Role: Loads and filters all client data and handles client status/delete POST actions.
+ * Role: Loads and filters all client data and handles client status change POST actions.
  */
 
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
@@ -72,7 +72,7 @@ if (isset($_GET['export']) && $_GET['export'] === 'excel') {
     exit;
 }
 
-// --- 3. Handle POST Actions (Status Change, Delete) ---
+// --- 3. Handle POST Actions (Status Change) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if (!$csrf->validateRequest(false)) {
         $session->setFlash('error', 'Invalid security token. Please try again.');
@@ -87,10 +87,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($clientId > 0) {
         try {
             switch ($_POST['action']) {
-                case 'delete':
-                    $success = $clientService->deleteClient($clientId);
-                    $message = $success ? 'Client record permanently deleted.' : $clientService->getErrorMessage();
-                    break;
                 case 'activate':
                     $success = $clientService->activateClient($clientId);
                     $message = $success ? 'Client status updated to Active.' : $clientService->getErrorMessage();

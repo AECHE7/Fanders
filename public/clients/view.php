@@ -76,14 +76,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         case 'blacklist':
             $success = $clientService->blacklistClient($clientId);
             break;
-        case 'delete':
-            $success = $clientService->deleteClient($clientId);
-            if ($success) {
-                $session->setFlash('success', 'Client record deleted and associated data archived.');
-                header('Location: ' . APP_URL . '/public/clients/index.php');
-                exit;
-            }
-            break;
     }
 
     if ($success) {
@@ -224,17 +216,11 @@ function getClientStatusBadgeClass($status) {
                                 <i data-feather="slash"></i> Blacklist
                             </button>
                         <?php endif; ?>
-
-                        <?php if (!$hasActiveLoan && Permissions::isAllowed($currentRole, ['super-admin', 'admin'])): ?>
-                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteClientModal">
-                                <i data-feather="trash-2"></i> Delete Record
-                            </button>
-                        <?php endif; ?>
                     </div>
 
                     <?php if ($hasActiveLoan): ?>
                         <div class="alert alert-info mt-3 mb-0">
-                            Client has an **Active Loan**. Status changes may be limited, and the record **cannot be deleted**.
+                            Client has an **Active Loan**. Status changes may be limited.
                         </div>
                     <?php endif; ?>
 
@@ -406,42 +392,7 @@ function getClientStatusBadgeClass($status) {
     </div>
 </div>
 
-<!-- Delete Client Modal -->
-<div class="modal fade" id="deleteClientModal" tabindex="-1" aria-labelledby="deleteClientModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteClientModalLabel">
-                    <i data-feather="trash-2"></i> Confirm Client Deletion
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
-                    <i data-feather="alert-triangle"></i> <strong>PERMANENT DELETION:</strong> This will permanently delete the client record and all loan history.
-                </div>
-                <p>Client to delete:</p>
-                <ul class="list-unstyled ms-3">
-                    <li><strong>ID:</strong> <?= htmlspecialchars($clientData['id']) ?></li>
-                    <li><strong>Name:</strong> <?= htmlspecialchars($clientData['name']) ?></li>
-                    <li><strong>Phone:</strong> <?= htmlspecialchars($clientData['phone_number']) ?></li>
-                </ul>
-                <p class="text-danger fw-bold">THIS ACTION CANNOT BE UNDONE!</p>
-                <p class="text-muted small">Note: Only available when client has no active loans.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $clientId ?>" style="display:inline;">
-                    <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
-                    <input type="hidden" name="action" value="delete">
-                    <button type="submit" class="btn btn-danger">
-                        <i data-feather="trash-2"></i> Confirm Deletion
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+
     </div>
 </main>
 
