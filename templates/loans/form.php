@@ -122,50 +122,19 @@ $loanLimits = $loanCalcService->getLoanAmountLimits();
             </div>
         </div>
         <div class="row g-3 stagger-fade-in">
-            <!-- Loan Term -->
+            <!-- Loan Term - Fixed at 17 weeks -->
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
-                    <?php
-                    // Include LoanTermHelper for conversational terms
-                    require_once BASE_PATH . '/app/utilities/LoanTermHelper.php';
-                    $termOptions = LoanTermHelper::getCommonTermOptions();
-                    ?>
-                    <select
-                        class="notion-form-select form-select custom-select-animated"
-                        id="loan_term"
-                        name="loan_term"
-                        <?= $isLocked ? 'disabled' : '' ?>
-                        required
-                        aria-required="true">
-                        <option value="">Select loan term...</option>
-                        <?php foreach ($termOptions as $weeks => $label): ?>
-                            <option value="<?= $weeks ?>" <?= (isset($loan['loan_term']) && $loan['loan_term'] == $weeks) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($label) ?>
-                            </option>
-                        <?php endforeach; ?>
-                        <!-- Custom option -->
-                        <option value="custom" <?= (isset($loan['loan_term']) && !array_key_exists($loan['loan_term'], $termOptions)) ? 'selected' : '' ?>>
-                            Custom Term...
-                        </option>
-                    </select>
-                    <?php if ($isLocked): ?>
-                        <input type="hidden" name="loan_term" value="<?= htmlspecialchars($loan['loan_term']) ?>">
-                    <?php endif; ?>
+                    <div class="form-control notion-form-control" style="background-color: #f8f9fa; border: 2px solid #dee2e6;">
+                        <strong>17 weeks (4+ months)</strong> - Fixed Term
+                    </div>
+                    <!-- Hidden input to submit the fixed value -->
+                    <input type="hidden" name="loan_term" value="17">
                     
-                    <!-- Custom input field (hidden by default) -->
-                    <input
-                        type="number"
-                        class="notion-form-control mt-2"
-                        id="custom_loan_term"
-                        name="custom_loan_term"
-                        style="display: none;"
-                        min="4"
-                        max="52"
-                        step="1"
-                        placeholder="Enter custom weeks (4-52)">
-                    
-                    <small class="form-text text-muted">Choose from common terms or select custom for 4-52 weeks</small>
-                    <div class="invalid-feedback">Please select a valid loan term.</div>
+                    <small class="form-text text-muted">
+                        <i data-feather="lock" style="width: 14px; height: 14px;"></i>
+                        Loan term is fixed at 17 weeks for all loans
+                    </small>
                 </div>
             </div>
         </div>

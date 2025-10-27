@@ -23,7 +23,7 @@ $debugFile = BASE_PATH . '/LOAN_DEBUG_LOG.txt';
 $loan = [
     'client_id' => isset($_GET['client_id']) ? (int)$_GET['client_id'] : '', // Pre-select if linked from client page
     'loan_amount' => '',
-    'loan_term' => 17 // Default to 17 weeks
+    'loan_term' => 17 // Fixed to 17 weeks (4+ months)
 ];
 $loanCalculation = null;
 $error = $session->getFlash('error'); // Retrieve any previous error
