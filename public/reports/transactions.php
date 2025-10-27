@@ -49,36 +49,94 @@ if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
 // --- 4. Display View ---
 $pageTitle = "Transaction Reports";
 
+// Prepare data for template
+$reportMetrics = [
+    'report_date' => date('F j, Y'),
+    'report_period' => date('M j', strtotime($filters['date_from'])) . ' - ' . date('M j, Y', strtotime($filters['date_to'])),
+    'total_actions' => count($reportData)
+];
+
 include_once BASE_PATH . '/templates/layout/header.php';
 include_once BASE_PATH . '/templates/layout/navbar.php';
 ?>
 
 <main class="main-content">
     <div class="content-wrapper">
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Transaction Reports</h1>
-        <div class="btn-toolbar mb-2 mb-md-0">
-            <a href="<?= APP_URL ?>/public/reports/index.php" class="btn btn-sm btn-outline-secondary me-2">
-                <i data-feather="arrow-left"></i> Back to Reports
-            </a>
-            <a href="?<?= http_build_query(array_merge($filters, ['export' => 'pdf'])) ?>"
-               class="btn btn-sm btn-success">
-                <i data-feather="download"></i> Export PDF
-            </a>
+        <!-- Dashboard Header -->
+        <div class="notion-page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #fff8e1;">
+                            <i data-feather="activity" style="width: 24px; height: 24px; color: #ff9800;"></i>
+                        </div>
+                    </div>
+                    <h1 class="notion-page-title mb-0">Transaction Reports</h1>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <div class="text-muted d-none d-md-block me-3">
+                        <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
+                        <?= date('l, F j, Y') ?>
+                    </div>
+                    <div class="btn-group">
+                        <a href="<?= APP_URL ?>/public/reports/transactions.php?export=pdf&<?= http_build_query($filters) ?>" class="btn btn-sm btn-outline-danger">
+                            <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> PDF
+                        </a>
+                    </div>
+                    <a href="<?= APP_URL ?>/public/reports/index.php" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Reports
+                    </a>
+                </div>
+            </div>
+            <div class="notion-divider my-3"></div>
         </div>
-    </div>
 
-    <!-- Flash Messages -->
-    <?php if ($session->hasFlash('success')): ?>
-        <div class="alert alert-success">
-            <?= $session->getFlash('success') ?>
+        <!-- Flash Messages -->
+        <?php if ($session->hasFlash('success')): ?>
+            <div class="alert alert-success alert-dismissible fade show">
+                <i data-feather="check-circle" class="me-2" style="width: 16px; height: 16px;"></i>
+                <?= $session->getFlash('success') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($session->hasFlash('error')): ?>
+            <div class="alert alert-danger alert-dismissible fade show">
+                <i data-feather="alert-circle" class="me-2" style="width: 16px; height: 16px;"></i>
+                <?= $session->getFlash('error') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        <?php endif; ?>
+
+        <!-- Report Filters -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <i data-feather="filter" class="me-2" style="width:18px;height:18px;"></i>
+                    <strong>Report Filters</strong>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">From Date</label>
+                        <input type="date" class="form-control" name="date_from" value="<?= $filters['date_from'] ?>">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">To Date</label>
+                        <input type="date" class="form-control" name="date_to" value="<?= $filters['date_to'] ?>">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="search" style="width: 16px; height: 16px;"></i> Generate Report
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
-    <?php endif; ?>
-    <?php if ($session->hasFlash('error')): ?>
-        <div class="alert alert-danger">
-            <?= $session->getFlash('error') ?>
-        </div>
-    <?php endif; ?>
 
     <!-- Statistics Cards -->
     <div class="row mb-4">

@@ -1,7 +1,7 @@
 <?php
 /**
- * Loan Reports Controller
- * Generates comprehensive reports for loan management with professional design
+ * Client Reports Controller
+ * Generates comprehensive reports for client management with professional design
  */
 
 // Centralized initialization (handles sessions, auth, CSRF, and autoloader)
@@ -18,19 +18,20 @@ require_once BASE_PATH . '/app/utilities/FilterUtility.php';
 $filters = FilterUtility::sanitizeFilters($_GET);
 $filters = FilterUtility::validateDateRange($filters);
 
-// Additional loan-specific filters
-$loanFilters = [
+// Additional client-specific filters
+$clientFilters = [
     'status' => $filters['status'] ?? '',
-    'client_id' => $filters['client_id'] ?? '',
+    'location' => $filters['location'] ?? '',
     'loan_officer' => $filters['loan_officer'] ?? '',
-    'min_amount' => $filters['min_amount'] ?? '',
-    'max_amount' => $filters['max_amount'] ?? ''
+    'min_age' => $filters['min_age'] ?? '',
+    'max_age' => $filters['max_age'] ?? '',
+    'gender' => $filters['gender'] ?? ''
 ];
 
-$filters = array_merge($filters, $loanFilters);
+$filters = array_merge($filters, $clientFilters);
 
 // --- 2. Generate Report Data ---
-$reportData = $reportService->generateLoanReport($filters);
+$reportData = $reportService->generateClientReport($filters);
 
 // Add array check to prevent fatal error
 if (!is_array($reportData)) {
@@ -38,20 +39,24 @@ if (!is_array($reportData)) {
 }
 
 // --- 3. Calculate Statistics ---
-$loanStats = [
-    'total_loans' => count($reportData),
-    'total_principal' => array_sum(array_column($reportData, 'principal_amount')),
-    'total_disbursed' => array_sum(array_column($reportData, 'total_amount')),
-    'total_paid' => array_sum(array_column($reportData, 'total_paid')),
-    'total_balance' => array_sum(array_column($reportData, 'remaining_balance')),
-    'active_loans' => count(array_filter($reportData, fn($loan) => $loan['status'] === 'active')),
-    'completed_loans' => count(array_filter($reportData, fn($loan) => $loan['status'] === 'completed')),
-    'pending_loans' => count(array_filter($reportData, fn($loan) => $loan['status'] === 'pending'))
+$clientStats = [
+    'total_clients' => count($reportData),
+    'active_clients' => count(array_filter($reportData, fn($client) => ($client['status'] ?? '') === 'active')),
+    'inactive_clients' => count(array_filter($reportData, fn($client) => ($client['status'] ?? '') === 'inactive')),
+    'male_clients' => count(array_filter($reportData, fn($client) => strtolower($client['gender'] ?? '') === 'male')),
+    'female_clients' => count(array_filter($reportData, fn($client) => strtolower($client['gender'] ?? '') === 'female')),
+    'clients_with_loans' => count(array_filter($reportData, fn($client) => ($client['total_loans'] ?? 0) > 0)),
+    'total_loans' => array_sum(array_column($reportData, 'total_loans')),
+    'total_loan_amount' => array_sum(array_column($reportData, 'total_loan_amount'))
 ];
 
-// Calculate collection rate
-$loanStats['collection_rate'] = $loanStats['total_disbursed'] > 0 
-    ? round(($loanStats['total_paid'] / $loanStats['total_disbursed']) * 100, 1) 
+// Calculate averages
+$clientStats['average_loans_per_client'] = $clientStats['total_clients'] > 0 
+    ? round($clientStats['total_loans'] / $clientStats['total_clients'], 1) 
+    : 0;
+
+$clientStats['average_loan_amount'] = $clientStats['clients_with_loans'] > 0 
+    ? $clientStats['total_loan_amount'] / $clientStats['clients_with_loans'] 
     : 0;
 
 // --- 4. Handle CSV Export ---
@@ -64,31 +69,32 @@ if ($exportFormat === 'csv') {
         }
         
         header('Content-Type: text/csv');
-        header('Content-Disposition: attachment; filename="loan_report_' . date('Y-m-d') . '.csv"');
+        header('Content-Disposition: attachment; filename="client_report_' . date('Y-m-d') . '.csv"');
         
         $output = fopen('php://output', 'w');
         
         // Headers
-        fputcsv($output, ['Loan Number', 'Client Name', 'Principal Amount', 'Total Amount', 'Amount Paid', 'Balance', 'Status', 'Created Date']);
+        fputcsv($output, ['Client Name', 'Phone', 'Email', 'Address', 'Gender', 'Status', 'Total Loans', 'Total Amount', 'Date Registered']);
         
         // Data
-        foreach ($reportData as $loan) {
+        foreach ($reportData as $client) {
             fputcsv($output, [
-                $loan['loan_number'],
-                $loan['client_name'],
-                $loan['principal_amount'],
-                $loan['total_amount'],
-                $loan['total_paid'],
-                $loan['remaining_balance'],
-                ucfirst($loan['status']),
-                $loan['created_at']
+                $client['full_name'] ?? $client['name'],
+                $client['phone'],
+                $client['email'] ?? '',
+                $client['address'] ?? '',
+                $client['gender'] ?? '',
+                ucfirst($client['status'] ?? 'active'),
+                $client['total_loans'] ?? 0,
+                $client['total_loan_amount'] ?? 0,
+                $client['created_at'] ?? ''
             ]);
         }
         
         fclose($output);
     } catch (Exception $e) {
         $session->setFlash('error', 'Error exporting CSV: ' . $e->getMessage());
-        header('Location: ' . APP_URL . '/public/reports/loans.php');
+        header('Location: ' . APP_URL . '/public/reports/clients.php');
     }
     exit;
 }
@@ -97,23 +103,25 @@ if ($exportFormat === 'csv') {
 if ($exportFormat === 'pdf') {
     try {
         $reportService = new ReportService();
-        $reportService->exportLoanReportPDF($reportData, $filters);
+        $reportService->exportClientReportPDF($reportData, $filters);
         exit;
     } catch (Exception $e) {
         $session->setFlash('error', 'Error generating PDF: ' . $e->getMessage());
-        header('Location: ' . APP_URL . '/public/reports/loans.php');
+        header('Location: ' . APP_URL . '/public/reports/clients.php');
         exit;
     }
 }
 
 // Prepare data for template
-$pageTitle = "Loan Reports";
+$pageTitle = "Client Reports";
 $reportMetrics = [
     'report_date' => date('F j, Y'),
     'report_period' => !empty($filters['date_from']) && !empty($filters['date_to']) 
         ? date('M j', strtotime($filters['date_from'])) . ' - ' . date('M j, Y', strtotime($filters['date_to']))
         : 'All Time',
-    'total_clients' => count(array_unique(array_column($reportData, 'client_id')))
+    'active_percentage' => $clientStats['total_clients'] > 0 
+        ? round(($clientStats['active_clients'] / $clientStats['total_clients']) * 100, 1) 
+        : 0
 ];
 
 include_once BASE_PATH . '/templates/layout/header.php';
@@ -127,11 +135,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
                     <div class="me-3">
-                        <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #e8f4fd;">
-                            <i data-feather="credit-card" style="width: 24px; height: 24px; color: #0d6efd;"></i>
+                        <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #fff0e6;">
+                            <i data-feather="users" style="width: 24px; height: 24px; color: #fd7e14;"></i>
                         </div>
                     </div>
-                    <h1 class="notion-page-title mb-0">Loan Reports</h1>
+                    <h1 class="notion-page-title mb-0">Client Reports</h1>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
                     <div class="text-muted d-none d-md-block me-3">
@@ -139,15 +147,15 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         <?= date('l, F j, Y') ?>
                     </div>
                     <div class="btn-group">
-                        <a href="<?= APP_URL ?>/public/reports/loans.php?format=csv&<?= http_build_query($filters) ?>" class="btn btn-sm btn-outline-success">
+                        <a href="<?= APP_URL ?>/public/reports/clients.php?format=csv&<?= http_build_query($filters) ?>" class="btn btn-sm btn-outline-success">
                             <i data-feather="download" class="me-1" style="width: 14px; height: 14px;"></i> CSV
                         </a>
-                        <a href="<?= APP_URL ?>/public/reports/loans.php?format=pdf&<?= http_build_query($filters) ?>" class="btn btn-sm btn-outline-danger">
+                        <a href="<?= APP_URL ?>/public/reports/clients.php?format=pdf&<?= http_build_query($filters) ?>" class="btn btn-sm btn-outline-danger">
                             <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> PDF
                         </a>
                     </div>
-                    <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-secondary">
-                        <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Loans
+                    <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-sm btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-1" style="width: 14px; height: 14px;"></i> Back to Clients
                     </a>
                 </div>
             </div>
@@ -194,14 +202,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         <select class="form-select" name="status">
                             <option value="">All Status</option>
                             <option value="active" <?= ($filters['status'] ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
-                            <option value="completed" <?= ($filters['status'] ?? '') === 'completed' ? 'selected' : '' ?>>Completed</option>
-                            <option value="pending" <?= ($filters['status'] ?? '') === 'pending' ? 'selected' : '' ?>>Pending</option>
-                            <option value="cancelled" <?= ($filters['status'] ?? '') === 'cancelled' ? 'selected' : '' ?>>Cancelled</option>
+                            <option value="inactive" <?= ($filters['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive</option>
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="form-label">Min Amount</label>
-                        <input type="number" class="form-control" name="min_amount" placeholder="0" value="<?= $filters['min_amount'] ?? '' ?>">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" name="gender">
+                            <option value="">All Genders</option>
+                            <option value="male" <?= ($filters['gender'] ?? '') === 'male' ? 'selected' : '' ?>>Male</option>
+                            <option value="female" <?= ($filters['gender'] ?? '') === 'female' ? 'selected' : '' ?>>Female</option>
+                        </select>
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">&nbsp;</label>
@@ -218,14 +228,14 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <!-- Report Summary -->
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card text-white bg-primary shadow-sm">
+                <div class="card text-white bg-warning shadow-sm">
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h6 class="card-title text-uppercase small">Total Loans</h6>
-                                <h3 class="mb-0"><?= number_format($loanStats['total_loans']) ?></h3>
+                                <h6 class="card-title text-uppercase small">Total Clients</h6>
+                                <h3 class="mb-0"><?= number_format($clientStats['total_clients']) ?></h3>
                             </div>
-                            <i data-feather="credit-card" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                            <i data-feather="users" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                         </div>
                     </div>
                 </div>
@@ -235,10 +245,23 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h6 class="card-title text-uppercase small">Total Disbursed</h6>
-                                <h3 class="mb-0">₱<?= number_format($loanStats['total_disbursed'], 2) ?></h3>
+                                <h6 class="card-title text-uppercase small">Active Clients</h6>
+                                <h3 class="mb-0"><?= number_format($clientStats['active_clients']) ?></h3>
                             </div>
-                            <i data-feather="dollar-sign" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                            <i data-feather="user-check" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-primary shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title text-uppercase small">With Loans</h6>
+                                <h3 class="mb-0"><?= number_format($clientStats['clients_with_loans']) ?></h3>
+                            </div>
+                            <i data-feather="credit-card" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                         </div>
                     </div>
                 </div>
@@ -248,55 +271,42 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <div class="card-body">
                         <div class="d-flex justify-content-between">
                             <div>
-                                <h6 class="card-title text-uppercase small">Collection Rate</h6>
-                                <h3 class="mb-0"><?= $loanStats['collection_rate'] ?>%</h3>
+                                <h6 class="card-title text-uppercase small">Avg Loans</h6>
+                                <h3 class="mb-0"><?= $clientStats['average_loans_per_client'] ?></h3>
                             </div>
                             <i data-feather="trending-up" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card text-white bg-secondary shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h6 class="card-title text-uppercase small">Outstanding</h6>
-                                <h3 class="mb-0">₱<?= number_format($loanStats['total_balance'], 2) ?></h3>
-                            </div>
-                            <i data-feather="clock" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
-                        </div>
+        </div>
+
+        <!-- Demographics Breakdown -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-body text-center">
+                        <i data-feather="user" class="text-primary mb-2" style="width: 2rem; height: 2rem;"></i>
+                        <h4 class="text-primary"><?= number_format($clientStats['male_clients']) ?></h4>
+                        <small class="text-muted">Male Clients</small>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Status Breakdown -->
-        <div class="row mb-4">
             <div class="col-md-4">
                 <div class="card border-success shadow-sm">
                     <div class="card-body text-center">
-                        <i data-feather="check-circle" class="text-success mb-2" style="width: 2rem; height: 2rem;"></i>
-                        <h4 class="text-success"><?= number_format($loanStats['active_loans']) ?></h4>
-                        <small class="text-muted">Active Loans</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card border-info shadow-sm">
-                    <div class="card-body text-center">
-                        <i data-feather="clock" class="text-info mb-2" style="width: 2rem; height: 2rem;"></i>
-                        <h4 class="text-info"><?= number_format($loanStats['pending_loans']) ?></h4>
-                        <small class="text-muted">Pending Loans</small>
+                        <i data-feather="user" class="text-success mb-2" style="width: 2rem; height: 2rem;"></i>
+                        <h4 class="text-success"><?= number_format($clientStats['female_clients']) ?></h4>
+                        <small class="text-muted">Female Clients</small>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card border-warning shadow-sm">
                     <div class="card-body text-center">
-                        <i data-feather="check" class="text-warning mb-2" style="width: 2rem; height: 2rem;"></i>
-                        <h4 class="text-warning"><?= number_format($loanStats['completed_loans']) ?></h4>
-                        <small class="text-muted">Completed Loans</small>
+                        <i data-feather="percent" class="text-warning mb-2" style="width: 2rem; height: 2rem;"></i>
+                        <h4 class="text-warning"><?= $reportMetrics['active_percentage'] ?>%</h4>
+                        <small class="text-muted">Active Rate</small>
                     </div>
                 </div>
             </div>
@@ -308,7 +318,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
                         <i data-feather="list" class="me-2" style="width:18px;height:18px;"></i>
-                        <strong>Loan Report Data</strong>
+                        <strong>Client Report Data</strong>
                         <span class="badge bg-primary ms-2"><?= count($reportData) ?> records</span>
                     </div>
                     <div class="text-muted small">
@@ -320,7 +330,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 <?php if (empty($reportData)): ?>
                     <div class="text-center py-5">
                         <i data-feather="inbox" class="text-muted mb-3" style="width: 3rem; height: 3rem;"></i>
-                        <h5 class="text-muted">No loans data found</h5>
+                        <h5 class="text-muted">No client data found</h5>
                         <p class="text-muted">Try adjusting your filters or date range to see results.</p>
                     </div>
                 <?php else: ?>
@@ -328,68 +338,79 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         <table class="table table-striped table-hover mb-0">
                             <thead class="table-dark">
                                 <tr>
-                                    <th style="width: 120px;">Loan #</th>
                                     <th>Client Name</th>
-                                    <th class="text-end">Principal</th>
+                                    <th style="width: 130px;">Phone</th>
+                                    <th style="width: 100px;">Gender</th>
+                                    <th class="text-center" style="width: 80px;">Loans</th>
                                     <th class="text-end">Total Amount</th>
-                                    <th class="text-end">Amount Paid</th>
-                                    <th class="text-end">Balance</th>
                                     <th style="width: 100px;">Status</th>
-                                    <th style="width: 110px;">Created</th>
+                                    <th style="width: 110px;">Registered</th>
+                                    <th style="width: 100px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($reportData as $loan): ?>
+                                <?php foreach ($reportData as $client): ?>
                                     <tr>
                                         <td>
-                                            <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="text-decoration-none fw-bold">
-                                                <?= htmlspecialchars($loan['loan_number'] ?? '') ?>
-                                            </a>
-                                        </td>
-                                        <td>
                                             <div class="d-flex align-items-center">
-                                                <div class="avatar-circle bg-primary text-white me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                                    <?= strtoupper(substr($loan['client_name'] ?? 'U', 0, 1)) ?>
+                                                <div class="avatar-circle bg-warning text-white me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                                    <?= strtoupper(substr($client['full_name'] ?? $client['name'] ?? 'U', 0, 1)) ?>
                                                 </div>
                                                 <div>
-                                                    <div class="fw-semibold"><?= htmlspecialchars($loan['client_name'] ?? '') ?></div>
-                                                    <?php if (!empty($loan['client_phone'])): ?>
-                                                        <small class="text-muted"><?= htmlspecialchars($loan['client_phone']) ?></small>
+                                                    <div class="fw-semibold"><?= htmlspecialchars($client['full_name'] ?? $client['name'] ?? '') ?></div>
+                                                    <?php if (!empty($client['email'])): ?>
+                                                        <small class="text-muted"><?= htmlspecialchars($client['email']) ?></small>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="text-end fw-semibold">₱<?= number_format((float)($loan['principal_amount'] ?? 0), 2) ?></td>
-                                        <td class="text-end">₱<?= number_format((float)($loan['total_amount'] ?? 0), 2) ?></td>
-                                        <td class="text-end text-success">₱<?= number_format((float)($loan['total_paid'] ?? 0), 2) ?></td>
+                                        <td>
+                                            <?php if (!empty($client['phone'])): ?>
+                                                <a href="tel:<?= htmlspecialchars($client['phone']) ?>" class="text-decoration-none">
+                                                    <?= htmlspecialchars($client['phone']) ?>
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <?php if (!empty($client['gender'])): ?>
+                                                <span class="badge <?= strtolower($client['gender']) === 'male' ? 'bg-primary' : 'bg-success' ?> px-2 py-1">
+                                                    <?= htmlspecialchars(ucfirst($client['gender'])) ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-info px-2 py-1"><?= number_format($client['total_loans'] ?? 0) ?></span>
+                                        </td>
                                         <td class="text-end">
-                                            <?php $balance = (float)($loan['remaining_balance'] ?? 0); ?>
-                                            <span class="<?= $balance > 0 ? 'text-warning fw-semibold' : 'text-success' ?>">
-                                                ₱<?= number_format($balance, 2) ?>
-                                            </span>
+                                            <span class="fw-semibold">₱<?= number_format((float)($client['total_loan_amount'] ?? 0), 2) ?></span>
                                         </td>
                                         <td>
                                             <?php 
-                                            $status = strtolower($loan['status'] ?? '');
-                                            $badgeClass = match($status) {
-                                                'active' => 'bg-success',
-                                                'completed' => 'bg-primary',
-                                                'pending' => 'bg-warning text-dark',
-                                                'cancelled' => 'bg-danger',
-                                                default => 'bg-secondary'
-                                            };
+                                            $status = strtolower($client['status'] ?? 'active');
+                                            $statusClass = $status === 'active' ? 'bg-success' : 'bg-secondary';
                                             ?>
-                                            <span class="badge <?= $badgeClass ?> px-2 py-1">
-                                                <?= htmlspecialchars(ucfirst($loan['status'] ?? '')) ?>
+                                            <span class="badge <?= $statusClass ?> px-2 py-1">
+                                                <?= htmlspecialchars(ucfirst($client['status'] ?? 'Active')) ?>
                                             </span>
                                         </td>
                                         <td>
                                             <div class="text-nowrap">
-                                                <?= !empty($loan['created_at']) ? date('M d, Y', strtotime($loan['created_at'])) : '' ?>
+                                                <?= !empty($client['created_at']) ? date('M d, Y', strtotime($client['created_at'])) : '' ?>
                                             </div>
-                                            <?php if (!empty($loan['created_at'])): ?>
-                                                <small class="text-muted"><?= date('g:i A', strtotime($loan['created_at'])) ?></small>
+                                            <?php if (!empty($client['created_at'])): ?>
+                                                <small class="text-muted"><?= date('g:i A', strtotime($client['created_at'])) ?></small>
                                             <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group" role="group">
+                                                <a href="<?= APP_URL ?>/public/clients/view.php?id=<?= $client['id'] ?>" class="btn btn-sm btn-outline-primary" title="View Client">
+                                                    <i data-feather="eye" style="width: 14px; height: 14px;"></i>
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -409,25 +430,25 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="border-end pe-3">
-                                    <div class="h5 mb-1"><?= number_format($loanStats['total_loans']) ?></div>
-                                    <small class="text-muted">Total Loans</small>
+                                    <div class="h5 mb-1"><?= number_format($clientStats['total_clients']) ?></div>
+                                    <small class="text-muted">Total Clients</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="border-end pe-3">
-                                    <div class="h5 mb-1">₱<?= number_format($loanStats['total_disbursed'], 2) ?></div>
-                                    <small class="text-muted">Total Disbursed</small>
+                                    <div class="h5 mb-1 text-success"><?= number_format($clientStats['active_clients']) ?></div>
+                                    <small class="text-muted">Active Clients</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="border-end pe-3">
-                                    <div class="h5 mb-1 text-success">₱<?= number_format($loanStats['total_paid'], 2) ?></div>
-                                    <small class="text-muted">Total Collected</small>
+                                    <div class="h5 mb-1 text-primary"><?= number_format($clientStats['clients_with_loans']) ?></div>
+                                    <small class="text-muted">With Loans</small>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="h5 mb-1 text-warning">₱<?= number_format($loanStats['total_balance'], 2) ?></div>
-                                <small class="text-muted">Outstanding Balance</small>
+                                <div class="h5 mb-1 text-warning">₱<?= number_format($clientStats['total_loan_amount'], 2) ?></div>
+                                <small class="text-muted">Total Loan Value</small>
                             </div>
                         </div>
                         <div class="mt-3 pt-3 border-top">

@@ -1,16 +1,19 @@
 <?php
-/**
- * Client Reports Controller
- * Generates comprehensive reports for client management with professional design
- */
-
-// Centralized initialization (handles sessions, auth, CSRF, and autoloader)
 require_once '../../public/init.php';
 
-// Enforce role-based access control for Fanders Microfinance Staff
-$auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'account-officer']);
+// Check authentication
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ' . APP_URL . '/public/auth/login.php');
+    exit;
+}
 
-// Initialize services
+// // Check permissions
+// $allowedRoles = ['super-admin', 'admin', 'manager', 'staff'];
+// if (!in_array($_SESSION['role'], $allowedRoles)) {
+//     header('Location: ' . APP_URL . '/public/dashboard/index.php');
+//     exit;
+// }
+
 $reportService = new ReportService();
 
 // Get filter parameters

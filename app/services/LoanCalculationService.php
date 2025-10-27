@@ -7,10 +7,12 @@ require_once __DIR__ . '/../core/BaseService.php';
 
 class LoanCalculationService extends BaseService {
     // Constants based on Fanders requirements
-    const MONTHLY_INTEREST_RATE = 0.05; // 5% monthly interest
+    const INTEREST_RATE = 0.05; // 5% interest
     const LOAN_TERM_MONTHS = 4;         // Always 4 months
     const INSURANCE_FEE = 425.00;       // Fixed ₱425 insurance fee
     const WEEKS_IN_LOAN = 17;           // 17 weeks total
+
+    const SAVINGS = 0.01;          // 1% savings deduction
 
     /**
      * Calculate loan details based on principal amount and term
@@ -33,10 +35,10 @@ class LoanCalculationService extends BaseService {
         }
 
         // Calculate interest (P x 0.05 x 4) - fixed 4 months regardless of term
-        $totalInterest = $principalAmount * self::MONTHLY_INTEREST_RATE * self::LOAN_TERM_MONTHS;
+        $totalInterest = ($principalAmount * self::INTEREST_RATE) * self::LOAN_TERM_MONTHS;
 
         // Calculate total amount (Principal + Interest + Insurance)
-        $totalAmount = $principalAmount + $totalInterest + self::INSURANCE_FEE;
+        $totalAmount = $principalAmount + $totalInterest + self::INSURANCE_FEE + ( $principalAmount * self::SAVINGS );
 
         // Calculate weekly payment (total amount divided by term weeks)
         $weeklyPayment = round($totalAmount / $termWeeks, 2);
@@ -51,7 +53,7 @@ class LoanCalculationService extends BaseService {
 
         return [
             'principal' => $principalAmount,
-            'interest_rate' => self::MONTHLY_INTEREST_RATE,
+            'interest_rate' => self::INTEREST_RATE,
             'term_weeks' => $termWeeks,
             'total_interest' => round($totalInterest, 2),
             'insurance_fee' => self::INSURANCE_FEE,

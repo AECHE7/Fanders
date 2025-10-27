@@ -339,109 +339,85 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($reportData as $loan): ?>
-                                    <tr>
-                                        <td>
-                                            <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="text-decoration-none fw-bold">
-                                                <?= htmlspecialchars($loan['loan_number'] ?? '') ?>
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar-circle bg-primary text-white me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
-                                                    <?= strtoupper(substr($loan['client_name'] ?? 'U', 0, 1)) ?>
-                                                </div>
-                                                <div>
-                                                    <div class="fw-semibold"><?= htmlspecialchars($loan['client_name'] ?? '') ?></div>
-                                                    <?php if (!empty($loan['client_phone'])): ?>
-                                                        <small class="text-muted"><?= htmlspecialchars($loan['client_phone']) ?></small>
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="text-end fw-semibold">₱<?= number_format((float)($loan['principal_amount'] ?? 0), 2) ?></td>
-                                        <td class="text-end">₱<?= number_format((float)($loan['total_amount'] ?? 0), 2) ?></td>
-                                        <td class="text-end text-success">₱<?= number_format((float)($loan['total_paid'] ?? 0), 2) ?></td>
-                                        <td class="text-end">
-                                            <?php $balance = (float)($loan['remaining_balance'] ?? 0); ?>
-                                            <span class="<?= $balance > 0 ? 'text-warning fw-semibold' : 'text-success' ?>">
-                                                ₱<?= number_format($balance, 2) ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <?php 
-                                            $status = strtolower($loan['status'] ?? '');
-                                            $badgeClass = match($status) {
-                                                'active' => 'bg-success',
-                                                'completed' => 'bg-primary',
-                                                'pending' => 'bg-warning text-dark',
-                                                'cancelled' => 'bg-danger',
-                                                default => 'bg-secondary'
-                                            };
-                                            ?>
-                                            <span class="badge <?= $badgeClass ?> px-2 py-1">
-                                                <?= htmlspecialchars(ucfirst($loan['status'] ?? '')) ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="text-nowrap">
-                                                <?= !empty($loan['created_at']) ? date('M d, Y', strtotime($loan['created_at'])) : '' ?>
-                                            </div>
-                                            <?php if (!empty($loan['created_at'])): ?>
-                                                <small class="text-muted"><?= date('g:i A', strtotime($loan['created_at'])) ?></small>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- Executive Summary Footer -->
-        <div class="card shadow-sm mt-4">
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-12">
-                        <h6 class="text-muted mb-3">Executive Summary</h6>
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="border-end pe-3">
-                                    <div class="h5 mb-1"><?= number_format($loanStats['total_loans']) ?></div>
-                                    <small class="text-muted">Total Loans</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="border-end pe-3">
-                                    <div class="h5 mb-1">₱<?= number_format($loanStats['total_disbursed'], 2) ?></div>
-                                    <small class="text-muted">Total Disbursed</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="border-end pe-3">
-                                    <div class="h5 mb-1 text-success">₱<?= number_format($loanStats['total_paid'], 2) ?></div>
-                                    <small class="text-muted">Total Collected</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="h5 mb-1 text-warning">₱<?= number_format($loanStats['total_balance'], 2) ?></div>
-                                <small class="text-muted">Outstanding Balance</small>
-                            </div>
+                        <div class="card-body text-center">
+                            <h4 class="text-success">₱<?= number_format(array_sum(array_column($reportData, 'principal_amount')), 2) ?></h4>
+                            <small class="text-muted">Total Principal</small>
                         </div>
-                        <div class="mt-3 pt-3 border-top">
-                            <small class="text-muted">
-                                <i data-feather="clock" class="me-1" style="width: 14px; height: 14px;"></i>
-                                Report generated on <?= date('F j, Y \a\t g:i A') ?> | Period: <?= $reportMetrics['report_period'] ?>
-                            </small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h4 class="text-info">₱<?= number_format(array_sum(array_column($reportData, 'total_paid')), 2) ?></h4>
+                            <small class="text-muted">Total Paid</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h4 class="text-warning">₱<?= number_format(array_sum(array_column($reportData, 'remaining_balance')), 2) ?></h4>
+                            <small class="text-muted">Outstanding</small>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Data Table -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Loan Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Loan #</th>
+                                    <th>Client</th>
+                                    <th>Principal</th>
+                                    <th>Total Amount</th>
+                                    <th>Paid</th>
+                                    <th>Balance</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($reportData)): ?>
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted">No loan data found for the selected criteria.</td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($reportData as $loan): ?>
+                                        <tr>
+                                            <td>
+                                                <a href="<?= APP_URL ?>/public/loans/view.php?id=<?= $loan['id'] ?>" class="text-decoration-none">
+                                                    <?= htmlspecialchars($loan['loan_number'] ?? '') ?>
+                                                </a>
+                                            </td>
+                                            <td><?= htmlspecialchars($loan['client_name'] ?? '') ?></td>
+                                            <td>₱<?= number_format((float)($loan['principal_amount'] ?? 0), 2) ?></td>
+                                            <td>₱<?= number_format((float)($loan['total_amount'] ?? 0), 2) ?></td>
+                                            <td>₱<?= number_format((float)($loan['total_paid'] ?? 0), 2) ?></td>
+                                            <td>₱<?= number_format((float)($loan['remaining_balance'] ?? 0), 2) ?></td>
+                                            <?php $status = strtolower($loan['status'] ?? ''); ?>
+                                            <td>
+                                                <span class="badge bg-<?= $status === 'active' ? 'success' : ($status === 'completed' ? 'primary' : 'secondary') ?>">
+                                                    <?= htmlspecialchars(ucfirst($loan['status'] ?? '')) ?>
+                                                </span>
+                                            </td>
+                                            <td><?= !empty($loan['created_at']) ? date('M d, Y', strtotime($loan['created_at'])) : '' ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
-
     </div>
-</main>
+</div>
 
-<?php include_once BASE_PATH . '/templates/layout/footer.php'; ?>
+<?php include '../../templates/layout/footer.php'; ?>
