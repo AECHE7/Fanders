@@ -158,12 +158,111 @@ $currentIdType = $clientData['identification_type'] ?? '';
     <!-- Form Actions -->
     <div class="d-flex justify-content-end mt-4">
         <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
-        <button type="submit" class="btn btn-primary px-4 ripple-effect">
+        <button type="button" class="btn btn-primary px-4 ripple-effect" data-bs-toggle="modal" data-bs-target="#confirmClientSaveModal">
             <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
             <?= $isEditing ? 'Update Client' : 'Create Client' ?>
         </button>
     </div>
 </form>
+
+<!-- Client Save Confirmation Modal -->
+<div class="modal fade" id="confirmClientSaveModal" tabindex="-1" aria-labelledby="confirmClientSaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmClientSaveModalLabel">
+                    <i data-feather="alert-circle" class="me-2" style="width:20px;height:20px;"></i>
+                    <?= $isEditing ? 'Confirm Client Update' : 'Confirm Client Creation' ?>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">You are about to <?= $isEditing ? 'update the information for' : 'create a new client account for' ?>:</p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Full Name:</dt>
+                            <dd class="col-sm-8 fw-bold" id="modalClientName"><?= htmlspecialchars($clientData['name'] ?? '') ?></dd>
+                            <dt class="col-sm-4">Email:</dt>
+                            <dd class="col-sm-8" id="modalClientEmail"><?= htmlspecialchars($clientData['email'] ?? '') ?></dd>
+                            <dt class="col-sm-4">Phone:</dt>
+                            <dd class="col-sm-8" id="modalClientPhone"><?= htmlspecialchars($clientData['phone_number'] ?? '') ?></dd>
+                            <?php if ($isEditing): ?>
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8" id="modalClientStatus">
+                                <span class="badge text-bg-<?= $currentStatus === 'active' ? 'success' : ($currentStatus === 'inactive' ? 'secondary' : 'danger') ?>">
+                                    <?= ucfirst($currentStatus) ?>
+                                </span>
+                            </dd>
+                            <?php endif; ?>
+                        </dl>
+                    </div>
+                </div>
+                <p class="mt-3 mb-0 text-muted small">
+                    <i data-feather="info" class="me-1" style="width:14px;height:14px;"></i>
+                    <?= $isEditing ? 'This action will update the client information in the system.' : 'This will create a new client account that can apply for loans.' ?>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmClientSave">
+                    <i data-feather="check" class="me-1" style="width:16px;height:16px;"></i>
+                    <?= $isEditing ? 'Confirm Update' : 'Confirm Creation' ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update modal content when form values change
+    const form = document.querySelector('.notion-form');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const phoneInput = document.getElementById('phone_number');
+    const statusSelect = document.getElementById('status');
+    
+    function updateModalContent() {
+        if (nameInput) document.getElementById('modalClientName').textContent = nameInput.value || 'Not specified';
+        if (emailInput) document.getElementById('modalClientEmail').textContent = emailInput.value || 'Not specified';
+        if (phoneInput) document.getElementById('modalClientPhone').textContent = phoneInput.value || 'Not specified';
+        
+        // Update status badge if editing
+        if (statusSelect) {
+            const statusElement = document.getElementById('modalClientStatus');
+            if (statusElement) {
+                const status = statusSelect.value;
+                const badgeClass = status === 'active' ? 'success' : (status === 'inactive' ? 'secondary' : 'danger');
+                statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+            }
+        }
+    }
+    
+    // Update modal when inputs change
+    [nameInput, emailInput, phoneInput, statusSelect].forEach(input => {
+        if (input) {
+            input.addEventListener('input', updateModalContent);
+            input.addEventListener('change', updateModalContent);
+        }
+    });
+    
+    // Confirm save button handler
+    document.getElementById('confirmClientSave').addEventListener('click', function() {
+        // Validate form before submitting
+        if (form.checkValidity()) {
+            form.submit();
+        } else {
+            // Close modal and show validation errors
+            bootstrap.Modal.getInstance(document.getElementById('confirmClientSaveModal')).hide();
+            form.reportValidity();
+        }
+    });
+});
+</script>
 
 <style>
 /* Notion Form Styles and Animations (Copied from existing code) */

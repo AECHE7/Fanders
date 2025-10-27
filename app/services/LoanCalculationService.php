@@ -7,7 +7,7 @@ require_once __DIR__ . '/../core/BaseService.php';
 
 class LoanCalculationService extends BaseService {
     // Fixed Business Constants for Fanders Microfinance
-    const INTEREST_RATE = 0.05;         // 5% fixed interest rate
+    const INTEREST_RATE = 0.06;         // 6% fixed interest rate
     const INSURANCE_FEE = 425.00;       // Fixed ₱425 insurance fee per loan
     const SAVINGS_RATE = 0.01;          // 1% savings deduction rate
     
