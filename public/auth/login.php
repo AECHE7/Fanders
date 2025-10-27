@@ -161,14 +161,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <div class="invalid-feedback">Please enter your password.</div>
                             </div>
                             
-                            <div class="mb-4">
-                                <label class="notion-form-toggle">
-                                    <input type="checkbox" value="1" id="rememberMe" name="remember_me">
-                                    <span class="notion-form-toggle-slider"></span>
-                                    <span class="ms-2 position-relative" style="top: -6px;">Remember me</span>
-                                </label>
-                            </div>
-                            
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary py-2 px-4 login-pulse-button">
                                     <i data-feather="log-in" class="me-2" style="width: 16px; height: 16px;"></i> Sign in
@@ -187,7 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 <!-- Footer info -->
                 <div class="text-center mt-5 small text-muted">
-                    <p>Default login: admin.1@fanders.com / admin123</p>
                     <p>&copy; <?= date('Y') ?> <?= APP_NAME ?>. All rights reserved.</p>
                 </div>
             </div>

@@ -375,7 +375,9 @@ class ClientService extends BaseService {
          // Although Deactivate is preferred, we keep delete functionality for cleanup if no loans exist.
         $activeLoans = $this->clientModel->getClientCurrentLoans($id);
         if (!empty($activeLoans)) {
-            $this->setErrorMessage('Cannot delete client with active loans. Please deactivate instead.');
+            $loanStatuses = array_unique(array_column($activeLoans, 'status'));
+            $statusList = implode(', ', $loanStatuses);
+            $this->setErrorMessage("Cannot delete client with active/pending loans (Status: {$statusList}). Only clients with Completed or Defaulted loans can be deleted. Consider deactivating the client instead.");
             return false;
         }
         

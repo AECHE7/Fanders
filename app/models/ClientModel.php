@@ -221,14 +221,15 @@ class ClientModel extends BaseModel {
     }
 
     /**
-     * Fetches currently active loan records for a given client.
+     * Fetches currently active/pending loan records for a given client.
+     * This includes Application, Approved, and Active loans that would prevent client deletion.
      * @param int $clientId
      * @return array
      */
     public function getClientCurrentLoans($clientId) {
         $sql = "SELECT l.*
                 FROM loans l
-                WHERE l.client_id = ? AND l.status = 'Active'
+                WHERE l.client_id = ? AND LOWER(l.status) IN (LOWER('Application'), LOWER('Approved'), LOWER('Active'))
                 ORDER BY l.created_at DESC";
 
         return $this->db->resultSet($sql, [$clientId]);
