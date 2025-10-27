@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($canCalculate) {
-            $loanCalculation = $loanCalculationService->calculateLoan((float)$loanAmountRaw, (int)$loanTermRaw);
+            $loanCalculation = $loanCalculationService->calculateLoan((float)$loanAmountRaw, (int)$loanTermRaw, (int)$loanTermMonth);
             if (!$loanCalculation) {
                 $error = $loanCalculationService->getErrorMessage() ?: "Failed to calculate loan details.";
                 // Log calculation error for debugging
