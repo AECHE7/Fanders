@@ -249,7 +249,7 @@ class UserService extends BaseService {
         if ($result) {
             $this->cache->delete('user_stats');
             $this->cache->delete('staff_stats');
-            
+
             // Log user activation
             if (class_exists('TransactionService')) {
                 $transactionService = new TransactionService();
@@ -260,6 +260,56 @@ class UserService extends BaseService {
                 ]);
             }
         }
+        return $result;
+    }
+
+    /**
+     * Deletes a user account permanently.
+     * Note: Deactivation is preferred to preserve audit trails, but deletion is allowed for cleanup.
+     * @param int $id
+     * @return bool
+     */
+    public function deleteUser($id) {
+        $existingUser = $this->userModel->findById($id);
+
+        if (!$existingUser) {
+            $this->setErrorMessage('User not found.');
+            return false;
+        }
+
+        // Check if user has associated records that prevent deletion
+        // For example, if user has recorded payments or created loans, prevent deletion
+        $sql = "SELECT COUNT(*) as count FROM payments WHERE user_id = ?";
+        $result = $this->userModel->query($sql, [$id], true);
+        if ($result && $result['count'] > 0) {
+            $this->setErrorMessage('Cannot delete user with recorded payments. Please deactivate instead.');
+            return false;
+        }
+
+        $sql = "SELECT COUNT(*) as count FROM loans WHERE created_by = ? OR approved_by = ?";
+        $result = $this->userModel->query($sql, [$id, $id], true);
+        if ($result && $result['count'] > 0) {
+            $this->setErrorMessage('Cannot delete user with associated loans. Please deactivate instead.');
+            return false;
+        }
+
+        $result = $this->userModel->delete($id);
+
+        if ($result) {
+            $this->cache->delete('user_stats');
+            $this->cache->delete('staff_stats');
+
+            // Log user deletion
+            if (class_exists('TransactionService')) {
+                $transactionService = new TransactionService();
+                $transactionService->logGeneric('user_deleted', $_SESSION['user_id'] ?? null, $id, [
+                    'user_id' => $id,
+                    'user_name' => $existingUser['name'] ?? 'Unknown',
+                    'user_email' => $existingUser['email'] ?? 'Unknown'
+                ]);
+            }
+        }
+
         return $result;
     }
 

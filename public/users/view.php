@@ -236,22 +236,19 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </div>
         </div>
 
-        <!-- <div class="card mt-4">
+        <!-- Delete User Section -->
+        <div class="card mt-4">
             <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Delete Zone</h5>
             </div>
             <div class="card-body">
             <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
-                <p class="card-text">Deleting this user is irreversible. Please be certain..</p>
-                    <form method="post" action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" onsubmit="return confirm('Are you sure you want to delete this user account? This action cannot be undone.');" style="margin:0;">
-                        <?= $csrf->getTokenField() ?>
-                        <input type="hidden" name="action" value="delete">
-                        <button type="submit" class="btn btn-sm btn-danger">
-                            <i data-feather="trash-2"></i> Delete User
-                        </button>
-                    </form>
-                <?php endif; ?>
-            </div> -->
+                <p class="card-text">Deleting this user is irreversible. Please be certain.</p>
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
+                    <i data-feather="trash-2"></i> Delete User
+                </button>
+            <?php endif; ?>
+            </div>
         </div>
     <?php endif; ?>
     </div>
@@ -270,8 +267,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <div class="modal-body">
                 <p>You are about to activate staff account:</p>
                 <ul class="list-unstyled ms-3">
-                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['full_name']) ?></li>
-                    <li><strong>Username:</strong> <?= htmlspecialchars($viewUser['username']) ?></li>
+                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['name']) ?></li>
+                    <li><strong>Email:</strong> <?= htmlspecialchars($viewUser['email']) ?></li>
                     <li><strong>Role:</strong> <span class="badge text-bg-primary"><?= ucfirst($viewUser['role']) ?></span></li>
                 </ul>
                 <div class="alert alert-info mt-3">
@@ -308,8 +305,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 </div>
                 <p>Staff to deactivate:</p>
                 <ul class="list-unstyled ms-3">
-                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['full_name']) ?></li>
-                    <li><strong>Username:</strong> <?= htmlspecialchars($viewUser['username']) ?></li>
+                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['name']) ?></li>
+                    <li><strong>Email:</strong> <?= htmlspecialchars($viewUser['email']) ?></li>
                     <li><strong>Role:</strong> <span class="badge text-bg-primary"><?= ucfirst($viewUser['role']) ?></span></li>
                 </ul>
                 <p class="text-muted small">This staff member will no longer be able to log in to the system.</p>
@@ -321,6 +318,42 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <input type="hidden" name="action" value="deactivate">
                     <button type="submit" class="btn btn-warning">
                         <i data-feather="user-x"></i> Confirm Deactivation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteUserModalLabel">
+                    <i data-feather="trash-2"></i> Confirm User Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i data-feather="alert-triangle"></i> <strong>Danger:</strong> Deleting this user account is irreversible and will permanently remove all associated data.
+                </div>
+                <p>User to delete:</p>
+                <ul class="list-unstyled ms-3">
+                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['name']) ?></li>
+                    <li><strong>Email:</strong> <?= htmlspecialchars($viewUser['email']) ?></li>
+                    <li><strong>Role:</strong> <span class="badge text-bg-primary"><?= ucfirst($viewUser['role']) ?></span></li>
+                </ul>
+                <p class="text-muted small">This action cannot be undone. Consider deactivating the account instead if you might need to restore access later.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" style="display:inline;">
+                    <?= $csrf->getTokenField() ?>
+                    <input type="hidden" name="action" value="delete">
+                    <button type="submit" class="btn btn-danger">
+                        <i data-feather="trash-2"></i> Confirm Deletion
                     </button>
                 </form>
             </div>
