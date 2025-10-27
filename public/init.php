@@ -60,7 +60,8 @@ $csrfToken = $csrf->getToken(); // Get current token for form use
 // --- 3. Global Security Checks ---
 
 // Check if user is logged in (excluding login/init pages themselves)
-if (!isset($skip_auth_check) || $skip_auth_check !== true) {
+if ((!isset($skip_auth_check) || $skip_auth_check !== true) && 
+    (!isset($GLOBALS['skip_auth_check']) || $GLOBALS['skip_auth_check'] !== true)) {
     if (!$auth->isLoggedIn()) {
         // Redirect to login page
         $session->setFlash('error', 'Please login to access this page.');
