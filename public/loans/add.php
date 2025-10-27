@@ -270,10 +270,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     ?>
     <?php if ($loanCalculation && empty($error)): ?>
         <?php
-        // Calculate approximate weekly breakdown
+        // Calculate approximate weekly breakdown with ALL components
         $principal_per_week = round($loanCalculation['principal'] / $loanCalculation['term_weeks'], 2);
         $interest_per_week = round($loanCalculation['total_interest'] / $loanCalculation['term_weeks'], 2);
         $insurance_per_week = round($loanCalculation['insurance_fee'] / $loanCalculation['term_weeks'], 2);
+        $savings_per_week = round($loanCalculation['savings_deduction'] / $loanCalculation['term_weeks'], 2);
         $term_weeks = $loanCalculation['term_weeks'];
         $term_months = round($term_weeks / 4.333, 1); // Approximate months
         ?>
@@ -291,12 +292,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                             <td class="text-end">₱<?= number_format($loanCalculation['principal'], 2) ?></td>
                         </tr>
                         <tr>
-                            <td class="fw-medium">Total Interest (4 months @ 5%):</td>
+                            <td class="fw-medium">Total Interest (<?= $loanCalculation['term_months'] ?> months @ 5%):</td>
                             <td class="text-end text-danger">₱<?= number_format($loanCalculation['total_interest'], 2) ?></td>
                         </tr>
                         <tr>
                             <td class="fw-medium">Fixed Insurance Fee:</td>
                             <td class="text-end text-danger">₱<?= number_format($loanCalculation['insurance_fee'], 2) ?></td>
+                        </tr>
+                        <tr>
+                            <td class="fw-medium">Mandatory Savings (1%):</td>
+                            <td class="text-end text-info">₱<?= number_format($loanCalculation['savings_deduction'], 2) ?></td>
                         </tr>
                         <tr class="table-info">
                             <td class="fw-bold">Total Repayment Amount:</td>
@@ -318,7 +323,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     </table>
                 </div>
                 <div class="col-md-6">
-                    <h6>Weekly Breakdown (Approximate)</h6>
+                    <h6>Weekly Breakdown (Complete)</h6>
                     <table class="table table-sm table-borderless">
                         <tr>
                             <td>Principal per week:</td>
@@ -333,11 +338,16 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                             <td class="text-end">₱<?= number_format($insurance_per_week, 2) ?></td>
                         </tr>
                         <tr>
-                            <td class="fw-bold">Total Weekly Components:</td>
-                            <td class="text-end fw-bold">₱<?= number_format(
+                            <td>Savings per week (1%):</td>
+                            <td class="text-end text-info">₱<?= number_format($savings_per_week, 2) ?></td>
+                        </tr>
+                        <tr class="table-light border-top">
+                            <td class="fw-bold">Total Weekly Payment:</td>
+                            <td class="text-end fw-bold text-success">₱<?= number_format(
                                 $principal_per_week +
                                 $interest_per_week +
-                                $insurance_per_week, 2
+                                $insurance_per_week +
+                                $savings_per_week, 2
                             ) ?></td>
                         </tr>
                     </table>
