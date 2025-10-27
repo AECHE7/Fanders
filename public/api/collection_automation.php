@@ -2,8 +2,6 @@
 /**
  * Collection Automation API - Handles automated collection sheet operations
  */
-// Skip the authentication redirect for API endpoints
-$GLOBALS['skip_auth_check'] = true;
 require_once __DIR__ . '/../init.php';
 
 header('Content-Type: application/json');

@@ -5,8 +5,6 @@
  */
 
 header('Content-Type: application/json');
-// Skip the authentication redirect for API endpoints
-$GLOBALS['skip_auth_check'] = true;
 require_once '../../public/init.php';
 
 // Authentication

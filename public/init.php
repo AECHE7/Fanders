@@ -63,7 +63,16 @@ $csrfToken = $csrf->getToken(); // Get current token for form use
 if ((!isset($skip_auth_check) || $skip_auth_check !== true) && 
     (!isset($GLOBALS['skip_auth_check']) || $GLOBALS['skip_auth_check'] !== true)) {
     if (!$auth->isLoggedIn()) {
-        // Redirect to login page
+        // For API endpoints, return JSON instead of redirect
+        if (isset($_SERVER['HTTP_CONTENT_TYPE']) && $_SERVER['HTTP_CONTENT_TYPE'] === 'application/json' ||
+            strpos($_SERVER['REQUEST_URI'], '/api/') !== false ||
+            strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'Unauthorized - Please login']);
+            exit;
+        }
+        
+        // Redirect to login page for regular pages
         $session->setFlash('error', 'Please login to access this page.');
         header('Location: ' . APP_URL . '/public/auth/login.php');
         exit;
