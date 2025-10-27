@@ -276,7 +276,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         $principal_per_week = round($loanCalculation['principal'] / $loanCalculation['term_weeks'], 2);
         $interest_per_week = round($loanCalculation['total_interest'] / $loanCalculation['term_weeks'], 2);
         $insurance_per_week = round($loanCalculation['insurance_fee'] / $loanCalculation['term_weeks'], 2);
-        $savings_per_week = round($loanCalculation['savings_deduction'] / $loanCalculation['term_weeks'], 2);
+        $savings_per_week = round($loanCalculation['savings_deduction'], 2);
         $term_weeks = $loanCalculation['term_weeks'];
         $term_months = round($term_weeks / 4.333, 1); // Approximate months
         ?>

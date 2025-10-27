@@ -49,17 +49,17 @@ class LoanCalculationService extends BaseService {
             return false;
         }
 
-                // Calculate interest based on specified formula: P x 5% x term_months
+        // Calculate interest based on specified formula: P x 5% x term_months
         $totalInterest = ($principalAmount * self::INTEREST_RATE) * $termMonths;
 
         // Calculate savings deduction (1% of principal)
         $savingsDeduction = $principalAmount * self::SAVINGS_RATE;
 
         // Calculate total amount (Principal + Interest + Insurance + Savings)
-        $totalAmount = $principalAmount + $totalInterest + self::INSURANCE_FEE + $savingsDeduction;
+        $totalAmount = $principalAmount + $totalInterest + self::INSURANCE_FEE;
 
         // Calculate weekly payment (total amount divided by term weeks)
-        $weeklyPayment = round($totalAmount / $termWeeks, 2);
+        $weeklyPayment = round(($totalAmount / $termWeeks) + $savingsDeduction, 2);
 
         // --- Rounding Adjustment for Weekly Payment ---
         // Calculate the difference due to rounding and add it to the final weekly payment
