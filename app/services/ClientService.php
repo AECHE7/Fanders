@@ -372,7 +372,9 @@ class ClientService extends BaseService {
      * @return bool
      */
     public function deleteClient($id) {
-         // Although Deactivate is preferred, we keep delete functionality for cleanup if no loans exist.
+        // Although Deactivate is preferred, we keep delete functionality for cleanup if no loans exist.
+        
+        // Step 1: Check for active/pending loans
         $activeLoans = $this->clientModel->getClientCurrentLoans($id);
         if (!empty($activeLoans)) {
             $loanStatuses = array_unique(array_column($activeLoans, 'status'));
@@ -381,20 +383,54 @@ class ClientService extends BaseService {
             return false;
         }
         
-        $client = $this->clientModel->findById($id);
-        $result = $this->clientModel->delete($id);
-        
-        // Log client deletion transaction
-        if ($result && class_exists('TransactionService')) {
-            $transactionService = new TransactionService();
-            // Correct parameter order: (action, acting_user_id, client_id)
-            $transactionService->logClientTransaction('deleted', $_SESSION['user_id'] ?? null, $id, [
-                'client_id' => $id,
-                'client_name' => $client['name'] ?? 'Unknown'
-            ]);
+        // Step 2: Check for ANY loan history (including completed/defaulted)
+        $allLoans = $this->clientModel->getClientLoanHistory($id);
+        if (!empty($allLoans)) {
+            $this->setErrorMessage("Cannot delete client with loan history. Client has " . count($allLoans) . " loan record(s) that must be preserved for audit purposes. Consider deactivating the client instead.");
+            return false;
         }
         
-        return $result;
+        // Step 3: Verify client exists before attempting deletion
+        $client = $this->clientModel->findById($id);
+        if (!$client) {
+            $this->setErrorMessage("Client not found with ID: {$id}");
+            return false;
+        }
+        
+        // Step 4: Attempt deletion with proper error handling
+        try {
+            $result = $this->clientModel->delete($id);
+            
+            if (!$result) {
+                $this->setErrorMessage("Failed to delete client due to database constraints or related records. Consider deactivating the client instead.");
+                return false;
+            }
+            
+            // Log successful deletion
+            if (class_exists('TransactionService')) {
+                $transactionService = new TransactionService();
+                // Correct parameter order: (action, acting_user_id, client_id)
+                $transactionService->logClientTransaction('deleted', $_SESSION['user_id'] ?? null, $id, [
+                    'client_id' => $id,
+                    'client_name' => $client['name'] ?? 'Unknown'
+                ]);
+            }
+            
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Client deletion failed for ID {$id}: " . $e->getMessage());
+            
+            // Check if it's a foreign key constraint error
+            if (strpos(strtolower($e->getMessage()), 'foreign key') !== false || 
+                strpos(strtolower($e->getMessage()), 'constraint') !== false) {
+                $this->setErrorMessage("Cannot delete client due to related records in the system (payments, documents, etc.). For data integrity, consider deactivating the client instead.");
+            } else {
+                $this->setErrorMessage("Database error occurred during deletion: " . $e->getMessage());
+            }
+            
+            return false;
+        }
     }
     
     // --- Validation Logic (Based on Client Creation/Update Rules) ---

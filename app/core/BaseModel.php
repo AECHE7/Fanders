@@ -124,8 +124,32 @@ class BaseModel {
 
 
     public function delete($id) {
-        $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = ?";
-        return $this->db->query($sql, [$id]) ? true : false;
+        try {
+            $sql = "DELETE FROM {$this->table} WHERE {$this->primaryKey} = ?";
+            $stmt = $this->db->query($sql, [$id]);
+            
+            if ($stmt === false) {
+                $this->setLastError("Failed to execute delete query for {$this->table} with ID: {$id}");
+                error_log("BaseModel::delete failed - Query execution failed. Table: {$this->table}, ID: {$id}");
+                return false;
+            }
+            
+            // Check if any rows were actually affected
+            $rowsAffected = $stmt->rowCount();
+            if ($rowsAffected === 0) {
+                $this->setLastError("No records found to delete in {$this->table} with ID: {$id}");
+                error_log("BaseModel::delete warning - No rows affected. Table: {$this->table}, ID: {$id}");
+                return false;
+            }
+            
+            error_log("BaseModel::delete success - Table: {$this->table}, ID: {$id}, Rows affected: {$rowsAffected}");
+            return true;
+            
+        } catch (Exception $e) {
+            $this->setLastError("Delete operation failed: " . $e->getMessage());
+            error_log("BaseModel::delete exception - Table: {$this->table}, ID: {$id}, Error: " . $e->getMessage());
+            throw $e; // Re-throw so calling code can handle it
+        }
     }
 
     public function findByField($field, $value) {
