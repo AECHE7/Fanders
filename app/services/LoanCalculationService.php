@@ -26,7 +26,7 @@ class LoanCalculationService extends BaseService {
      * @param int $termMonths The loan term in months (for interest calculation, defaults to 4)
      * @return array|false Loan calculation details on success.
      */
-    public function calculateLoan($principalAmount, $termWeeks = null, $termMonths = null) {
+    public function calculateLoan($principalAmount, $termWeeks, $termMonths) {
         // Use default terms if not provided
         if ($termWeeks === null) {
             $termWeeks = self::DEFAULT_WEEKS_IN_LOAN;
