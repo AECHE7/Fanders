@@ -8,6 +8,13 @@ header('Content-Type: application/json');
 
 require_once '../../public/init.php';
 
+// Include required services and models
+require_once '../../app/services/TransactionService.php';
+require_once '../../app/models/TransactionLogModel.php';
+require_once '../../app/services/UserService.php';
+require_once '../../app/services/ClientService.php';
+require_once '../../app/services/LoanService.php';
+
 // Check if user is authenticated
 if (!$auth->isLoggedIn()) {
     http_response_code(401);

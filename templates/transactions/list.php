@@ -333,7 +333,7 @@ function showTransactionDetails(transactionId) {
     modal.show();
 
     // Fetch transaction details via AJAX
-    fetch(`<?= APP_URL ?>/public/api/get_transaction_log.php?id=${transactionId}`)
+    fetch(`<?= APP_URL ?>/public/api/get_transaction_details.php?id=${transactionId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
