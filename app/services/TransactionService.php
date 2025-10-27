@@ -224,6 +224,21 @@ class TransactionService extends BaseService {
     }
 
     /**
+     * Gets a transaction by ID with user information.
+     * @param int $transactionId Transaction ID
+     * @return array|null Transaction data or null if not found
+     */
+    public function getTransactionById($transactionId) {
+        $sql = "SELECT tl.*, u.name as user_name, u.email as user_email
+                FROM transaction_logs tl
+                LEFT JOIN users u ON tl.user_id = u.id
+                WHERE tl.id = ?";
+        
+        $result = $this->transactionLogModel->query($sql, [$transactionId]);
+        return !empty($result) ? $result[0] : null;
+    }
+
+    /**
      * Gets all available transaction types.
      * @return array
      */

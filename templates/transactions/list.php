@@ -315,32 +315,217 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Show transaction details in modal
 function showTransactionDetails(transactionId) {
-    // This would typically make an AJAX call to get detailed transaction info
-    // For now, we'll show a placeholder
     const modal = new bootstrap.Modal(document.getElementById('transactionDetailModal'));
     const content = document.getElementById('transactionDetailContent');
+    const modalTitle = document.getElementById('transactionDetailModalLabel');
 
+    // Show loading state
     content.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border" role="status">
-                <span class="sr-only">Loading...</span>
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
-            <p class="mt-2">Loading transaction details...</p>
+            <p class="mt-2 text-muted">Loading transaction details...</p>
         </div>
     `;
-
+    
+    modalTitle.textContent = 'Transaction Details';
     modal.show();
 
-    // Simulate loading (replace with actual AJAX call)
-    setTimeout(() => {
-        content.innerHTML = `
-            <div class="alert alert-info">
-                <h6>Transaction Details</h6>
-                <p><strong>Transaction ID:</strong> ${transactionId}</p>
-                <p>This feature is under development. Detailed transaction information will be available soon.</p>
+    // Fetch transaction details via AJAX
+    fetch(`<?= APP_URL ?>/public/api/get_transaction_details.php?id=${transactionId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayTransactionDetails(data.transaction);
+            } else {
+                showErrorMessage(data.message || 'Failed to load transaction details');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching transaction details:', error);
+            showErrorMessage('Network error occurred while loading transaction details');
+        });
+}
+
+// Display transaction details in the modal
+function displayTransactionDetails(transaction) {
+    const content = document.getElementById('transactionDetailContent');
+    const modalTitle = document.getElementById('transactionDetailModalLabel');
+    
+    modalTitle.innerHTML = `
+        <i data-feather="file-text" class="me-2"></i>
+        Transaction #${transaction.id} Details
+    `;
+    
+    // Build the details HTML
+    let detailsHtml = '';
+    if (Object.keys(transaction.formatted_details).length > 0) {
+        detailsHtml = '<div class="row">';
+        for (const [key, value] of Object.entries(transaction.formatted_details)) {
+            detailsHtml += `
+                <div class="col-md-6 mb-2">
+                    <small class="text-muted d-block">${key}</small>
+                    <strong>${value}</strong>
+                </div>
+            `;
+        }
+        detailsHtml += '</div>';
+    } else {
+        detailsHtml = '<p class="text-muted fst-italic">No additional details available</p>';
+    }
+    
+    content.innerHTML = `
+        <div class="transaction-detail-content">
+            <!-- Transaction Header -->
+            <div class="d-flex align-items-center mb-4">
+                <div class="transaction-icon me-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center" 
+                         style="width: 50px; height: 50px; background-color: ${getActionColor(transaction.action)};">
+                        <i data-feather="${getActionIcon(transaction.action)}" class="text-white"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="mb-1">${transaction.action_label}</h5>
+                    <p class="text-muted mb-0">
+                        <i data-feather="clock" class="me-1" style="width: 14px; height: 14px;"></i>
+                        ${transaction.formatted_date}
+                    </p>
+                </div>
+                <span class="badge bg-${getActionBadgeClass(transaction.action)} fs-6">
+                    ${transaction.action_label}
+                </span>
             </div>
-        `;
-    }, 1000);
+
+            <!-- Core Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="info-card p-3 bg-light rounded">
+                        <h6 class="fw-bold mb-2">
+                            <i data-feather="user" class="me-1" style="width: 16px; height: 16px;"></i>
+                            Performed By
+                        </h6>
+                        <p class="mb-1"><strong>${transaction.user.name}</strong></p>
+                        <small class="text-muted">Role: ${transaction.user.role}</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="info-card p-3 bg-light rounded">
+                        <h6 class="fw-bold mb-2">
+                            <i data-feather="target" class="me-1" style="width: 16px; height: 16px;"></i>
+                            Target Entity
+                        </h6>
+                        <p class="mb-1"><strong>${transaction.entity_name}</strong></p>
+                        <small class="text-muted">Type: ${transaction.entity_type} ${transaction.entity_id ? '#' + transaction.entity_id : ''}</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Details -->
+            <div class="mb-4">
+                <h6 class="fw-bold mb-3">
+                    <i data-feather="info" class="me-1" style="width: 16px; height: 16px;"></i>
+                    Additional Information
+                </h6>
+                <div class="details-card p-3 border rounded">
+                    ${detailsHtml}
+                </div>
+            </div>
+
+            <!-- Technical Information -->
+            <div class="technical-info">
+                <h6 class="fw-bold mb-3">
+                    <i data-feather="server" class="me-1" style="width: 16px; height: 16px;"></i>
+                    Technical Details
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted d-block">Transaction ID</small>
+                        <code class="bg-light px-2 py-1 rounded">${transaction.id}</code>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted d-block">IP Address</small>
+                        <code class="bg-light px-2 py-1 rounded">${transaction.ip_address || 'Not recorded'}</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Re-initialize Feather icons
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+}
+
+// Show error message in modal
+function showErrorMessage(message) {
+    const content = document.getElementById('transactionDetailContent');
+    content.innerHTML = `
+        <div class="alert alert-danger">
+            <i data-feather="alert-triangle" class="me-2"></i>
+            <strong>Error:</strong> ${message}
+        </div>
+    `;
+    
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+}
+
+// Helper functions for styling
+function getActionColor(action) {
+    const colors = {
+        'login': '#28a745',
+        'logout': '#6c757d',
+        'client_created': '#007bff',
+        'client_updated': '#ffc107',
+        'client_deleted': '#dc3545',
+        'loan_created': '#007bff',
+        'loan_approved': '#28a745',
+        'loan_disbursed': '#17a2b8',
+        'loan_completed': '#28a745',
+        'payment_recorded': '#28a745',
+        'user_created': '#007bff',
+        'user_updated': '#ffc107'
+    };
+    return colors[action] || '#6c757d';
+}
+
+function getActionIcon(action) {
+    const icons = {
+        'login': 'log-in',
+        'logout': 'log-out',
+        'client_created': 'user-plus',
+        'client_updated': 'user-check',
+        'client_deleted': 'user-x',
+        'loan_created': 'file-plus',
+        'loan_approved': 'check-circle',
+        'loan_disbursed': 'send',
+        'loan_completed': 'check-circle-2',
+        'payment_recorded': 'dollar-sign',
+        'user_created': 'user-plus',
+        'user_updated': 'user-check'
+    };
+    return icons[action] || 'activity';
+}
+
+function getActionBadgeClass(action) {
+    const classes = {
+        'login': 'success',
+        'logout': 'secondary',
+        'client_created': 'primary',
+        'client_updated': 'warning',
+        'client_deleted': 'danger',
+        'loan_created': 'primary',
+        'loan_approved': 'success',
+        'loan_disbursed': 'info',
+        'loan_completed': 'success',
+        'payment_recorded': 'success',
+        'user_created': 'primary',
+        'user_updated': 'warning'
+    };
+    return classes[action] || 'secondary';
 }
 </script>
 
