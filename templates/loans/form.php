@@ -121,21 +121,47 @@ $isLocked = isset($loanCalculation) && !empty($loanCalculation) && empty($error)
             <!-- Loan Term -->
             <div class="col-md-6">
                 <div class="notion-form-group interactive-form-field">
-                    <input
-                        type="number"
-                        class="notion-form-control"
+                    <?php
+                    // Include LoanTermHelper for conversational terms
+                    require_once BASE_PATH . '/app/utilities/LoanTermHelper.php';
+                    $termOptions = LoanTermHelper::getCommonTermOptions();
+                    ?>
+                    <select
+                        class="notion-form-select form-select custom-select-animated"
                         id="loan_term"
                         name="loan_term"
-                        value="<?= htmlspecialchars($loan['loan_term'] ?? 17) ?>"
-                        <?= $isLocked ? 'readonly' : '' ?>
+                        <?= $isLocked ? 'disabled' : '' ?>
                         required
+                        aria-required="true">
+                        <option value="">Select loan term...</option>
+                        <?php foreach ($termOptions as $weeks => $label): ?>
+                            <option value="<?= $weeks ?>" <?= (isset($loan['loan_term']) && $loan['loan_term'] == $weeks) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($label) ?>
+                            </option>
+                        <?php endforeach; ?>
+                        <!-- Custom option -->
+                        <option value="custom" <?= (isset($loan['loan_term']) && !array_key_exists($loan['loan_term'], $termOptions)) ? 'selected' : '' ?>>
+                            Custom Term...
+                        </option>
+                    </select>
+                    <?php if ($isLocked): ?>
+                        <input type="hidden" name="loan_term" value="<?= htmlspecialchars($loan['loan_term']) ?>">
+                    <?php endif; ?>
+                    
+                    <!-- Custom input field (hidden by default) -->
+                    <input
+                        type="number"
+                        class="notion-form-control mt-2"
+                        id="custom_loan_term"
+                        name="custom_loan_term"
+                        style="display: none;"
                         min="4"
                         max="52"
                         step="1"
-                        aria-required="true"
-                        placeholder="Loan Term (Weeks)">
-                    <small class="form-text text-muted">Minimum 4 weeks - Maximum 52 weeks</small>
-                    <div class="invalid-feedback">Please enter a valid loan term between 4 and 52 weeks.</div>
+                        placeholder="Enter custom weeks (4-52)">
+                    
+                    <small class="form-text text-muted">Choose from common terms or select custom for 4-52 weeks</small>
+                    <div class="invalid-feedback">Please select a valid loan term.</div>
                 </div>
             </div>
         </div>
@@ -215,6 +241,44 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => ripple.remove(), 600);
         });
     });
+    // Handle custom loan term selection
+    const loanTermSelect = document.getElementById('loan_term');
+    const customTermInput = document.getElementById('custom_loan_term');
+    
+    if (loanTermSelect && customTermInput) {
+        loanTermSelect.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                customTermInput.style.display = 'block';
+                customTermInput.required = true;
+                customTermInput.focus();
+            } else {
+                customTermInput.style.display = 'none';
+                customTermInput.required = false;
+                customTermInput.value = '';
+            }
+        });
+        
+        // Update hidden loan_term value when custom is entered
+        customTermInput.addEventListener('input', function() {
+            if (loanTermSelect.value === 'custom' && this.value) {
+                // Set the actual loan_term value for form submission
+                loanTermSelect.setAttribute('data-custom-value', this.value);
+            }
+        });
+        
+        // Before form submission, update loan_term with custom value if needed
+        document.getElementById('loanForm').addEventListener('submit', function() {
+            if (loanTermSelect.value === 'custom' && customTermInput.value) {
+                // Create a hidden input with the custom value
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'loan_term';
+                hiddenInput.value = customTermInput.value;
+                this.appendChild(hiddenInput);
+            }
+        });
+    }
+
     // If calculation succeeded, lock the form inputs and focus preview
     const isLocked = <?= (isset($isLocked) && $isLocked) ? 'true' : 'false' ?>;
     if (isLocked) {

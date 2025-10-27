@@ -182,7 +182,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 <?php if ($preSelectedClientData): ?>
                     New Loan for <?= htmlspecialchars($preSelectedClientData['name']) ?>
                 <?php else: ?>
-                    New Loan Application (4-52 Week Terms)
+                    New Loan Application
                 <?php endif; ?>
             </h1>
             <?php if ($preSelectedClientData): ?>
@@ -308,7 +308,12 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                         </tr>
                         <tr>
                             <td class="text-muted">Term:</td>
-                            <td class="text-end text-muted"><?= $term_weeks ?> weeks (<?= $term_months ?> months)</td>
+                            <td class="text-end text-muted">
+                                <?php
+                                require_once BASE_PATH . '/app/utilities/LoanTermHelper.php';
+                                echo LoanTermHelper::weeksToConversational($term_weeks);
+                                ?>
+                            </td>
                         </tr>
                     </table>
                 </div>

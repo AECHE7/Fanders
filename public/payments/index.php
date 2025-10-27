@@ -153,7 +153,10 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                     <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
                     <?= date('l, F j, Y') ?>
                 </div>
-                                <a href="<?= APP_URL ?>/public/reports/payments.php" class="btn btn-sm btn-outline-secondary px-3">
+                                <a href="<?= APP_URL ?>/public/payments/overdue_payments.php" class="btn btn-sm btn-outline-warning px-3">
+                    <i data-feather="alert-triangle" class="me-1" style="width: 14px; height: 14px;"></i> Overdue Payments
+                </a>
+                <a href="<?= APP_URL ?>/public/reports/payments.php" class="btn btn-sm btn-outline-secondary px-3">
                     <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> Payments Report
                 </a>
                 <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-sm btn-success">
@@ -174,19 +177,25 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-success w-100 py-3">
                             <i data-feather="plus-circle" class="me-2" style="width:18px;height:18px;"></i>
                             Record Payment
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <a href="<?= APP_URL ?>/public/payments/overdue_payments.php" class="btn btn-warning w-100 py-3">
+                            <i data-feather="alert-triangle" class="me-2" style="width:18px;height:18px;"></i>
+                            Overdue Payments
+                        </a>
+                    </div>
+                    <div class="col-md-3">
                         <a href="<?= APP_URL ?>/public/collection-sheets/index.php" class="btn btn-primary w-100 py-3">
                             <i data-feather="clipboard" class="me-2" style="width:18px;height:18px;"></i>
                             Collection Sheets
                         </a>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <a href="<?= APP_URL ?>/public/cash-blotter/index.php" class="btn btn-outline-secondary w-100 py-3">
                             <i data-feather="book-open" class="me-2" style="width:18px;height:18px;"></i>
                             Cash Blotter

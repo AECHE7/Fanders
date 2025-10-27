@@ -85,6 +85,15 @@ $navGroups = [
                 'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier', 'client'],
                 'active_pages' => ['payments', 'request']
             ],
+            'overdue-payments' => [
+                'icon' => 'alert-triangle',
+                'title' => 'Overdue Payments',
+                'url' => APP_URL . '/public/payments/overdue_payments.php',
+                'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier'],
+                'active_pages' => ['overdue_payments'],
+                'show_badge' => true,
+                'badge_color' => 'danger'
+            ],
             'collection-sheets' => [
                 'icon' => 'clipboard',
                 'title' => 'Collection Sheets',
