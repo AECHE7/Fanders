@@ -180,12 +180,68 @@ $userId = $currentUser;
     <!-- Form Actions -->
     <div class="d-flex justify-content-end mt-4">
         <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
-        <button type="submit" class="btn btn-primary px-4 ripple-effect">
+        <button type="button" class="btn btn-primary px-4 ripple-effect" data-bs-toggle="modal" data-bs-target="#confirmUserSaveModal">
             <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
             <?= isset($editUser['id']) ? 'Update Account' : 'Create Account' ?>
-        </div>
+        </button>
     </div>
 </form>
+
+<!-- User Save Confirmation Modal -->
+<div class="modal fade" id="confirmUserSaveModal" tabindex="-1" aria-labelledby="confirmUserSaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmUserSaveModalLabel">
+                    <i data-feather="alert-circle" class="me-2" style="width:20px;height:20px;"></i>
+                    <?= isset($editUser['id']) ? 'Confirm Staff Update' : 'Confirm Staff Creation' ?>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">You are about to <?= isset($editUser['id']) ? 'update the information for' : 'create a new staff account for' ?>:</p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Full Name:</dt>
+                            <dd class="col-sm-8 fw-bold" id="modalUserName"><?= htmlspecialchars($editUser['name'] ?? '') ?></dd>
+                            <dt class="col-sm-4">Email:</dt>
+                            <dd class="col-sm-8" id="modalUserEmail"><?= htmlspecialchars($editUser['email'] ?? '') ?></dd>
+                            <dt class="col-sm-4">Phone:</dt>
+                            <dd class="col-sm-8" id="modalUserPhone"><?= htmlspecialchars($editUser['phone_number'] ?? '') ?></dd>
+                            <dt class="col-sm-4">Role:</dt>
+                            <dd class="col-sm-8" id="modalUserRole">
+                                <span class="badge text-bg-primary"><?= ucfirst($editUser['role'] ?? '') ?></span>
+                            </dd>
+                            <?php if (isset($editUser['id'])): ?>
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8" id="modalUserStatus">
+                                <span class="badge text-bg-<?= ($editUser['status'] ?? 'active') === 'active' ? 'success' : 'secondary' ?>">
+                                    <?= ucfirst($editUser['status'] ?? 'active') ?>
+                                </span>
+                            </dd>
+                            <?php endif; ?>
+                        </dl>
+                    </div>
+                </div>
+                <p class="mt-3 mb-0 text-muted small">
+                    <i data-feather="info" class="me-1" style="width:14px;height:14px;"></i>
+                    <?= isset($editUser['id']) ? 'This action will update the staff member information and permissions.' : 'This will create a new staff account with system access.' ?>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmUserSave">
+                    <i data-feather="check" class="me-1" style="width:16px;height:16px;"></i>
+                    <?= isset($editUser['id']) ? 'Confirm Update' : 'Confirm Creation' ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -268,6 +324,63 @@ $userId = $currentUser;
                     ripple.remove();
                 }, 600);
             });
+        });
+        
+        // Modal confirmation functionality
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone_number');
+        const roleSelect = document.getElementById('role');
+        const statusSelect = document.getElementById('status');
+        
+        function updateModalContent() {
+            if (nameInput) document.getElementById('modalUserName').textContent = nameInput.value || 'Not specified';
+            if (emailInput) document.getElementById('modalUserEmail').textContent = emailInput.value || 'Not specified';
+            if (phoneInput) document.getElementById('modalUserPhone').textContent = phoneInput.value || 'Not specified';
+            
+            // Update role badge
+            if (roleSelect) {
+                const role = roleSelect.value;
+                document.getElementById('modalUserRole').innerHTML = `<span class="badge text-bg-primary">${role.charAt(0).toUpperCase() + role.slice(1)}</span>`;
+            }
+            
+            // Update status badge if editing
+            if (statusSelect) {
+                const statusElement = document.getElementById('modalUserStatus');
+                if (statusElement) {
+                    const status = statusSelect.value;
+                    const badgeClass = status === 'active' ? 'success' : 'secondary';
+                    statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+                }
+            }
+        }
+        
+        // Update modal when inputs change
+        [nameInput, emailInput, phoneInput, roleSelect, statusSelect].forEach(input => {
+            if (input) {
+                input.addEventListener('input', updateModalContent);
+                input.addEventListener('change', updateModalContent);
+            }
+        });
+        
+        // Confirm save button handler
+        document.getElementById('confirmUserSave').addEventListener('click', function() {
+            // Validate form before submitting
+            if (form.checkValidity()) {
+                // Additional password validation
+                if (passwordInput && confirmPasswordInput) {
+                    if (passwordInput.value !== confirmPasswordInput.value) {
+                        bootstrap.Modal.getInstance(document.getElementById('confirmUserSaveModal')).hide();
+                        confirmPasswordInput.focus();
+                        return;
+                    }
+                }
+                form.submit();
+            } else {
+                // Close modal and show validation errors
+                bootstrap.Modal.getInstance(document.getElementById('confirmUserSaveModal')).hide();
+                form.reportValidity();
+            }
         });
     });
 </script>

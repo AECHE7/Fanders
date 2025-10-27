@@ -49,7 +49,7 @@ class LoanCalculationService extends BaseService {
             return false;
         }
 
-        // Calculate interest based on specified formula: P x 5% x term_months
+                // Calculate interest based on specified formula: P x 5% x term_months
         $totalInterest = ($principalAmount * self::INTEREST_RATE) * $termMonths;
 
         // Calculate savings deduction (1% of principal)

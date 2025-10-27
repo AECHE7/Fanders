@@ -93,16 +93,16 @@ if (!function_exists('getClientStatusBadgeClass')) {
                                             <!-- Status Change Buttons -->
                                             <?php if ($client['status'] === 'inactive' || $client['status'] === 'blacklisted'): ?>
                                                 <button type="button" class="btn btn-outline-success btn-status-action"
-                                                        data-action="activate" data-id="<?= $client['id'] ?>" title="Activate Client">
+                                                        data-action="activate" data-id="<?= $client['id'] ?>" data-name="<?= htmlspecialchars($client['name']) ?>" title="Activate Client">
                                                     <i data-feather="user-check"></i>
                                                 </button>
                                             <?php elseif ($client['status'] === 'active'): ?>
                                                 <button type="button" class="btn btn-outline-warning btn-status-action"
-                                                        data-action="deactivate" data-id="<?= $client['id'] ?>" title="Deactivate Client">
+                                                        data-action="deactivate" data-id="<?= $client['id'] ?>" data-name="<?= htmlspecialchars($client['name']) ?>" title="Deactivate Client">
                                                     <i data-feather="user-minus"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-outline-danger btn-status-action"
-                                                        data-action="blacklist" data-id="<?= $client['id'] ?>" title="Blacklist Client">
+                                                        data-action="blacklist" data-id="<?= $client['id'] ?>" data-name="<?= htmlspecialchars($client['name']) ?>" title="Blacklist Client">
                                                     <i data-feather="slash"></i>
                                                 </button>
                                             <?php endif; ?>
@@ -131,6 +131,47 @@ if (!function_exists('getClientStatusBadgeClass')) {
     </div>
 <?php endif; ?>
 
+<!-- Client Action Confirmation Modal -->
+<div class="modal fade" id="clientActionModal" tabindex="-1" aria-labelledby="clientActionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="clientActionModalLabel">
+                    <i data-feather="alert-circle" class="me-2" style="width:20px;height:20px;"></i>
+                    Confirm Client Status Change
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">You are about to change the client status to: <strong id="modalAction">ACTION</strong></p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Client ID:</dt>
+                            <dd class="col-sm-8 fw-bold" id="modalClientId">#000</dd>
+                            <dt class="col-sm-4">Client Name:</dt>
+                            <dd class="col-sm-8" id="modalClientName">Client Name</dd>
+                        </dl>
+                    </div>
+                </div>
+                <div id="modalWarning" class="alert alert-info mt-3">
+                    This action will change the client status.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmClientAction">
+                    <i data-feather="check" class="me-1" style="width:16px;height:16px;"></i>
+                    Confirm Change
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Hidden Form for POST Actions (Status Change) -->
 <form id="actionForm" method="POST" action="<?= APP_URL ?>/public/clients/index.php" style="display:none;">
     <input type="hidden" name="csrf_token" value="<?= $csrfToken ?>">
@@ -156,18 +197,42 @@ if (!function_exists('getClientStatusBadgeClass')) {
                 e.preventDefault();
                 const clientId = this.getAttribute('data-id');
                 const action = this.getAttribute('data-action');
-                let message = `Are you sure you want to change the client status to ${action.toUpperCase()}?`;
-
+                const clientName = this.getAttribute('data-name') || 'Unknown Client';
+                
+                // Set modal content
+                document.getElementById('modalClientId').textContent = '#' + clientId;
+                document.getElementById('modalClientName').textContent = clientName;
+                document.getElementById('modalAction').textContent = action.toUpperCase();
+                
+                // Set warning message based on action
+                const warningElement = document.getElementById('modalWarning');
                 if (action === 'deactivate') {
-                    message += "\n\nWARNING: This will prevent the client from getting new loans, but existing active loans must be cleared first.";
+                    warningElement.innerHTML = '<i data-feather="alert-triangle" class="me-1" style="width:16px;height:16px;"></i><strong>Warning:</strong> This will prevent the client from getting new loans. Existing active loans must be cleared first.';
+                    warningElement.className = 'alert alert-warning mt-3';
+                } else if (action === 'blacklist') {
+                    warningElement.innerHTML = '<i data-feather="alert-triangle" class="me-1" style="width:16px;height:16px;"></i><strong>Danger:</strong> Blacklisted clients cannot apply for new loans and may require special approval to reactivate.';
+                    warningElement.className = 'alert alert-danger mt-3';
+                } else {
+                    warningElement.innerHTML = '<i data-feather="info" class="me-1" style="width:16px;height:16px;"></i>This will change the client status and may affect their ability to apply for loans.';
+                    warningElement.className = 'alert alert-info mt-3';
                 }
-
-                if (confirm(message)) {
-                    actionIdInput.value = clientId;
-                    actionTypeInput.value = action;
-                    actionForm.submit();
-                }
+                
+                // Set form values
+                actionIdInput.value = clientId;
+                actionTypeInput.value = action;
+                
+                // Update modal button color
+                const confirmBtn = document.getElementById('confirmClientAction');
+                confirmBtn.className = action === 'blacklist' ? 'btn btn-danger' : (action === 'deactivate' ? 'btn btn-warning' : 'btn btn-success');
+                
+                // Show modal
+                new bootstrap.Modal(document.getElementById('clientActionModal')).show();
             });
+        });
+        
+        // Confirm action button handler
+        document.getElementById('confirmClientAction').addEventListener('click', function() {
+            actionForm.submit();
         });
     });
 </script>

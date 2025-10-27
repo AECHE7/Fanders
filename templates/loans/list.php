@@ -108,21 +108,33 @@ if (!function_exists('getLoanStatusBadgeClass')) {
 
                                 <?php if ($canManage && $status === 'application'): ?>
                                     <!-- Approve Button (Manager/Admin action) -->
-                                    <!-- <button type="button" class="btn btn-outline-success btn-loan-action"
-                                            data-action="approve" data-id="<?= $loan['id'] ?>" title="Approve Loan">
+                                    <button type="button" class="btn btn-outline-success btn-loan-action"
+                                            data-action="approve" data-id="<?= $loan['id'] ?>"
+                                            data-client="<?= htmlspecialchars($loan['client_name']) ?>"
+                                            data-amount="₱<?= number_format($loan['principal'], 2) ?>"
+                                            data-status="<?= htmlspecialchars($loan['status']) ?>"
+                                            title="Approve Loan">
                                         <i data-feather="check"></i>
-                                    </button> -->
+                                    </button>
                                     <!-- Cancel Button -->
-                                    <!-- <button type="button" class="btn btn-outline-danger btn-loan-action"
-                                            data-action="cancel" data-id="<?= $loan['id'] ?>" title="Cancel Application">
+                                    <button type="button" class="btn btn-outline-danger btn-loan-action"
+                                            data-action="cancel" data-id="<?= $loan['id'] ?>"
+                                            data-client="<?= htmlspecialchars($loan['client_name']) ?>"
+                                            data-amount="₱<?= number_format($loan['principal'], 2) ?>"
+                                            data-status="<?= htmlspecialchars($loan['status']) ?>"
+                                            title="Cancel Application">
                                         <i data-feather="x-circle"></i>
-                                    </button> -->
+                                    </button>
                                 <?php endif; ?>
 
                                 <?php if ($canManage && $status === 'approved'): ?>
                                     <!-- Disburse Button (Manager/Admin action) -->
                                     <button type="button" class="btn btn-outline-primary btn-loan-action"
-                                            data-action="disburse" data-id="<?= $loan['id'] ?>" title="Disburse Funds (Activate Loan)">
+                                            data-action="disburse" data-id="<?= $loan['id'] ?>" 
+                                            data-client="<?= htmlspecialchars($loan['client_name']) ?>"
+                                            data-amount="₱<?= number_format($loan['principal'], 2) ?>"
+                                            data-status="<?= htmlspecialchars($loan['status']) ?>"
+                                            title="Disburse Funds (Activate Loan)">
                                         <i data-feather="send"></i> Disburse
                                     </button>
                                 <?php endif; ?>
@@ -193,6 +205,53 @@ if (!function_exists('getLoanStatusBadgeClass')) {
     </div>
 <?php endif; ?>
 
+<!-- Loan Action Confirmation Modal -->
+<div class="modal fade" id="loanActionModal" tabindex="-1" aria-labelledby="loanActionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="loanActionModalLabel">
+                    <i data-feather="alert-circle" class="me-2" style="width:20px;height:20px;"></i>
+                    Confirm Loan Action
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">You are about to perform the action: <strong id="modalLoanAction">ACTION</strong></p>
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Loan ID:</dt>
+                            <dd class="col-sm-8 fw-bold" id="modalLoanId">#000</dd>
+                            <dt class="col-sm-4">Client:</dt>
+                            <dd class="col-sm-8" id="modalLoanClient">Client Name</dd>
+                            <dt class="col-sm-4">Amount:</dt>
+                            <dd class="col-sm-8 text-success fw-bold" id="modalLoanAmount">₱0.00</dd>
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8" id="modalLoanStatus">
+                                <span class="badge text-bg-secondary">Status</span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+                <div id="modalLoanWarning" class="alert alert-info mt-3">
+                    This action will change the loan status.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmLoanAction">
+                    <i data-feather="check" class="me-1" style="width:16px;height:16px;"></i>
+                    Confirm Action
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Hidden Form for POST Actions (Approve/Disburse/Cancel) -->
 <form id="loanActionForm" method="POST" action="<?= APP_URL ?>/public/loans/index.php" style="display:none;">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken ?? '') ?>">
@@ -211,22 +270,64 @@ if (!function_exists('getLoanStatusBadgeClass')) {
             button.addEventListener('click', function() {
                 const loanId = this.getAttribute('data-id');
                 const action = this.getAttribute('data-action');
-                let message = `Are you sure you want to perform the action: ${action.toUpperCase()} on Loan ID ${loanId}?`;
-
+                const clientName = this.getAttribute('data-client') || 'Unknown Client';
+                const amount = this.getAttribute('data-amount') || '₱0.00';
+                const status = this.getAttribute('data-status') || 'Unknown';
+                
+                // Set modal content
+                document.getElementById('modalLoanId').textContent = '#' + loanId;
+                document.getElementById('modalLoanClient').textContent = clientName;
+                document.getElementById('modalLoanAmount').textContent = amount;
+                document.getElementById('modalLoanAction').textContent = action.toUpperCase();
+                
+                // Set status badge
+                const statusElement = document.getElementById('modalLoanStatus');
+                let statusClass = 'secondary';
+                if (status === 'application') statusClass = 'warning';
+                else if (status === 'approved') statusClass = 'info';
+                else if (status === 'active') statusClass = 'success';
+                else if (status === 'completed') statusClass = 'success';
+                else if (status === 'cancelled') statusClass = 'danger';
+                statusElement.innerHTML = `<span class="badge text-bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+                
+                // Set warning message based on action
+                const warningElement = document.getElementById('modalLoanWarning');
                 if (action === 'approve') {
-                    message = `CONFIRM: Approve Loan ID ${loanId}? This action cannot be easily undone.`;
+                    warningElement.innerHTML = '<i data-feather="info" class="me-1" style="width:16px;height:16px;"></i><strong>Action:</strong> This will approve the loan application. The loan will be ready for disbursement.';
+                    warningElement.className = 'alert alert-info mt-3';
                 } else if (action === 'disburse') {
-                    message = `CONFIRM: Disburse funds for Loan ID ${loanId}? This will activate the payment schedule.`;
+                    warningElement.innerHTML = '<i data-feather="alert-triangle" class="me-1" style="width:16px;height:16px;"></i><strong>Important:</strong> This will disburse the funds and activate the payment schedule. This action cannot be easily undone.';
+                    warningElement.className = 'alert alert-warning mt-3';
                 } else if (action === 'cancel') {
-                    message = `WARNING: Are you sure you want to CANCEL Loan ID ${loanId}? This will terminate the application.`;
+                    warningElement.innerHTML = '<i data-feather="x-circle" class="me-1" style="width:16px;height:16px;"></i><strong>Warning:</strong> This will cancel the loan application permanently. This action cannot be undone.';
+                    warningElement.className = 'alert alert-danger mt-3';
+                } else {
+                    warningElement.innerHTML = '<i data-feather="info" class="me-1" style="width:16px;height:16px;"></i>This action will change the loan status.';
+                    warningElement.className = 'alert alert-info mt-3';
                 }
-
-                if (confirm(message)) {
-                    actionIdInput.value = loanId;
-                    actionTypeInput.value = action;
-                    actionForm.submit();
+                
+                // Set form values
+                actionIdInput.value = loanId;
+                actionTypeInput.value = action;
+                
+                // Update modal button color
+                const confirmBtn = document.getElementById('confirmLoanAction');
+                if (action === 'cancel') {
+                    confirmBtn.className = 'btn btn-danger';
+                } else if (action === 'disburse') {
+                    confirmBtn.className = 'btn btn-warning';
+                } else {
+                    confirmBtn.className = 'btn btn-success';
                 }
+                
+                // Show modal
+                new bootstrap.Modal(document.getElementById('loanActionModal')).show();
             });
+        });
+
+        // Confirm loan action button handler
+        document.getElementById('confirmLoanAction').addEventListener('click', function() {
+            actionForm.submit();
         });
 
         // Feather icons initialization

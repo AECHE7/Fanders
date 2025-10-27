@@ -261,15 +261,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
       <div class="card-body">
         <div class="row g-3">
           <div class="col-md-4">
-            <form method="post" onsubmit="return confirm('Approve this collection sheet?');">
-              <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-              <input type="hidden" name="action" value="approve">
-              <button type="submit" class="btn btn-success w-100">
-                <i data-feather="check" class="me-2" style="width: 16px; height: 16px;"></i>
-                Approve Sheet
-              </button>
-              <small class="text-muted d-block mt-2">Verify collections are accurate</small>
-            </form>
+            <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#approveModal">
+              <i data-feather="check" class="me-2" style="width: 16px; height: 16px;"></i>
+              Approve Sheet
+            </button>
+            <small class="text-muted d-block mt-2">Verify collections are accurate</small>
           </div>
           <div class="col-md-4">
             <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#rejectModal">
@@ -296,20 +292,118 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
           <i data-feather="info" class="me-2" style="width: 16px; height: 16px;"></i>
           This sheet has been approved. Post all items as payments to complete the process.
         </div>
-        <form method="post" onsubmit="return confirm('Post all <?= count($items) ?> items as payments? This action cannot be undone.');">
-          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
-          <input type="hidden" name="action" value="post_payments">
-          <button type="submit" class="btn btn-primary btn-lg">
-            <i data-feather="upload" class="me-2" style="width: 18px; height: 18px;"></i>
-            Post All Payments (<?= count($items) ?> items)
-          </button>
-        </form>
+        <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#postPaymentsModal">
+          <i data-feather="upload" class="me-2" style="width: 18px; height: 18px;"></i>
+          Post All Payments (<?= count($items) ?> items)
+        </button>
       </div>
     </div>
     <?php endif; ?>
 
   </div>
 </main>
+
+<!-- Approve Modal -->
+<div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="approveModalLabel">
+          <i data-feather="check-circle" class="me-2" style="width:20px;height:20px;"></i>
+          Confirm Sheet Approval
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">You are about to approve this collection sheet:</p>
+        <div class="card bg-light">
+          <div class="card-body">
+            <dl class="row mb-0">
+              <dt class="col-sm-4">Sheet ID:</dt>
+              <dd class="col-sm-8 fw-bold">#<?= $sheet['id'] ?></dd>
+              <dt class="col-sm-4">Account Officer:</dt>
+              <dd class="col-sm-8"><?= htmlspecialchars($sheet['created_by_name']) ?></dd>
+              <dt class="col-sm-4">Collection Date:</dt>
+              <dd class="col-sm-8"><?= date('M j, Y', strtotime($sheet['collection_date'])) ?></dd>
+              <dt class="col-sm-4">Total Amount:</dt>
+              <dd class="col-sm-8 text-success fw-bold">₱<?= number_format((float)$sheet['total_amount'], 2) ?></dd>
+              <dt class="col-sm-4">Items Count:</dt>
+              <dd class="col-sm-8"><?= count($items) ?> payments</dd>
+            </dl>
+          </div>
+        </div>
+        <div class="alert alert-info mt-3">
+          <i data-feather="info" class="me-2" style="width:16px;height:16px;"></i>
+          <strong>Important:</strong> Approving this sheet will mark it ready for payment posting. Verify all amounts are correct.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
+          Cancel
+        </button>
+        <form method="post" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+          <input type="hidden" name="action" value="approve">
+          <button type="submit" class="btn btn-success">
+            <i data-feather="check" class="me-1" style="width:16px;height:16px;"></i>
+            Confirm Approval
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Post Payments Modal -->
+<div class="modal fade" id="postPaymentsModal" tabindex="-1" aria-labelledby="postPaymentsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="postPaymentsModalLabel">
+          <i data-feather="upload" class="me-2" style="width:20px;height:20px;"></i>
+          Confirm Payment Posting
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">You are about to post all payments from this collection sheet:</p>
+        <div class="card bg-light">
+          <div class="card-body">
+            <dl class="row mb-0">
+              <dt class="col-sm-4">Sheet ID:</dt>
+              <dd class="col-sm-8 fw-bold">#<?= $sheet['id'] ?></dd>
+              <dt class="col-sm-4">Total Amount:</dt>
+              <dd class="col-sm-8 text-success fw-bold">₱<?= number_format((float)$sheet['total_amount'], 2) ?></dd>
+              <dt class="col-sm-4">Payment Items:</dt>
+              <dd class="col-sm-8 fw-bold"><?= count($items) ?> payments</dd>
+              <dt class="col-sm-4">Collection Date:</dt>
+              <dd class="col-sm-8"><?= date('M j, Y', strtotime($sheet['collection_date'])) ?></dd>
+            </dl>
+          </div>
+        </div>
+        <div class="alert alert-warning mt-3">
+          <i data-feather="alert-triangle" class="me-2" style="width:16px;height:16px;"></i>
+          <strong>Warning:</strong> This action cannot be undone. All payments will be posted to client accounts and loan schedules will be updated.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
+          Cancel
+        </button>
+        <form method="post" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+          <input type="hidden" name="action" value="post_payments">
+          <button type="submit" class="btn btn-primary">
+            <i data-feather="upload" class="me-1" style="width:16px;height:16px;"></i>
+            Post All Payments
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Reject Modal -->
 <div class="modal fade" id="rejectModal" tabindex="-1">
