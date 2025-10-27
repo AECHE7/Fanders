@@ -10,6 +10,10 @@
  */
 // Lock form fields after successful calculation to prevent edits
 $isLocked = isset($loanCalculation) && !empty($loanCalculation) && empty($error);
+
+// Get dynamic loan amount limits from the service
+$loanCalcService = new LoanCalculationService();
+$loanLimits = $loanCalcService->getLoanAmountLimits();
 ?>
 
 <form action="<?= APP_URL ?>/public/loans/add.php" method="post" id="loanForm" class="notion-form needs-validation" novalidate>
@@ -107,13 +111,13 @@ $isLocked = isset($loanCalculation) && !empty($loanCalculation) && empty($error)
                         value="<?= htmlspecialchars($loan['loan_amount'] ?? '') ?>"
                         <?= $isLocked ? 'readonly' : '' ?>
                         required
-                        min="1000"
-                        max="50000"
+                        min="<?= $loanLimits['minimum'] ?>"
+                        max="<?= $loanLimits['maximum'] ?>"
                         step="100"
                         aria-required="true"
                         placeholder="Principal Amount (₱)">
-                    <small class="form-text text-muted">Minimum ₱1,000 - Maximum ₱50,000</small>
-                    <div class="invalid-feedback">Please enter a valid loan amount between ₱1,000 and ₱50,000.</div>
+                    <small class="form-text text-muted"><?= $loanLimits['range_display'] ?></small>
+                    <div class="invalid-feedback">Please enter a valid loan amount between <?= $loanLimits['range_display'] ?>.</div>
                 </div>
             </div>
         </div>

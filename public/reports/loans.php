@@ -371,13 +371,23 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                                         <td>
                                             <?php 
                                             $status = strtolower($loan['status'] ?? '');
-                                            $badgeClass = match($status) {
-                                                'active' => 'bg-success',
-                                                'completed' => 'bg-primary',
-                                                'pending' => 'bg-warning text-dark',
-                                                'cancelled' => 'bg-danger',
-                                                default => 'bg-secondary'
-                                            };
+                                            switch($status) {
+                                                case 'active':
+                                                    $badgeClass = 'bg-success';
+                                                    break;
+                                                case 'completed':
+                                                    $badgeClass = 'bg-primary';
+                                                    break;
+                                                case 'pending':
+                                                    $badgeClass = 'bg-warning text-dark';
+                                                    break;
+                                                case 'cancelled':
+                                                    $badgeClass = 'bg-danger';
+                                                    break;
+                                                default:
+                                                    $badgeClass = 'bg-secondary';
+                                                    break;
+                                            }
                                             ?>
                                             <span class="badge <?= $badgeClass ?> px-2 py-1">
                                                 <?= htmlspecialchars(ucfirst($loan['status'] ?? '')) ?>
