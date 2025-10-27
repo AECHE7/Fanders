@@ -25,10 +25,13 @@ $filterOptions = [
 ];
 $filters = FilterUtility::sanitizeFilters($_GET, $filterOptions);
 
-// Default focus on approvals queue (pending applications)
+// Default focus on approvals queue (pending applications only)
 if (empty($filters['status'])) {
     $filters['status'] = 'application';
 }
+
+// Force show only loans that need approval (application status)
+$filters['status'] = 'application';
 
 // Rename start_date/end_date to date_from/date_to for consistency
 if (isset($_GET['start_date'])) {
@@ -204,31 +207,27 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 
 <main class="main-content">
     <div class="content-wrapper">
-        <!-- Modern Page Header -->
+        <!-- Dashboard Header with Title, Date and Reports Links -->
         <div class="notion-page-header mb-4">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center">
                     <div class="me-3">
-                        <div class="page-icon rounded d-flex align-items-center justify-content-center" 
-                             style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                            <i data-feather="check-square" style="width: 24px; height: 24px; color: white;"></i>
+                        <div class="page-icon rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; background-color: #f0f4fd;">
+                            <i data-feather="check-square" style="width: 24px; height: 24px; color:rgb(0, 0, 0);"></i>
                         </div>
                     </div>
-                    <div>
-                        <h1 class="notion-page-title mb-0">Loan Approvals</h1>
-                        <p class="text-muted small mb-0">Manage loan applications, approvals, and disbursements</p>
-                    </div>
+                    <h1 class="notion-page-title mb-0">Loan Approvals</h1>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
                     <div class="text-muted d-none d-md-block me-3">
                         <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
                         <?= date('l, F j, Y') ?>
                     </div>
-                    <a href="<?= APP_URL ?>/public/loans/add.php" class="btn btn-sm btn-primary">
-                        <i data-feather="plus" class="me-1" style="width: 14px; height: 14px;"></i> New Loan
-                    </a>
                     <a href="<?= APP_URL ?>/public/loans/index.php" class="btn btn-sm btn-outline-secondary px-3">
                         <i data-feather="list" class="me-1" style="width: 14px; height: 14px;"></i> All Loans
+                    </a>
+                    <a href="<?= APP_URL ?>/public/loans/add.php" class="btn btn-sm btn-success">
+                        <i data-feather="plus" class="me-1" style="width: 14px; height: 14px;"></i> New Loan
                     </a>
                 </div>
             </div>
@@ -251,269 +250,127 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             </div>
         <?php endif; ?>
 
-        <!-- Quick Actions Tabs -->
-        <div class="row g-3 mb-4">
-            <div class="col-12 col-md-6 col-lg-3">
-                <a href="<?= APP_URL ?>/public/loans/approvals.php?status=application" 
-                   class="card h-100 text-decoration-none <?= $filters['status'] === 'application' ? 'border-primary' : '' ?> hover-shadow">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                                 style="width: 50px; height: 50px; background-color: #e3f2fd;">
-                                <i data-feather="inbox" style="width: 24px; height: 24px; color: #1976d2;"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-0 text-dark">Pending</h6>
-                            <p class="text-muted small mb-0">Applications</p>
-                        </div>
-                        <div class="badge bg-primary rounded-pill"><?= $approvalStats['pending_applications'] ?></div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <a href="<?= APP_URL ?>/public/loans/approvals.php?status=approved" 
-                   class="card h-100 text-decoration-none <?= $filters['status'] === 'approved' ? 'border-warning' : '' ?> hover-shadow">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                                 style="width: 50px; height: 50px; background-color: #fff3e0;">
-                                <i data-feather="check" style="width: 24px; height: 24px; color: #f57c00;"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-0 text-dark">Approved</h6>
-                            <p class="text-muted small mb-0">Awaiting Disbursement</p>
-                        </div>
-                        <div class="badge bg-warning rounded-pill"><?= $approvalStats['approved_pending_disbursement'] ?></div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <a href="<?= APP_URL ?>/public/loans/index.php?status=active" 
-                   class="card h-100 text-decoration-none hover-shadow">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                                 style="width: 50px; height: 50px; background-color: #e8f5e9;">
-                                <i data-feather="activity" style="width: 24px; height: 24px; color: #388e3c;"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-0 text-dark">Active</h6>
-                            <p class="text-muted small mb-0">Loans</p>
-                        </div>
-                        <div class="badge bg-success rounded-pill"><?= $loanStats['active_loans'] ?? 0 ?></div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <a href="<?= APP_URL ?>/public/loans/index.php" 
-                   class="card h-100 text-decoration-none hover-shadow">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-shrink-0 me-3">
-                            <div class="rounded-circle d-flex align-items-center justify-content-center" 
-                                 style="width: 50px; height: 50px; background-color: #f3e5f5;">
-                                <i data-feather="list" style="width: 24px; height: 24px; color: #7b1fa2;"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="mb-0 text-dark">All Loans</h6>
-                            <p class="text-muted small mb-0">View All</p>
-                        </div>
-                        <div class="badge bg-secondary rounded-pill"><?= $loanStats['total_loans'] ?? 0 ?></div>
-                    </div>
-                </a>
-            </div>
-        </div>
 
-        <!-- Statistics Cards Row -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-6 col-lg-3">
-                <div class="card shadow-sm h-100 border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <div class="card-body text-white">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
+
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-warning shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
                             <div>
-                                <p class="mb-1 opacity-75 small text-uppercase">Total Disbursed</p>
-                                <h3 class="mb-0 fw-bold">₱<?= number_format($loanStats['total_disbursed'] ?? 0, 2) ?></h3>
+                                <h6 class="card-title text-uppercase small">Pending Applications</h6>
+                                <h3 class="mb-0"><?= $approvalStats['pending_applications'] ?? 0 ?></h3>
                             </div>
-                            <div class="bg-white bg-opacity-25 rounded p-2">
-                                <i data-feather="dollar-sign" style="width: 24px; height: 24px;"></i>
-                            </div>
+                            <i data-feather="inbox" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card shadow-sm h-100 border-0" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                    <div class="card-body text-white">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="col-md-3">
+                <div class="card text-white bg-info shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
                             <div>
-                                <p class="mb-1 opacity-75 small text-uppercase">Disbursed Today</p>
-                                <h3 class="mb-0 fw-bold"><?= $approvalStats['disbursed_today'] ?></h3>
+                                <h6 class="card-title text-uppercase small">Approved (Pending Disbursement)</h6>
+                                <h3 class="mb-0"><?= $approvalStats['approved_pending_disbursement'] ?? 0 ?></h3>
                             </div>
-                            <div class="bg-white bg-opacity-25 rounded p-2">
-                                <i data-feather="trending-up" style="width: 24px; height: 24px;"></i>
-                            </div>
+                            <i data-feather="check" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card shadow-sm h-100 border-0" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                    <div class="card-body text-white">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="col-md-3">
+                <div class="card text-white bg-success shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
                             <div>
-                                <p class="mb-1 opacity-75 small text-uppercase">Approved This Week</p>
-                                <h3 class="mb-0 fw-bold"><?= $approvalStats['approved_this_week'] ?></h3>
+                                <h6 class="card-title text-uppercase small">Approved This Week</h6>
+                                <h3 class="mb-0"><?= $approvalStats['approved_this_week'] ?? 0 ?></h3>
                             </div>
-                            <div class="bg-white bg-opacity-25 rounded p-2">
-                                <i data-feather="check-circle" style="width: 24px; height: 24px;"></i>
-                            </div>
+                            <i data-feather="check-circle" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card shadow-sm h-100 border-0" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-                    <div class="card-body text-white">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
                             <div>
-                                <p class="mb-1 opacity-75 small text-uppercase">Overdue Loans</p>
-                                <h3 class="mb-0 fw-bold"><?= $loanStats['overdue_loans_count'] ?? 0 ?></h3>
+                                <h6 class="card-title text-uppercase small">Disbursed Today</h6>
+                                <h3 class="mb-0"><?= $approvalStats['disbursed_today'] ?? 0 ?></h3>
                             </div>
-                            <div class="bg-white bg-opacity-25 rounded p-2">
-                                <i data-feather="alert-triangle" style="width: 24px; height: 24px;"></i>
-                            </div>
+                            <i data-feather="trending-up" class="icon-lg opacity-50" style="width: 3rem; height: 3rem;"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Advanced Filters Card -->
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-header bg-white border-bottom">
+        <!-- Filters Card -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+                <form method="GET" action="<?= APP_URL ?>/public/loans/approvals.php" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Search Client/ID</label>
+                        <input type="text" class="form-control" id="search" name="search"
+                            value="<?= htmlspecialchars($filters['search'] ?? '') ?>"
+                            placeholder="Client name, phone, or loan ID...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="client_id" class="form-label">Client</label>
+                        <select class="form-select" id="client_id" name="client_id">
+                            <option value="">All Clients</option>
+                            <?php foreach ($clients as $client): ?>
+                                <option value="<?= $client['id'] ?>" <?= ($filters['client_id'] ?? '') == $client['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($client['name']) ?> (ID: <?= $client['id'] ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_from" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from"
+                            value="<?= htmlspecialchars($filters['date_from'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="date_to" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to"
+                            value="<?= htmlspecialchars($filters['date_to'] ?? '') ?>">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">Filter</button>
+                        <a href="<?= APP_URL ?>/public/loans/approvals.php" class="btn btn-outline-secondary">Clear</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loans Approval List Table Card -->
+        <div class="card shadow-sm">
+            <div class="card-header">
                 <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i data-feather="filter" class="me-2" style="width: 18px; height: 18px;"></i>
-                        Search & Filter
-                    </h5>
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" 
-                            data-bs-target="#filterCollapse" aria-expanded="true">
-                        <i data-feather="chevron-down" style="width: 16px; height: 16px;"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="collapse show" id="filterCollapse">
-                <div class="card-body">
-                    <form method="GET" action="<?= APP_URL ?>/public/loans/approvals.php" class="row g-3">
-                        <div class="col-md-4">
-                            <label for="search" class="form-label fw-semibold">Search</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i data-feather="search" style="width: 16px; height: 16px;"></i></span>
-                                <input type="text" class="form-control" id="search" name="search"
-                                    value="<?= htmlspecialchars($filters['search'] ?? '') ?>"
-                                    placeholder="Client name, phone, or loan ID...">
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="status" class="form-label fw-semibold">Status</label>
-                            <select class="form-select" id="status" name="status">
-                                <option value="">All Status</option>
-                                <option value="application" <?= ($filters['status'] ?? '') === 'application' ? 'selected' : '' ?>>Application (Pending)</option>
-                                <option value="approved" <?= ($filters['status'] ?? '') === 'approved' ? 'selected' : '' ?>>Approved</option>
-                                <option value="active" <?= ($filters['status'] ?? '') === 'active' ? 'selected' : '' ?>>Active (Paying)</option>
-                                <option value="completed" <?= ($filters['status'] ?? '') === 'completed' ? 'selected' : '' ?>>Completed</option>
-                                <option value="defaulted" <?= ($filters['status'] ?? '') === 'defaulted' ? 'selected' : '' ?>>Defaulted</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="client_id" class="form-label fw-semibold">Client</label>
-                            <select class="form-select" id="client_id" name="client_id">
-                                <option value="">All Clients</option>
-                                <?php foreach ($clients as $client): ?>
-                                    <option value="<?= $client['id'] ?>" <?= ($filters['client_id'] ?? '') == $client['id'] ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($client['name']) ?> (ID: <?= $client['id'] ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label for="limit" class="form-label fw-semibold">Items per page</label>
-                            <select class="form-select" id="limit" name="limit">
-                                <?php foreach ([10,20,50,100] as $opt): ?>
-                                    <option value="<?= $opt ?>" <?= (int)($limit ?? 20) === $opt ? 'selected' : '' ?>><?= $opt ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="date_from" class="form-label fw-semibold">From Date</label>
-                            <input type="date" class="form-control" id="date_from" name="date_from"
-                                value="<?= htmlspecialchars($filters['date_from'] ?? '') ?>">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="date_to" class="form-label fw-semibold">To Date</label>
-                            <input type="date" class="form-control" id="date_to" name="date_to"
-                                value="<?= htmlspecialchars($filters['date_to'] ?? '') ?>">
-                        </div>
-                        <div class="col-md-4 d-flex align-items-end gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                <i data-feather="filter" class="me-1" style="width: 16px; height: 16px;"></i> Apply Filters
-                            </button>
-                            <a href="<?= APP_URL ?>/public/loans/approvals.php" class="btn btn-outline-secondary">
-                                <i data-feather="x" class="me-1" style="width: 16px; height: 16px;"></i> Clear
-                            </a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Loans List Table Card -->
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-white border-bottom">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-1">
-                            <?php
-                            $statusLabel = '';
-                            switch($filters['status'] ?? '') {
-                                case 'application': $statusLabel = 'Pending Applications'; break;
-                                case 'approved': $statusLabel = 'Approved Loans'; break;
-                                case 'active': $statusLabel = 'Active Loans'; break;
-                                case 'completed': $statusLabel = 'Completed Loans'; break;
-                                case 'defaulted': $statusLabel = 'Defaulted Loans'; break;
-                                default: $statusLabel = 'All Loans';
-                            }
-                            echo $statusLabel;
-                            ?>
-                        </h5>
-                        <p class="text-muted small mb-0">
-                            Showing <?= count($loans) ?> of <?= $totalLoans ?> loans
-                        </p>
-                    </div>
-                    <div class="btn-group" role="group">
-                        <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" 
-                           class="btn btn-sm btn-outline-danger">
-                            <i data-feather="file-text" style="width: 14px; height: 14px;"></i> PDF
+                    <h5 class="mb-0">Loans Pending Approval</h5>
+                    <div class="btn-group">
+                        <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
+                            <i data-feather="download"></i> Export PDF
                         </a>
-                        <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'excel'])) ?>" 
-                           class="btn btn-sm btn-outline-success">
-                            <i data-feather="download" style="width: 14px; height: 14px;"></i> Excel
+                        <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'excel'])) ?>" class="btn btn-sm btn-outline-success">
+                            <i data-feather="file"></i> Export Excel
                         </a>
                     </div>
                 </div>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body">
                 <?php
-                // Provide template variables expected by `templates/loans/listapp.php`
+                // Provide template variables expected by `templates/loans/list_approval.php`
                 // Ensure CSRF token is available for the hidden POST form and action handlers
                 $csrfToken = isset($csrf) && method_exists($csrf, 'getToken') ? $csrf->getToken() : '';
                 // Provide current user role for role-specific UI checks inside the template
                 $userRole = $auth->getCurrentUser()['role'] ?? null;
 
-                include_once BASE_PATH . '/templates/loans/listapp.php';
+                include_once BASE_PATH . '/templates/loans/list_approval.php';
                 ?>
             </div>
         </div>
