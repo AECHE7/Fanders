@@ -84,6 +84,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($canCalculate) {
+            // Calculate term in months from weeks for interest calculation
+            $loanTermMonths = max(1, round((int)$loanTermRaw / 4.33)); // Convert weeks to months
             $loanCalculation = $loanCalculationService->calculateLoan((float)$loanAmountRaw, (int)$loanTermRaw, (int)$loanTermMonths);
             if (!$loanCalculation) {
                 $error = $loanCalculationService->getErrorMessage() ?: "Failed to calculate loan details.";
