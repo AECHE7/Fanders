@@ -297,7 +297,7 @@ function toggleView(viewType) {
 // Export transactions function
 function exportTransactions() {
     const filters = new URLSearchParams(window.location.search);
-    const exportUrl = '<?= APP_URL ?>/public/reports/transactions.php?' + filters.toString() + '&export=pdf';
+    const exportUrl = `${window.location.protocol}//${window.location.host}/public/reports/transactions.php?` + filters.toString() + '&export=pdf';
     window.open(exportUrl, '_blank');
 }
 
@@ -333,9 +333,23 @@ function showTransactionDetails(transactionId) {
     modal.show();
 
     // Fetch transaction details via AJAX
-    fetch(`<?= APP_URL ?>/public/api/get_transaction_details.php?id=${transactionId}`)
-        .then(response => response.json())
+    // Use dynamic URL based on current request to handle localhost vs production domains
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    const apiUrl = `${protocol}//${host}/public/api/get_transaction_details.php?id=${transactionId}`;
+    
+    console.log('Fetching transaction details from:', apiUrl);
+    
+    fetch(apiUrl)
+        .then(response => {
+            console.log('Response status:', response.status, response.statusText);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('API Response:', data);
             if (data.success) {
                 displayTransactionDetails(data.transaction);
             } else {
@@ -344,7 +358,8 @@ function showTransactionDetails(transactionId) {
         })
         .catch(error => {
             console.error('Error fetching transaction details:', error);
-            showErrorMessage('Network error occurred while loading transaction details');
+            console.error('API URL that failed:', apiUrl);
+            showErrorMessage(`Network error: ${error.message}. Check console for details.`);
         });
 }
 
