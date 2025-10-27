@@ -54,8 +54,16 @@ $navGroups = [
                 'title' => 'Loan Management',
                 'url' => APP_URL . '/public/loans/index.php',
                 'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier', 'client'],
-                'active_pages' => ['loans', 'approvals'],
+                'active_pages' => ['loans'],
                 'priority' => true // Mark as high priority
+            ],
+            'loan-approvals' => [
+                'icon' => 'check-circle',
+                'title' => 'Loan Approvals',
+                'url' => APP_URL . '/public/loans/approvals.php',
+                'roles' => ['super-admin', 'admin', 'manager'],
+                'active_pages' => ['approvals'],
+                'show_badge' => true // This will show the pending count badge
             ],
             'clients' => [
                 'icon' => 'users',
@@ -92,7 +100,7 @@ $navGroups = [
                 'active_pages' => ['cash_blotter', 'cash-blotter']
             ],
             'slr-documents' => [
-                'icon' => 'file-check',
+                'icon' => 'file',
                 'title' => 'SLR Documents',
                 'url' => APP_URL . '/public/slr/index.php',
                 'roles' => ['super-admin', 'admin', 'manager', 'cashier'],
@@ -190,7 +198,7 @@ if (Permissions::canViewLoanApprovals($userRole)) {
                                         <i data-feather="<?= $item['icon'] ?>" class="me-2 nav-icon" style="width: 18px; height: 18px;"></i>
                                         <span class="fw-medium nav-text"><?= $item['title'] ?></span>
                                         
-                                        <?php if ($id === 'loans' && $pendingCount > 0): ?>
+                                        <?php if ($id === 'loan-approvals' && $pendingCount > 0): ?>
                                             <span class="badge bg-danger ms-auto nav-badge" data-count="<?= $pendingCount ?>"><?= $pendingCount ?></span>
                                         <?php endif; ?>
                                     </a>
@@ -201,21 +209,21 @@ if (Permissions::canViewLoanApprovals($userRole)) {
                 <?php endif; ?>
             <?php endforeach; ?>
 
-            <!-- Special Loan Approvals Item (if user has access and there are pending items) -->
-            <?php if (Permissions::canViewLoanApprovals($userRole) && $pendingCount > 0): ?>
+            <!-- Urgent Actions Section (only when there are many pending approvals) -->
+            <?php if (Permissions::canViewLoanApprovals($userRole) && $pendingCount > 5): ?>
                 <div class="px-3 mb-2">
                     <small class="text-muted fw-semibold text-uppercase tracking-wider" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                        Urgent Actions
+                        ⚠️ Urgent Actions
                     </small>
                 </div>
                 <ul class="nav flex-column px-2 mb-3">
                     <li class="nav-item mb-1">
                         <a class="nav-link <?= ($currentPage === 'approvals') ? 'active bg-warning text-dark' : 'text-dark bg-warning-subtle' ?> d-flex align-items-center justify-content-between py-2 px-3 rounded nav-item-link urgent-item" 
                            href="<?= APP_URL ?>/public/loans/approvals.php" 
-                           data-title="Loan Approvals">
+                           data-title="High Priority Approvals">
                             <div class="d-flex align-items-center">
-                                <i data-feather="alert-circle" class="me-2 nav-icon" style="width: 18px; height: 18px;"></i>
-                                <span class="fw-medium nav-text">Pending Approvals</span>
+                                <i data-feather="alert-triangle" class="me-2 nav-icon" style="width: 18px; height: 18px;"></i>
+                                <span class="fw-medium nav-text">High Priority!</span>
                             </div>
                             <span class="badge bg-danger ms-2 nav-badge" data-count="<?= $pendingCount ?>"><?= $pendingCount ?></span>
                         </a>
@@ -249,7 +257,12 @@ if (Permissions::canViewLoanApprovals($userRole)) {
                         </a>
                     <?php endif; ?>
                     
-                    <?php if (in_array($userRole, ['super-admin', 'admin', 'manager'])): ?>
+                    <?php if (Permissions::canViewLoanApprovals($userRole) && $pendingCount > 0): ?>
+                        <a href="<?= APP_URL ?>/public/loans/approvals.php" class="btn btn-sm btn-warning d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="Review Approvals">
+                            <i data-feather="check-circle" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
+                            <span class="quick-action-text">Review Approvals (<?= $pendingCount ?>)</span>
+                        </a>
+                    <?php elseif (in_array($userRole, ['super-admin', 'admin', 'manager'])): ?>
                         <a href="<?= APP_URL ?>/public/reports/index.php" class="btn btn-sm btn-outline-secondary d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="Generate Report">
                             <i data-feather="bar-chart-2" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
                             <span class="quick-action-text">Generate Report</span>

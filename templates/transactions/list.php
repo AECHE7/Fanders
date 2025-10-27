@@ -258,7 +258,8 @@ $pagination = [
     </nav>
 <?php endif; ?>
 
-<!-- Transaction Detail Modal -->
+<!-- Transaction Detail Modal - DISABLED (modal functionality removed) -->
+<!-- 
 <div class="modal fade" id="transactionDetailModal" tabindex="-1" aria-labelledby="transactionDetailModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -272,6 +273,7 @@ $pagination = [
         </div>
     </div>
 </div>
+-->
 
 <script>
 // Toggle between table and cards view
@@ -301,20 +303,19 @@ function exportTransactions() {
     window.open(exportUrl, '_blank');
 }
 
-// Transaction row click handler
-document.addEventListener('DOMContentLoaded', function() {
-    const transactionRows = document.querySelectorAll('.transaction-row, .transaction-card');
+// Transaction row click handler - DISABLED (modal functionality removed)
+// document.addEventListener('DOMContentLoaded', function() {
+//     const transactionRows = document.querySelectorAll('.transaction-row, .transaction-card');
+//     transactionRows.forEach(row => {
+//         row.addEventListener('click', function() {
+//             const transactionId = this.getAttribute('data-transaction-id');
+//             showTransactionDetails(transactionId);
+//         });
+//     });
+// });
 
-    transactionRows.forEach(row => {
-        row.addEventListener('click', function() {
-            const transactionId = this.getAttribute('data-transaction-id');
-            showTransactionDetails(transactionId);
-        });
-    });
-});
-
-// Show transaction details in modal
-function showTransactionDetails(transactionId) {
+// Show transaction details in modal - DISABLED (modal functionality removed)
+/* function showTransactionDetails(transactionId) {
     const modal = new bootstrap.Modal(document.getElementById('transactionDetailModal'));
     const content = document.getElementById('transactionDetailContent');
     const modalTitle = document.getElementById('transactionDetailModalLabel');
@@ -471,9 +472,10 @@ function displayTransactionDetails(transaction) {
     if (typeof feather !== 'undefined') {
         feather.replace();
     }
-}
+} */
 
-// Show error message in modal
+// Show error message in modal - DISABLED (modal functionality removed)
+/*
 function showErrorMessage(message) {
     const content = document.getElementById('transactionDetailContent');
     content.innerHTML = `
@@ -486,7 +488,7 @@ function showErrorMessage(message) {
     if (typeof feather !== 'undefined') {
         feather.replace();
     }
-}
+} */
 
 // Helper functions for styling
 function getActionColor(action) {
