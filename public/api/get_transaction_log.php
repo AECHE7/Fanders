@@ -38,7 +38,7 @@ try {
         $log['details'] = $decoded === null ? $log['details'] : $decoded;
     }
 
-    echo json_encode(['success' => true, 'data' => $log]);
+    echo json_encode(['success' => true, 'transaction' => $log]);
 } catch (Exception $e) {
     http_response_code(500);
     error_log('API get_transaction_log error: ' . $e->getMessage());
