@@ -3,10 +3,10 @@
  * Footer template for the Fanders Microfinance Loan Management System
  */
 ?>
+<!-- Close the layout wrapper (opened in header) so footer sits outside main layout -->
+</div>
 
-</main>
-
-<footer class="footer mt-auto py-4 bg-light border-top">
+<footer class="footer py-4 bg-light border-top">
     <div class="container-fluid px-4">
             <div class="row align-items-center">
                 <div class="col-md-6">
@@ -176,9 +176,8 @@
             });
         </script>
 
-<!-- Close layout wrapper opened in header -->
-</div>
+    <!-- Session Timeout Modal (after JS libraries are loaded) -->
+    <?php include_once BASE_PATH . '/templates/layout/session_timeout_modal.php'; ?>
+
 </body>
 </html>
-
-<?php include_once BASE_PATH . '/templates/layout/session_timeout_modal.php'; ?>
