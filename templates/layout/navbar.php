@@ -225,6 +225,12 @@ if (Permissions::canViewLoanApprovals($userRole)) {
     animation: pulse-warning 2s infinite;
 }
 
+.sidebar .urgent-item.active {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+    color: #000 !important;
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4) !important;
+}
+
 @keyframes pulse-warning {
     0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
     70% { box-shadow: 0 0 0 8px rgba(255, 193, 7, 0); }
@@ -291,7 +297,7 @@ if (Permissions::canViewLoanApprovals($userRole)) {
                                 $isPriority = isset($item['priority']) && $item['priority'];
                                 ?>
                                 <li class="nav-item mb-1">
-                                    <a class="nav-link <?= $isActive ? 'active bg-primary text-white' : 'text-dark' ?> <?= $isPriority ? 'priority-item' : '' ?> d-flex align-items-center py-2 px-3 rounded nav-item-link" 
+                                    <a class="nav-link <?= $isActive ? 'active' : 'text-dark' ?> <?= $isPriority ? 'priority-item' : '' ?> d-flex align-items-center py-2 px-3 nav-item-link" 
                                        href="<?= $item['url'] ?>" 
                                        data-title="<?= $item['title'] ?>">
                                         <i data-feather="<?= $item['icon'] ?>" class="me-2 nav-icon" style="width: 18px; height: 18px;"></i>
@@ -317,7 +323,7 @@ if (Permissions::canViewLoanApprovals($userRole)) {
                 </div>
                 <ul class="nav flex-column px-2 mb-3">
                     <li class="nav-item mb-1">
-                        <a class="nav-link <?= ($currentPage === 'approvals') ? 'active bg-warning text-dark' : 'text-dark bg-warning-subtle' ?> d-flex align-items-center justify-content-between py-2 px-3 rounded nav-item-link urgent-item" 
+                        <a class="nav-link <?= ($currentPage === 'approvals') ? 'active' : 'text-dark bg-warning-subtle' ?> d-flex align-items-center justify-content-between py-2 px-3 nav-item-link urgent-item" 
                            href="<?= APP_URL ?>/public/loans/approvals.php" 
                            data-title="High Priority Approvals">
                             <div class="d-flex align-items-center">
