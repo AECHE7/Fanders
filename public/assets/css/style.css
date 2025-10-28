@@ -120,12 +120,25 @@ body {
 
 .sidebar .nav-link:hover {
     background-color: var(--notion-hover-bg);
+    transform: translateX(4px);
+    transition: all 0.2s ease-in-out;
+    border-radius: 8px;
 }
 
 .sidebar .nav-link.active {
-    background-color: var(--notion-light-blue);
-    color: var(--notion-blue);
-    font-weight: 500;
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white !important;
+    font-weight: 600;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    transform: translateX(2px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar .nav-link.active:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateX(6px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
 }
 
 .sidebar-heading {

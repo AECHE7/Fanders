@@ -30,21 +30,26 @@ if (strpos($currentPage, '.php') !== false) {
     $currentPage = basename($currentPage, '.php');
 }
 
+// Enhanced page detection logic - check both directory and filename
+$currentDirectory = '';
+if (preg_match('/\/public\/([^\/]+)\//', $requestUri, $matches)) {
+    $currentDirectory = $matches[1];
+}
+
 // Map specific pages to their parent sections only when they don't have their own navigation items
 $pageMappings = [
-    'index' => 'dashboard',
-    'view' => 'dashboard',
-    'edit' => 'dashboard',
-    'add' => 'dashboard',
-    'list' => 'dashboard',
-    // Note: Removed 'approvals' => 'loans' to allow loan approvals to have its own active state
-    // Note: 'overdue_payments' is left unmapped to have its own active state
     'request' => 'payments',
 ];
 
 // Only apply mapping if the page doesn't have its own dedicated navigation item
 if (isset($pageMappings[$currentPage])) {
     $currentPage = $pageMappings[$currentPage];
+}
+
+// Enhanced active detection: use directory as fallback if current page doesn't match
+$activePageOptions = [$currentPage];
+if (!empty($currentDirectory) && $currentDirectory !== $currentPage) {
+    $activePageOptions[] = $currentDirectory;
 }
 
 // Define navigation groups with improved organization
@@ -65,7 +70,7 @@ $navGroups = [
                 'title' => 'Loan Management',
                 'url' => APP_URL . '/public/loans/index.php',
                 'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier', 'client'],
-                'active_pages' => ['loans'],
+                'active_pages' => ['loans', 'index', 'add', 'view', 'edit'],
                 'priority' => true // Mark as high priority
             ],
             'loan-approvals' => [
@@ -81,7 +86,7 @@ $navGroups = [
                 'title' => 'Client Management',
                 'url' => APP_URL . '/public/clients/index.php',
                 'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier'],
-                'active_pages' => ['clients']
+                'active_pages' => ['clients', 'client', 'add', 'view', 'edit']
             ]
         ]
     ],
@@ -177,9 +182,76 @@ if (Permissions::canViewLoanApprovals($userRole)) {
 }
 ?>
 
+<style>
+/* Enhanced Sidebar Navigation Styles */
+.sidebar .nav-link {
+    transition: all 0.3s ease;
+    border-radius: 0.5rem !important;
+    margin-bottom: 0.25rem;
+    border: 2px solid transparent;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #e9ecef !important;
+    color: #495057 !important;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.sidebar .nav-link.active {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%) !important;
+    color: white !important;
+    border-color: #0a58ca !important;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3) !important;
+    transform: translateX(6px);
+}
+
+.sidebar .nav-link.active:hover {
+    background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%) !important;
+    color: white !important;
+    transform: translateX(6px);
+    box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4) !important;
+}
+
+.sidebar .nav-link .nav-icon {
+    transition: all 0.3s ease;
+}
+
+.sidebar .nav-link.active .nav-icon {
+    filter: drop-shadow(0 0 2px rgba(255,255,255,0.3));
+}
+
+.sidebar .urgent-item {
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(255, 193, 7, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+}
+
+.sidebar .quick-action-btn {
+    transition: all 0.3s ease;
+    border-radius: 0.4rem;
+}
+
+.sidebar .quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.sidebar .group-title {
+    opacity: 0.7;
+    font-weight: 600;
+}
+</style>
+
 <div class="sidebar-wrapper">
     <div class="sidebar sidebar-expanded collapse d-md-block bg-light border-end" id="sidebarMenu" style="width: 280px; transition: all 0.3s ease;">
         <nav class="position-sticky pt-3" style="height: calc(100vh - 56px); overflow-y: auto;">
+            
+            <!-- Debug: Current Page: <?= htmlspecialchars($currentPage) ?>, Directory: <?= htmlspecialchars($currentDirectory) ?>, URI: <?= htmlspecialchars($requestUri) ?> -->
             
             <?php foreach ($navGroups as $groupId => $group): ?>
                 <?php 
@@ -208,7 +280,16 @@ if (Permissions::canViewLoanApprovals($userRole)) {
                         <?php foreach ($group['items'] as $id => $item): ?>
                             <?php if (Permissions::isAllowed($userRole, $item['roles'])): ?>
                                 <?php
-                                $isActive = isset($item['active_pages']) && in_array($currentPage, $item['active_pages']);
+                                // Enhanced active detection - check both current page and directory
+                                $isActive = false;
+                                if (isset($item['active_pages'])) {
+                                    foreach ($activePageOptions as $pageOption) {
+                                        if (in_array($pageOption, $item['active_pages'])) {
+                                            $isActive = true;
+                                            break;
+                                        }
+                                    }
+                                }
                                 $isPriority = isset($item['priority']) && $item['priority'];
                                 ?>
                                 <li class="nav-item mb-1">
