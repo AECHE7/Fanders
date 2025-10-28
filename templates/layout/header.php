@@ -60,7 +60,5 @@
     
     <!-- Layout wrapper holds sidebar and main content -->
     <div class="layout">
-        <!-- Sidebar Navigation -->
-        <?php include_once BASE_PATH . '/templates/layout/navbar.php'; ?>
 
 
