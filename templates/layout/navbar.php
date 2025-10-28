@@ -7,46 +7,68 @@
 // Centralized permissions
 require_once BASE_PATH . '/app/utilities/Permissions.php';
 
-// Determine active page for navigation highlighting
-$requestUri = $_SERVER['REQUEST_URI'];
+// Enhanced page detection for navigation highlighting
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $currentPage = 'dashboard'; // default
+$currentDirectory = '';
 
-// Extract the specific page from the URL - improved logic
-// First try to match directory/file pattern
-if (preg_match('/\/public\/([^\/]+)\/([^\/\?]+)\.php/', $requestUri, $matches)) {
-    // For URLs like /public/loans/approvals.php or /public/payments/overdue_payments.php
-    $directory = $matches[1];
-    $filename = $matches[2];
-    
-    // Use the filename as the page identifier for better specificity
-    $currentPage = $filename;
-} elseif (preg_match('/\/public\/([^\/]+)/', $requestUri, $matches)) {
-    // For URLs like /public/dashboard/ or /public/loans/
+// Clean the URI - remove query parameters and normalize
+$cleanUri = strtok($requestUri, '?');
+
+// Multiple detection patterns for better coverage
+if (preg_match('#/public/([^/]+)/([^/]+)\.php#', $cleanUri, $matches)) {
+    // Pattern: /public/directory/file.php
+    $currentDirectory = $matches[1];
+    $currentPage = $matches[2];
+} elseif (preg_match('#/public/([^/]+)/([^/]+)/?$#', $cleanUri, $matches)) {
+    // Pattern: /public/directory/file or /public/directory/file/
+    $currentDirectory = $matches[1]; 
+    $currentPage = $matches[2];
+} elseif (preg_match('#/public/([^/]+)\.php#', $cleanUri, $matches)) {
+    // Pattern: /public/file.php
+    $currentPage = $matches[1];
+} elseif (preg_match('#/public/([^/]+)/?$#', $cleanUri, $matches)) {
+    // Pattern: /public/directory or /public/directory/
+    $currentPage = $matches[1];
+    $currentDirectory = $matches[1];
+} elseif (preg_match('#/([^/]+)\.php#', $cleanUri, $matches)) {
+    // Pattern: /file.php (root level)
     $currentPage = $matches[1];
 }
 
-// Handle specific cases
-if (strpos($currentPage, '.php') !== false) {
-    $currentPage = basename($currentPage, '.php');
-}
-
-// Enhanced page detection logic - check both directory and filename
-$currentDirectory = '';
-if (preg_match('/\/public\/([^\/]+)\//', $requestUri, $matches)) {
-    $currentDirectory = $matches[1];
-}
-
-// Map specific pages to their parent sections only when they don't have their own navigation items
+// Specific page mappings for better navigation detection
 $pageMappings = [
+    // Payment related pages
     'request' => 'payments',
+    'overdue_payments' => 'overdue',
+    'payment_request' => 'payments',
+    
+    // Loan related pages  
+    'approvals' => 'loan-approvals',
+    'list_approval' => 'loan-approvals',
+    'listapp' => 'loan-approvals',
+    
+    // Collection related pages
+    'collection_sheets' => 'collection-sheets',
+    'approve' => 'collection-sheets',
+    'review' => 'collection-sheets',
+    
+    // Reports and analytics
+    'reports' => 'reports-analytics',
+    'analytics' => 'reports-analytics',
+    
+    // Administration
+    'users' => 'users',
+    'staff' => 'users',
+    'admins' => 'users'
 ];
 
-// Only apply mapping if the page doesn't have its own dedicated navigation item
+// Apply page mapping
 if (isset($pageMappings[$currentPage])) {
     $currentPage = $pageMappings[$currentPage];
 }
 
-// Enhanced active detection: use directory as fallback if current page doesn't match
+// Enhanced active detection: multiple options for matching
 $activePageOptions = [$currentPage];
 if (!empty($currentDirectory) && $currentDirectory !== $currentPage) {
     $activePageOptions[] = $currentDirectory;
@@ -204,13 +226,29 @@ if (Permissions::canViewLoanApprovals($userRole)) {
     border-color: #0a58ca !important;
     box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3) !important;
     transform: translateX(6px);
+    border-radius: 12px !important;
 }
 
 .sidebar .nav-link.active:hover {
     background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%) !important;
     color: white !important;
-    transform: translateX(6px);
-    box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4) !important;
+    transform: translateX(8px);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4) !important;
+    border-radius: 12px !important;
+}
+
+/* Urgent item active state - different styling for warning items */
+.sidebar .nav-link.urgent-item.active {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+    color: #000 !important;
+    border-color: #d39e00 !important;
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4) !important;
+}
+
+.sidebar .nav-link.urgent-item.active:hover {
+    background: linear-gradient(135deg, #e0a800 0%, #c69500 100%) !important;
+    color: #000 !important;
+    box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5) !important;
 }
 
 .sidebar .nav-link .nav-icon {
@@ -245,11 +283,20 @@ if (Permissions::canViewLoanApprovals($userRole)) {
     opacity: 0.7;
     font-weight: 600;
 }
+
+/* Debug styles for development */
+.nav-debug {
+    font-size: 11px;
+    opacity: 0.6;
+    font-family: monospace;
+}
 </style>
 
 <div class="sidebar-wrapper">
     <div class="sidebar sidebar-expanded collapse d-md-block bg-light border-end" id="sidebarMenu" style="width: 280px; transition: all 0.3s ease;">
         <nav class="position-sticky pt-3" style="height: calc(100vh - 56px); overflow-y: auto;">
+            
+            <!-- Debug: URI: <?= htmlspecialchars($requestUri) ?>, Page: <?= htmlspecialchars($currentPage) ?>, Dir: <?= htmlspecialchars($currentDirectory) ?> -->
             
             <?php foreach ($navGroups as $groupId => $group): ?>
                 <?php 
@@ -291,7 +338,7 @@ if (Permissions::canViewLoanApprovals($userRole)) {
                                 $isPriority = isset($item['priority']) && $item['priority'];
                                 ?>
                                 <li class="nav-item mb-1">
-                                    <a class="nav-link <?= $isActive ? 'active bg-primary text-white' : 'text-dark' ?> <?= $isPriority ? 'priority-item' : '' ?> d-flex align-items-center py-2 px-3 rounded nav-item-link" 
+                                    <a class="nav-link <?= $isActive ? 'active' : 'text-dark' ?> <?= $isPriority ? 'priority-item' : '' ?> d-flex align-items-center py-2 px-3 rounded nav-item-link" 
                                        href="<?= $item['url'] ?>" 
                                        data-title="<?= $item['title'] ?>">
                                         <i data-feather="<?= $item['icon'] ?>" class="me-2 nav-icon" style="width: 18px; height: 18px;"></i>
@@ -317,7 +364,7 @@ if (Permissions::canViewLoanApprovals($userRole)) {
                 </div>
                 <ul class="nav flex-column px-2 mb-3">
                     <li class="nav-item mb-1">
-                        <a class="nav-link <?= ($currentPage === 'approvals') ? 'active bg-warning text-dark' : 'text-dark bg-warning-subtle' ?> d-flex align-items-center justify-content-between py-2 px-3 rounded nav-item-link urgent-item" 
+                        <a class="nav-link <?= ($currentPage === 'approvals') ? 'active' : 'text-dark bg-warning-subtle' ?> d-flex align-items-center justify-content-between py-2 px-3 rounded nav-item-link urgent-item" 
                            href="<?= APP_URL ?>/public/loans/approvals.php" 
                            data-title="High Priority Approvals">
                             <div class="d-flex align-items-center">
@@ -385,3 +432,18 @@ if (Permissions::canViewLoanApprovals($userRole)) {
         </nav>
     </div>
 </div>
+
+<script>
+// Navigation debug logging
+console.log('Navigation Debug Info:', {
+    currentPage: '<?= htmlspecialchars($currentPage) ?>',
+    currentDirectory: '<?= htmlspecialchars($currentDirectory) ?>',
+    requestUri: '<?= htmlspecialchars($requestUri) ?>',
+    activePageOptions: <?= json_encode($activePageOptions) ?>
+});
+
+// Log active navigation items
+document.querySelectorAll('.nav-link.active').forEach((link, index) => {
+    console.log(`Active nav item ${index + 1}:`, link.textContent.trim(), link.href);
+});
+</script>
