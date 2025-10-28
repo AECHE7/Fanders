@@ -173,9 +173,10 @@
                 }
             });
         </script>
-        <!-- Close layout wrapper opened in header -->
-        </div>
-    </body>
-    </html>
+    
+    <!-- Close layout wrapper opened in header -->
+    </div>
+</body>
+</html>
 
 <?php include_once BASE_PATH . '/templates/layout/session_timeout_modal.php'; ?>
