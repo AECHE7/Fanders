@@ -52,57 +52,25 @@ body { display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
 .layout { display: flex; flex: 1; }
 .layout.sidebar-hidden { flex-direction: column; }
 
-.main-content { flex: 1; display: flex; flex-direction: column; transition: all 0.3s ease; margin-left: 280px; width: calc(100% - 280px); }
-.content-wrapper { padding: 1.5rem 2rem; flex: 1; }
+.main-content { flex: 1; display: flex; flex-direction: column; transition: all 0.3s ease; width: 100%; margin-left: 0; padding-left: 0; }
+.content-wrapper { padding: 1.5rem 1rem; flex: 1; padding-left: 1rem !important; padding-right: 1rem !important; }
 .footer { margin-top: auto; }
 
-/* When sidebar is hidden/collapsed, use full width */
+/* When sidebar is visible (desktop), offset main content */
+.layout:not(.sidebar-hidden) .main-content { margin-left: 280px !important; width: calc(100% - 280px) !important; }
 .layout.sidebar-hidden .main-content { margin-left: 0 !important; width: 100% !important; }
 
 /* Responsive adjustments */
 @media (max-width: 767.98px) {
-    .sidebar { 
-        position: relative; 
-        top: auto; 
-        height: auto; 
-        width: 100% !important; 
-        border-right: none; 
-        border-bottom: 1px solid #dee2e6; 
-        z-index: 1020; 
-    }
-    
-    .sidebar-toggle { 
-        display: inline-flex !important; 
-        width: 40px; 
-        height: 40px; 
-    }
-    
-    .main-content { 
-        margin-left: 0 !important; 
-        width: 100% !important; 
-    }
-    
-    .content-wrapper {
-        padding: 1rem !important;
-    }
-    
+    .sidebar { position: relative; top: auto; height: auto; width: 100% !important; border-right: none; border-bottom: 1px solid #dee2e6; }
+    .sidebar-toggle { display: none; }
+    .main-content { margin-left: 0 !important; width: 100% !important; }
     .sidebar-collapsed .nav-text,
     .sidebar-collapsed .nav-badge,
     .sidebar-collapsed .quick-actions-title,
-    .sidebar-collapsed .quick-action-text { 
-        opacity: 1; 
-        visibility: visible; 
-    }
-    
+    .sidebar-collapsed .quick-action-text { opacity: 1; visibility: visible; }
     .sidebar-collapsed .nav-icon,
-    .sidebar-collapsed .quick-action-icon { 
-        margin-right: 0.5rem; 
-    }
-    
-    /* Mobile header adjustments */
-    .navbar-brand span {
-        display: none !important;
-    }
+    .sidebar-collapsed .quick-action-icon { margin-right: 0.5rem; }
 }
 
 /* Smooth transitions */

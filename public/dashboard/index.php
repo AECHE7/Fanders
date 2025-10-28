@@ -197,7 +197,7 @@ $userService = new UserService();
 
 // Include header
 include_once BASE_PATH . '/templates/layout/header.php';
-include_once BASE_PATH . '/templates/layout/navbar.php';
+
 ?>
 
 <main class="main-content">
