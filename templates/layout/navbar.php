@@ -63,14 +63,16 @@ $navGroups = [
                 'title' => 'Dashboard',
                 'url' => APP_URL . '/public/dashboard/index.php',
                 'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier', 'client'],
-                'active_pages' => ['dashboard', 'index', 'view', 'edit', 'add', 'list']
+                // Only match the dashboard section explicitly to avoid collisions with generic page names
+                'active_pages' => ['dashboard']
             ],
             'loans' => [
                 'icon' => 'file-text',
                 'title' => 'Loan Management',
                 'url' => APP_URL . '/public/loans/index.php',
                 'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier', 'client'],
-                'active_pages' => ['loans', 'index', 'add', 'view', 'edit'],
+                // Match by module/directory; avoid generic names like index/view/edit
+                'active_pages' => ['loans'],
                 'priority' => true // Mark as high priority
             ],
             'loan-approvals' => [
@@ -86,7 +88,7 @@ $navGroups = [
                 'title' => 'Client Management',
                 'url' => APP_URL . '/public/clients/index.php',
                 'roles' => ['super-admin', 'admin', 'manager', 'account_officer', 'cashier'],
-                'active_pages' => ['clients', 'client', 'add', 'view', 'edit']
+                'active_pages' => ['clients', 'client']
             ]
         ]
     ],
