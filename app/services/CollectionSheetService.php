@@ -193,37 +193,73 @@ class CollectionSheetService extends BaseService {
      * @return array Enhanced sheet data
      */
     private function enhanceSheetWithOfficerInfo($sheet) {
+        // Initialize fields with safe defaults FIRST
+        $sheet['officer_name'] = 'Unknown Officer';
+        $sheet['created_by_name'] = 'Unknown Officer';  
+        $sheet['collection_date'] = $sheet['sheet_date'] ?? null;
+        
         try {
+            // Log debug information
+            error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Processing sheet ID: " . ($sheet['id'] ?? 'unknown'));
+            error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Officer ID: " . ($sheet['officer_id'] ?? 'null'));
+            
             // Get officer information using UserModel
-            if (!empty($sheet['officer_id'])) {
+            if (!empty($sheet['officer_id']) && is_numeric($sheet['officer_id'])) {
                 require_once __DIR__ . '/../models/UserModel.php';
                 $userModel = new UserModel();
-                $officer = $userModel->findById($sheet['officer_id']);
                 
-                if ($officer) {
-                    $sheet['officer_name'] = $officer['name'];
-                    $sheet['created_by_name'] = $officer['name']; // Alias for modal compatibility
+                // Validate UserModel exists and has findById method
+                if (!class_exists('UserModel')) {
+                    throw new Exception("UserModel class not found");
+                }
+                
+                $officer = $userModel->findById((int)$sheet['officer_id']);
+                
+                if ($officer && isset($officer['name']) && !empty($officer['name'])) {
+                    $sheet['officer_name'] = trim($officer['name']);
+                    $sheet['created_by_name'] = trim($officer['name']); // Alias for modal compatibility
+                    error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Successfully found officer: " . $officer['name']);
                 } else {
-                    $sheet['officer_name'] = 'Unknown Officer';
-                    $sheet['created_by_name'] = 'Unknown Officer';
+                    error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Officer not found for ID: " . $sheet['officer_id']);
+                    $sheet['officer_name'] = 'Officer Not Found (ID: ' . $sheet['officer_id'] . ')';
+                    $sheet['created_by_name'] = 'Officer Not Found (ID: ' . $sheet['officer_id'] . ')';
                 }
             } else {
+                error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Invalid or missing officer_id");
                 $sheet['officer_name'] = 'No Officer Assigned';
                 $sheet['created_by_name'] = 'No Officer Assigned';
             }
             
-            // Add collection_date alias for modal compatibility
-            $sheet['collection_date'] = $sheet['sheet_date'] ?? null;
+            // Ensure collection_date is always set
+            if (empty($sheet['collection_date']) && !empty($sheet['sheet_date'])) {
+                $sheet['collection_date'] = $sheet['sheet_date'];
+            } elseif (empty($sheet['collection_date'])) {
+                $sheet['collection_date'] = date('Y-m-d'); // Today as ultimate fallback
+            }
+            
+            error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Final values: officer_name=" . $sheet['officer_name'] . ", created_by_name=" . $sheet['created_by_name'] . ", collection_date=" . $sheet['collection_date']);
             
         } catch (Exception $e) {
-            // Log error but don't break the functionality
-            error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Error: " . $e->getMessage());
+            // Log detailed error but don't break the functionality
+            error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Exception: " . $e->getMessage());
+            error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Stack trace: " . $e->getTraceAsString());
             
-            // Provide safe fallbacks
-            $sheet['officer_name'] = 'Officer ID ' . ($sheet['officer_id'] ?? 'Unknown');
-            $sheet['created_by_name'] = 'Officer ID ' . ($sheet['officer_id'] ?? 'Unknown');
-            $sheet['collection_date'] = $sheet['sheet_date'] ?? null;
+            // Ensure fallback values are always set (already set at beginning)
+            if (empty($sheet['officer_name'])) {
+                $sheet['officer_name'] = 'Officer ID ' . ($sheet['officer_id'] ?? 'Unknown');
+            }
+            if (empty($sheet['created_by_name'])) {
+                $sheet['created_by_name'] = 'Officer ID ' . ($sheet['officer_id'] ?? 'Unknown');
+            }
+            if (empty($sheet['collection_date'])) {
+                $sheet['collection_date'] = $sheet['sheet_date'] ?? date('Y-m-d');
+            }
         }
+        
+        // Final validation - ensure all required fields are strings
+        $sheet['officer_name'] = (string)($sheet['officer_name'] ?? '');
+        $sheet['created_by_name'] = (string)($sheet['created_by_name'] ?? '');
+        $sheet['collection_date'] = (string)($sheet['collection_date'] ?? '');
         
         return $sheet;
     }

@@ -4,6 +4,7 @@
  * Allows cashiers to review and approve/post collection sheets
  */
 require_once __DIR__ . '/../init.php';
+require_once BASE_PATH . '/app/utilities/ModalUtils.php';
 $auth->checkRoleAccess(['super-admin', 'admin', 'manager', 'cashier']);
 
 $service = new CollectionSheetService();
@@ -322,11 +323,11 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               <dt class="col-sm-4">Sheet ID:</dt>
               <dd class="col-sm-8 fw-bold">#<?= $sheet['id'] ?></dd>
               <dt class="col-sm-4">Account Officer:</dt>
-              <dd class="col-sm-8"><?= htmlspecialchars($sheet['created_by_name'] ?? $sheet['officer_name'] ?? 'Unknown Officer') ?></dd>
+              <dd class="col-sm-8"><?= ModalUtils::safeText($sheet, ['created_by_name', 'officer_name'], 'Unknown Officer') ?></dd>
               <dt class="col-sm-4">Collection Date:</dt>
-              <dd class="col-sm-8"><?= !empty($sheet['collection_date']) ? date('M j, Y', strtotime($sheet['collection_date'])) : (!empty($sheet['sheet_date']) ? date('M j, Y', strtotime($sheet['sheet_date'])) : 'Not specified') ?></dd>
+              <dd class="col-sm-8"><?= ModalUtils::safeDate($sheet, ['collection_date', 'sheet_date']) ?></dd>
               <dt class="col-sm-4">Total Amount:</dt>
-              <dd class="col-sm-8 text-success fw-bold">₱<?= number_format((float)$sheet['total_amount'], 2) ?></dd>
+              <dd class="col-sm-8 text-success fw-bold"><?= ModalUtils::safeCurrency($sheet, 'total_amount') ?></dd>
               <dt class="col-sm-4">Items Count:</dt>
               <dd class="col-sm-8"><?= count($items) ?> payments</dd>
             </dl>
@@ -378,7 +379,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               <dt class="col-sm-4">Payment Items:</dt>
               <dd class="col-sm-8 fw-bold"><?= count($items) ?> payments</dd>
               <dt class="col-sm-4">Collection Date:</dt>
-              <dd class="col-sm-8"><?= !empty($sheet['collection_date']) ? date('M j, Y', strtotime($sheet['collection_date'])) : (!empty($sheet['sheet_date']) ? date('M j, Y', strtotime($sheet['sheet_date'])) : 'Not specified') ?></dd>
+              <dd class="col-sm-8"><?= ModalUtils::safeDate($sheet, ['collection_date', 'sheet_date']) ?></dd>
             </dl>
           </div>
         </div>
