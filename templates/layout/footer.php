@@ -123,8 +123,9 @@
                 }
 
                 if (sidebarToggle && sidebar) {
-                    // Load sidebar state from localStorage
-                    const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                    // Load sidebar state from localStorage (only on desktop)
+                    const sidebarCollapsed = window.innerWidth >= 768 ? (localStorage.getItem('sidebarCollapsed') === 'true') : false;
+                    
                     if (sidebarCollapsed) {
                         sidebar.classList.add('sidebar-collapsed');
                         sidebar.classList.remove('sidebar-expanded');

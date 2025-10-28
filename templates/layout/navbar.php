@@ -254,7 +254,7 @@ if (Permissions::canViewLoanApprovals($userRole)) {
 </style>
 
 <div class="sidebar-wrapper">
-    <div class="sidebar sidebar-expanded collapse d-md-block bg-light border-end" id="sidebarMenu" style="width: 280px; transition: all 0.3s ease;">
+    <div class="sidebar sidebar-expanded d-md-block bg-light border-end" id="sidebarMenu" style="width: 280px; transition: all 0.3s ease;">
         <nav class="position-sticky pt-3" style="height: calc(100vh - 56px); overflow-y: auto;">
             
             <?php foreach ($navGroups as $groupId => $group): ?>

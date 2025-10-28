@@ -16,10 +16,14 @@
     border-right: 1px solid #dee2e6;
     transition: all 0.3s ease;
     overflow: hidden;
+    display: block; /* Always show on desktop */
 }
 
 /* Expanded sidebar (default state) */
-.sidebar-expanded { width: 280px; }
+.sidebar-expanded { 
+    width: 280px; 
+    display: block !important;
+}
 
 /* Collapsed sidebar - completely hidden */
 .sidebar-collapsed {
@@ -79,6 +83,13 @@ body { display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
 }
 
 /* Responsive adjustments */
+@media (min-width: 768px) {
+    /* Ensure sidebar is always visible on desktop */
+    .sidebar {
+        display: block !important;
+    }
+}
+
 @media (max-width: 767.98px) {
     .sidebar { 
         position: relative; 
@@ -86,7 +97,8 @@ body { display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
         height: auto; 
         width: 100% !important; 
         border-right: none; 
-        border-bottom: 1px solid #dee2e6; 
+        border-bottom: 1px solid #dee2e6;
+        display: block !important;
     }
     
     .sidebar-toggle { 
