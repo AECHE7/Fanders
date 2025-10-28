@@ -168,22 +168,139 @@ class CollectionSheetService extends BaseService {
 
     /**
      * Get a sheet with its items.
+     * Enhanced to include officer information for modal displays
      * @param int $sheetId
      * @return array|false
      */
     public function getSheetDetails($sheetId) {
-        // Get sheet with officer name using JOIN
-        $sql = "SELECT cs.*, u.name AS created_by_name, u.name AS officer_name, 
-                       cs.sheet_date AS collection_date
-                FROM collection_sheets cs
-                LEFT JOIN users u ON cs.officer_id = u.id
-                WHERE cs.id = ?";
+        // Get basic sheet data
+        $sheet = $this->sheetModel->findById($sheetId);
+        if (!$sheet) { 
+            return false; 
+        }
         
-        $sheet = $this->sheetModel->db->single($sql, [$sheetId]);
-        if (!$sheet) { return false; }
+        // Enhance sheet data with officer information for modal displays
+        $sheet = $this->enhanceSheetWithOfficerInfo($sheet);
         
         $items = $this->itemModel->getItemsBySheet($sheetId);
         return ['sheet' => $sheet, 'items' => $items];
+    }
+
+    /**
+     * Enhance sheet data with officer information
+     * This method adds officer_name, created_by_name, and collection_date fields
+     * @param array $sheet
+     * @return array Enhanced sheet data
+     */
+    private function enhanceSheetWithOfficerInfo($sheet) {
+        try {
+            // Get officer information using UserModel
+            if (!empty($sheet['officer_id'])) {
+                require_once __DIR__ . '/../models/UserModel.php';
+                $userModel = new UserModel();
+                $officer = $userModel->findById($sheet['officer_id']);
+                
+                if ($officer) {
+                    $sheet['officer_name'] = $officer['name'];
+                    $sheet['created_by_name'] = $officer['name']; // Alias for modal compatibility
+                } else {
+                    $sheet['officer_name'] = 'Unknown Officer';
+                    $sheet['created_by_name'] = 'Unknown Officer';
+                }
+            } else {
+                $sheet['officer_name'] = 'No Officer Assigned';
+                $sheet['created_by_name'] = 'No Officer Assigned';
+            }
+            
+            // Add collection_date alias for modal compatibility
+            $sheet['collection_date'] = $sheet['sheet_date'] ?? null;
+            
+        } catch (Exception $e) {
+            // Log error but don't break the functionality
+            error_log("CollectionSheetService::enhanceSheetWithOfficerInfo - Error: " . $e->getMessage());
+            
+            // Provide safe fallbacks
+            $sheet['officer_name'] = 'Officer ID ' . ($sheet['officer_id'] ?? 'Unknown');
+            $sheet['created_by_name'] = 'Officer ID ' . ($sheet['officer_id'] ?? 'Unknown');
+            $sheet['collection_date'] = $sheet['sheet_date'] ?? null;
+        }
+        
+        return $sheet;
+    }
+
+    /**
+     * Get sheet details with enhanced officer information specifically for modals
+     * This method ensures all required fields are available for modal displays
+     * @param int $sheetId
+     * @return array|false
+     */
+    public function getSheetDetailsForModal($sheetId) {
+        $details = $this->getSheetDetails($sheetId);
+        if (!$details) {
+            return false;
+        }
+        
+        // Verify that required modal fields are present
+        $sheet = $details['sheet'];
+        $requiredFields = ['created_by_name', 'officer_name', 'collection_date'];
+        $missingFields = [];
+        
+        foreach ($requiredFields as $field) {
+            if (!isset($sheet[$field]) || $sheet[$field] === null) {
+                $missingFields[] = $field;
+            }
+        }
+        
+        if (!empty($missingFields)) {
+            error_log("CollectionSheetService::getSheetDetailsForModal - Missing fields for sheet ID $sheetId: " . implode(', ', $missingFields));
+            
+            // Ensure fallback values are set
+            if (!isset($sheet['created_by_name'])) {
+                $sheet['created_by_name'] = $sheet['officer_name'] ?? 'Unknown Officer';
+            }
+            if (!isset($sheet['officer_name'])) {
+                $sheet['officer_name'] = 'Officer ID ' . ($sheet['officer_id'] ?? 'Unknown');
+            }
+            if (!isset($sheet['collection_date'])) {
+                $sheet['collection_date'] = $sheet['sheet_date'] ?? null;
+            }
+            
+            $details['sheet'] = $sheet;
+        }
+        
+        return $details;
+    }
+
+    /**
+     * Validate sheet data integrity for debugging
+     * @param array $sheet
+     * @return array Validation results
+     */
+    private function validateSheetData($sheet) {
+        $validation = [
+            'valid' => true,
+            'issues' => [],
+            'warnings' => []
+        ];
+        
+        // Check required basic fields
+        $requiredFields = ['id', 'officer_id', 'sheet_date', 'status'];
+        foreach ($requiredFields as $field) {
+            if (!isset($sheet[$field]) || $sheet[$field] === null) {
+                $validation['valid'] = false;
+                $validation['issues'][] = "Missing required field: $field";
+            }
+        }
+        
+        // Check enhanced fields
+        $enhancedFields = ['officer_name', 'created_by_name', 'collection_date'];
+        foreach ($enhancedFields as $field) {
+            if (!isset($sheet[$field]) || $sheet[$field] === null) {
+                $validation['warnings'][] = "Missing enhanced field: $field";
+            }
+        }
+        
+        return $validation;
     }
 
     /**

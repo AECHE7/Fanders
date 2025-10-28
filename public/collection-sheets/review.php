@@ -45,7 +45,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
           </div>
           <div>
             <h1 class="notion-page-title mb-0">Review & Post – Sheet #<?= (int)$sheet['id'] ?></h1>
-            <div class="text-muted small">Date: <?= htmlspecialchars($sheet['sheet_date']) ?> • Officer ID: <?= (int)$sheet['officer_id'] ?> • Status: <?= htmlspecialchars($sheet['status']) ?></div>
+            <div class="text-muted small">Date: <?= htmlspecialchars($sheet['sheet_date']) ?> • Officer: <?= htmlspecialchars($sheet['officer_name'] ?? 'Officer ID: ' . $sheet['officer_id']) ?> • Status: <?= htmlspecialchars($sheet['status']) ?></div>
           </div>
         </div>
         <div>
