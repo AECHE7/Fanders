@@ -172,8 +172,16 @@ class CollectionSheetService extends BaseService {
      * @return array|false
      */
     public function getSheetDetails($sheetId) {
-        $sheet = $this->sheetModel->findById($sheetId);
+        // Get sheet with officer name using JOIN
+        $sql = "SELECT cs.*, u.name AS created_by_name, u.name AS officer_name, 
+                       cs.sheet_date AS collection_date
+                FROM collection_sheets cs
+                LEFT JOIN users u ON cs.officer_id = u.id
+                WHERE cs.id = ?";
+        
+        $sheet = $this->sheetModel->db->single($sql, [$sheetId]);
         if (!$sheet) { return false; }
+        
         $items = $this->itemModel->getItemsBySheet($sheetId);
         return ['sheet' => $sheet, 'items' => $items];
     }

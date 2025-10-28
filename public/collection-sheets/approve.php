@@ -322,9 +322,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               <dt class="col-sm-4">Sheet ID:</dt>
               <dd class="col-sm-8 fw-bold">#<?= $sheet['id'] ?></dd>
               <dt class="col-sm-4">Account Officer:</dt>
-              <dd class="col-sm-8"><?= htmlspecialchars($sheet['created_by_name']) ?></dd>
+              <dd class="col-sm-8"><?= htmlspecialchars($sheet['created_by_name'] ?? $sheet['officer_name'] ?? 'Unknown Officer') ?></dd>
               <dt class="col-sm-4">Collection Date:</dt>
-              <dd class="col-sm-8"><?= date('M j, Y', strtotime($sheet['collection_date'])) ?></dd>
+              <dd class="col-sm-8"><?= !empty($sheet['collection_date']) ? date('M j, Y', strtotime($sheet['collection_date'])) : (!empty($sheet['sheet_date']) ? date('M j, Y', strtotime($sheet['sheet_date'])) : 'Not specified') ?></dd>
               <dt class="col-sm-4">Total Amount:</dt>
               <dd class="col-sm-8 text-success fw-bold">₱<?= number_format((float)$sheet['total_amount'], 2) ?></dd>
               <dt class="col-sm-4">Items Count:</dt>
@@ -378,7 +378,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
               <dt class="col-sm-4">Payment Items:</dt>
               <dd class="col-sm-8 fw-bold"><?= count($items) ?> payments</dd>
               <dt class="col-sm-4">Collection Date:</dt>
-              <dd class="col-sm-8"><?= date('M j, Y', strtotime($sheet['collection_date'])) ?></dd>
+              <dd class="col-sm-8"><?= !empty($sheet['collection_date']) ? date('M j, Y', strtotime($sheet['collection_date'])) : (!empty($sheet['sheet_date']) ? date('M j, Y', strtotime($sheet['sheet_date'])) : 'Not specified') ?></dd>
             </dl>
           </div>
         </div>
