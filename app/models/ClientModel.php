@@ -298,28 +298,20 @@ class ClientModel extends BaseModel {
      * @return array
      */
     public function getAllClientsPaginated($limit = 20, $offset = 0, $filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+
+        // Base SQL
         $sql = "SELECT * FROM {$this->table}";
-        $params = [];
 
-        // Add filters
-        $whereConditions = [];
-        if (!empty($filters['status'])) {
-            $whereConditions[] = "status = ?";
-            $params[] = $filters['status'];
-        }
-        if (!empty($filters['search'])) {
-            $whereConditions[] = "(name LIKE ? OR email LIKE ? OR phone_number LIKE ?)";
-            $searchTerm = "%{$filters['search']}%";
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-            $params[] = $searchTerm;
-        }
+        // Build WHERE clause using FilterUtility for consistency
+        list($whereClause, $params) = FilterUtility::buildWhereClause($filters, 'clients');
+        
+        // Build ORDER BY clause
+        $allowedSortFields = ['name', 'created_at', 'status', 'email'];
+        $orderClause = FilterUtility::buildOrderClause($filters, $allowedSortFields, 'created_at');
 
-        if (!empty($whereConditions)) {
-            $sql .= " WHERE " . implode(" AND ", $whereConditions);
-        }
-
-        $sql .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+        // Complete query
+        $sql = "$sql $whereClause $orderClause LIMIT ? OFFSET ?";
         $params[] = $limit;
         $params[] = $offset;
 

@@ -271,7 +271,7 @@ if (Permissions::canViewLoanApprovals($userRole)) {
                             <span class="quick-action-text">Create Collection</span>
                         </a>
                     <?php elseif (Permissions::canRecordPayment($userRole)): ?>
-                        <a href="<?= APP_URL ?>/public/payments/list.php" class="btn btn-sm btn-success d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="Record Payment">
+                        <a href="<?= APP_URL ?>/public/payments/add.php" class="btn btn-sm btn-success d-flex align-items-center justify-content-center py-2 quick-action-btn" data-title="Record Payment">
                             <i data-feather="dollar-sign" class="me-2 quick-action-icon" style="width: 16px; height: 16px;"></i>
                             <span class="quick-action-text">Record Payment</span>
                         </a>

@@ -182,18 +182,18 @@ class FilterUtility
             }
         }
 
-        // Status filter - supports both single value and array
+        // Status filter - supports both single value and array with case-insensitive matching
         if (!empty($filters['status']) && !empty($mappings['status_field'])) {
             if (is_array($filters['status'])) {
-                // Handle array of statuses with IN clause
-                $placeholders = implode(',', array_fill(0, count($filters['status']), '?'));
-                $conditions[] = "{$mappings['status_field']} IN ($placeholders)";
+                // Handle array of statuses with IN clause (case-insensitive)
+                $placeholders = implode(',', array_fill(0, count($filters['status']), 'LOWER(?)'));
+                $conditions[] = "LOWER({$mappings['status_field']}) IN ($placeholders)";
                 foreach ($filters['status'] as $status) {
-                    $params[] = $status;
+                    $params[] = strtolower($status);
                 }
             } else {
-                // Handle single status value
-                $conditions[] = "{$mappings['status_field']} = ?";
+                // Handle single status value (case-insensitive)
+                $conditions[] = "LOWER({$mappings['status_field']}) = LOWER(?)";
                 $params[] = $filters['status'];
             }
         }

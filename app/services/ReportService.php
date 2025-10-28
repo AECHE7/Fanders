@@ -77,8 +77,9 @@ class ReportService extends BaseService {
 
         if (!empty($filters['status'])) {
             // Normalize status to match DB values (e.g., 'Active', 'Completed')
+            // Handle both lowercase and uppercase forms
             $normalizedStatus = ucfirst(strtolower($filters['status']));
-            $query .= " AND l.status = ?";
+            $query .= " AND LOWER(l.status) = LOWER(?)";
             $params[] = $normalizedStatus;
         }
 

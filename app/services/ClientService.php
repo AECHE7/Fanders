@@ -37,8 +37,22 @@ class ClientService extends BaseService {
      * Retrieves all client records.
      * @return array
      */
-    public function getAllClients() {
-        return $this->clientModel->getAll('name', 'ASC');
+    public function getAllClients($page = null, $limit = null, $filters = []) {
+        require_once __DIR__ . '/../utilities/FilterUtility.php';
+        
+        // Sanitize and validate filters
+        $filters = FilterUtility::sanitizeFilters($filters, [
+            'allowed_statuses' => ['active', 'inactive', 'blacklisted']
+        ]);
+        $filters = FilterUtility::validateDateRange($filters);
+        
+        // If pagination parameters are provided, use paginated method
+        if ($page !== null && $limit !== null) {
+            return $this->clientModel->getAllClientsPaginated($limit, ($page - 1) * $limit, $filters);
+        }
+        
+        // Otherwise, get all clients with filters
+        return $this->clientModel->getAllClients($filters);
     }
 
     /**
@@ -107,7 +121,7 @@ class ClientService extends BaseService {
      */
     public function invalidateCache() {
         // Invalidate client statistics cache
-        CacheUtility::forget(CacheUtility::generateKey('client_stats'));
+        $this->cache->delete(CacheUtility::generateKey('client_stats'));
         
         // Invalidate dropdown cache (all variations)
         $filters = [
@@ -118,11 +132,13 @@ class ClientService extends BaseService {
         ];
         
         foreach ($filters as $filter) {
-            CacheUtility::forget(CacheUtility::generateKey('clients_dropdown', $filter));
+            $this->cache->delete(CacheUtility::generateKey('clients_dropdown', $filter));
         }
         
-        // Clean expired entries
-        CacheUtility::cleanExpired();
+        // Clean expired entries if method exists
+        if (method_exists($this->cache, 'cleanExpired')) {
+            $this->cache->cleanExpired();
+        }
     }
 
     /**

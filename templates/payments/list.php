@@ -124,7 +124,13 @@
                         <?= $pagination->getInfo() ?>
                     </div>
                     <nav aria-label="Payments pagination">
-                        <?= $pagination->render() ?>
+                        <?php
+                        // Clean filters for pagination to preserve filter state
+                        require_once __DIR__ . '/../app/utilities/FilterUtility.php';
+                        $paginationFilters = FilterUtility::cleanFiltersForUrl($filters ?? []);
+                        unset($paginationFilters['page']); // Remove page from filters since pagination will add it
+                        ?>
+                        <?= $pagination->render($paginationFilters) ?>
                     </nav>
                 </div>
             <?php endif; ?>

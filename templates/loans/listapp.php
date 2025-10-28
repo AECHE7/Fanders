@@ -343,7 +343,15 @@ if (!function_exists('getLoanStatusBadgeClass')) {
             <?= isset($pagination) ? $pagination->getInfo() : "Page {$page} of {$totalPages}" ?>
         </div>
         <nav aria-label="Loans pagination">
-            <?= isset($pagination) ? $pagination->render() : '' ?>
+            <?php if (isset($pagination)): ?>
+                <?php
+                // Clean filters for pagination to preserve filter state
+                require_once __DIR__ . '/../app/utilities/FilterUtility.php';
+                $paginationFilters = FilterUtility::cleanFiltersForUrl($filters ?? []);
+                unset($paginationFilters['page']); // Remove page from filters since pagination will add it
+                ?>
+                <?= $pagination->render($paginationFilters) ?>
+            <?php endif; ?>
         </nav>
     </div>
 <?php endif; ?>
