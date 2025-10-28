@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/interactions.css?v=<?= filemtime(BASE_PATH . '/public/assets/css/interactions.css') ?>">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/sidebar.css?v=<?= filemtime(BASE_PATH . '/public/assets/css/sidebar.css') ?>">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/sidebar-enhanced.css?v=<?= filemtime(BASE_PATH . '/public/assets/css/sidebar-enhanced.css') ?>">
+    <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/navigation-enhanced.css?v=<?= filemtime(BASE_PATH . '/public/assets/css/navigation-enhanced.css') ?>">>
 
     <!-- Favicon -->
     <link rel="icon" href="<?= APP_URL ?>/assets/favicon.png" type="image/png" sizes="32x32">
@@ -60,7 +61,7 @@
     </header>
         <!-- Layout wrapper holds sidebar and main content -->
         <!-- <div class="layout"> -->
-            <!-- Sidebar will be included here -->
-            <?php include_once BASE_PATH . '/templates/layout/navbar.php'; ?>
+            <!-- Enhanced Sidebar Navigation -->
+            <?php include_once BASE_PATH . '/templates/layout/navbar-enhanced.php'; ?>
 
 

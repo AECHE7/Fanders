@@ -1,0 +1,378 @@
+/* Enhanced Navigation & Sidebar Styles for Fanders */
+
+/* ===== SIDEBAR LAYOUT ===== */
+.sidebar-wrapper {
+    position: relative;
+}
+
+.sidebar {
+    background-color: var(--notion-bg);
+    border-right: 1px solid var(--notion-border);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.sidebar-collapsed {
+    width: 60px;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: var(--notion-bg);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--notion-gray);
+    border-radius: 6px;
+    opacity: 0.5;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    opacity: 0.8;
+}
+
+/* ===== NAVIGATION ITEMS ===== */
+.nav-item-link {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    margin: 2px 8px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--notion-text);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border: 2px solid transparent;
+    font-weight: 500;
+    min-height: 44px; /* Ensure consistent height */
+}
+
+.nav-item-link:hover {
+    background-color: var(--notion-hover-bg);
+    color: var(--notion-text);
+    transform: translateX(4px);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border-color: rgba(13, 110, 253, 0.1);
+    text-decoration: none;
+}
+
+.nav-item-link.active {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white !important;
+    font-weight: 600;
+    transform: translateX(6px);
+    box-shadow: 0 4px 20px rgba(0, 123, 255, 0.25);
+    border-color: rgba(0, 123, 255, 0.3);
+}
+
+.nav-item-link.active:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateX(8px);
+    box-shadow: 0 6px 25px rgba(0, 123, 255, 0.35);
+    text-decoration: none;
+}
+
+/* Priority item styling */
+.nav-item-link.priority-item {
+    border-left: 4px solid #007bff;
+    padding-left: 12px;
+}
+
+.nav-item-link.priority-item:not(.active) {
+    background-color: rgba(0, 123, 255, 0.03);
+}
+
+/* Urgent item styling */
+.nav-item-link.urgent-item {
+    border-left: 4px solid #ffc107;
+    background-color: rgba(255, 193, 7, 0.1);
+    animation: subtle-pulse 3s infinite;
+}
+
+.nav-item-link.urgent-item.active {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    color: #000 !important;
+    font-weight: 700;
+    border-color: #d39e00;
+}
+
+@keyframes subtle-pulse {
+    0%, 100% { 
+        border-left-color: #ffc107; 
+        background-color: rgba(255, 193, 7, 0.08);
+    }
+    50% { 
+        border-left-color: #ffca2c; 
+        background-color: rgba(255, 193, 7, 0.15);
+    }
+}
+
+/* ===== NAVIGATION ICONS ===== */
+.nav-icon {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+}
+
+.nav-item-link.active .nav-icon {
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
+    transform: scale(1.1);
+}
+
+/* Collapsed sidebar icon adjustment */
+.sidebar-collapsed .nav-icon {
+    margin-right: 0;
+}
+
+.sidebar-collapsed .nav-text,
+.sidebar-collapsed .nav-badge {
+    display: none;
+}
+
+/* ===== NAVIGATION BADGES ===== */
+.nav-badge {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+    transition: all 0.25s ease;
+}
+
+.nav-item-link.active .nav-badge {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+}
+
+/* ===== GROUP SECTIONS ===== */
+.nav-group-separator {
+    margin: 16px 12px 8px;
+    border-top: 1px solid var(--notion-border);
+    opacity: 0.6;
+}
+
+.group-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(55, 53, 47, 0.6);
+    margin: 12px 16px 8px;
+    display: flex;
+    align-items: center;
+}
+
+.group-title-icon {
+    width: 14px;
+    height: 14px;
+    margin-right: 6px;
+    opacity: 0.7;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .group-title {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* ===== QUICK ACTIONS SECTION ===== */
+.quick-actions {
+    margin: 20px 12px 12px;
+    padding: 16px;
+    background-color: var(--notion-light-gray);
+    border-radius: 8px;
+    border: 1px solid var(--notion-border);
+}
+
+.quick-actions-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(55, 53, 47, 0.7);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+}
+
+.quick-action-btn {
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border: 1px solid transparent;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+}
+
+.quick-action-btn:last-child {
+    margin-bottom: 0;
+}
+
+.quick-action-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Tablet adjustments */
+@media (max-width: 992px) {
+    .sidebar {
+        width: 260px;
+    }
+    
+    .nav-item-link {
+        padding: 8px 12px;
+        margin: 1px 6px;
+    }
+    
+    .quick-actions {
+        margin: 16px 8px;
+        padding: 12px;
+    }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 56px;
+        left: -280px;
+        width: 280px;
+        height: calc(100vh - 56px);
+        z-index: 1040;
+        background-color: var(--notion-bg);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .sidebar.show {
+        left: 0;
+    }
+    
+    .nav-item-link:hover,
+    .nav-item-link.active {
+        transform: none; /* Disable transform on mobile */
+    }
+    
+    .quick-action-btn:hover {
+        transform: none;
+    }
+}
+
+/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+.nav-item-link:focus,
+.quick-action-btn:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+.nav-item-link:focus:not(:focus-visible),
+.quick-action-btn:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+    .nav-item-link,
+    .quick-action-btn,
+    .nav-icon,
+    .nav-badge {
+        transition: none;
+    }
+    
+    .nav-item-link.urgent-item {
+        animation: none;
+        border-left-color: #ffc107;
+    }
+}
+
+/* ===== HIGH CONTRAST ADJUSTMENTS ===== */
+@media (prefers-contrast: high) {
+    .nav-item-link {
+        border: 2px solid var(--notion-border);
+    }
+    
+    .nav-item-link.active {
+        border-color: #007bff;
+        color: white;
+        background: #007bff;
+    }
+    
+    .quick-actions {
+        border: 2px solid var(--notion-border);
+    }
+}
+
+/* ===== LOADING STATES ===== */
+.nav-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.nav-loading .nav-icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ===== ERROR STATES ===== */
+.nav-error {
+    color: #dc3545 !important;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+.nav-error:hover {
+    background-color: rgba(220, 53, 69, 0.15);
+}
+
+/* ===== SIDEBAR TOGGLE BUTTON ===== */
+.sidebar-toggle {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 1050;
+    background: white;
+    border: 1px solid var(--notion-border);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.25s ease;
+}
+
+.sidebar-toggle:hover {
+    background: var(--notion-hover-bg);
+    transform: scale(1.05);
+}
+
+@media (min-width: 768px) {
+    .sidebar-toggle {
+        display: none !important;
+    }
+}
