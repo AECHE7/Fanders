@@ -11,29 +11,15 @@ require_once BASE_PATH . '/app/utilities/Permissions.php';
 $requestUri = $_SERVER['REQUEST_URI'];
 $currentPage = 'dashboard'; // default
 
-// Extract the specific page from the URL - improved logic
-// First try to match directory/file pattern
+// Extract the specific page from the URL with sensible defaults
+// Prefer the filename unless it's "index"; then use the directory name.
 if (preg_match('/\/public\/([^\/]+)\/([^\/\?]+)\.php/', $requestUri, $matches)) {
-    // For URLs like /public/loans/approvals.php or /public/payments/overdue_payments.php
     $directory = $matches[1];
     $filename = $matches[2];
-    
-    // Use the filename as the page identifier for better specificity
-    $currentPage = $filename;
-} elseif (preg_match('/\/public\/([^\/]+)/', $requestUri, $matches)) {
-    // For URLs like /public/dashboard/ or /public/loans/
+    $currentPage = ($filename === 'index') ? $directory : $filename;
+} elseif (preg_match('/\/public\/([^\/]+)\/?$/', $requestUri, $matches)) {
+    // Directory without explicit file (e.g., /public/dashboard/)
     $currentPage = $matches[1];
-}
-
-// Handle specific cases
-if (strpos($currentPage, '.php') !== false) {
-    $currentPage = basename($currentPage, '.php');
-}
-
-// Enhanced page detection logic - check both directory and filename
-$currentDirectory = '';
-if (preg_match('/\/public\/([^\/]+)\//', $requestUri, $matches)) {
-    $currentDirectory = $matches[1];
 }
 
 // Map specific pages to their parent sections only when they don't have their own navigation items
@@ -46,11 +32,8 @@ if (isset($pageMappings[$currentPage])) {
     $currentPage = $pageMappings[$currentPage];
 }
 
-// Enhanced active detection: use directory as fallback if current page doesn't match
+// Active detection will rely solely on the resolved $currentPage to avoid double-highlighting
 $activePageOptions = [$currentPage];
-if (!empty($currentDirectory) && $currentDirectory !== $currentPage) {
-    $activePageOptions[] = $currentDirectory;
-}
 
 // Define navigation groups with improved organization
 $navGroups = [

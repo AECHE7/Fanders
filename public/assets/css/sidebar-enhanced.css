@@ -18,8 +18,9 @@
 }
 
 .sidebar .priority-item:not(.active) {
-    border-left-color: #007bff;
-    background-color: rgba(0, 123, 255, 0.05);
+    /* Remove constant blue accent when not active; show only on hover */
+    border-left-color: transparent;
+    background-color: transparent;
 }
 
 .sidebar .priority-item:not(.active):hover {
