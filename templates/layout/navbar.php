@@ -251,8 +251,6 @@ if (Permissions::canViewLoanApprovals($userRole)) {
     <div class="sidebar sidebar-expanded collapse d-md-block bg-light border-end" id="sidebarMenu" style="width: 280px; transition: all 0.3s ease;">
         <nav class="position-sticky pt-3" style="height: calc(100vh - 56px); overflow-y: auto;">
             
-            <!-- Debug: Current Page: <?= htmlspecialchars($currentPage) ?>, Directory: <?= htmlspecialchars($currentDirectory) ?>, URI: <?= htmlspecialchars($requestUri) ?> -->
-            
             <?php foreach ($navGroups as $groupId => $group): ?>
                 <?php 
                 // Check if user has access to any item in this group
