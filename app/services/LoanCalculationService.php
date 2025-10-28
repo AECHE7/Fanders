@@ -22,11 +22,11 @@ class LoanCalculationService extends BaseService {
     /**
      * Calculate loan details based on principal amount and term
      * @param float $principalAmount The loan principal amount
-     * @param int $termWeeks The loan term in weeks (flexible, user input)
+     * @param int $termWeeks The loan term in weeks (flexible, user input, defaults to 17)
      * @param int $termMonths The loan term in months (for interest calculation, defaults to 4)
      * @return array|false Loan calculation details on success.
      */
-    public function calculateLoan($principalAmount, $termWeeks, $termMonths) {
+    public function calculateLoan($principalAmount, $termWeeks = null, $termMonths = null) {
         // Use default terms if not provided
         if ($termWeeks === null) {
             $termWeeks = self::DEFAULT_WEEKS_IN_LOAN;
