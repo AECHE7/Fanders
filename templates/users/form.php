@@ -5,7 +5,7 @@
 $auth = new AuthService();
 
 $currentUser = $auth->getCurrentUser();
-$userId = $currentUser;
+$currentUserId = $currentUser['id'] ?? null;
 ?>
 
 <form action="" method="post" class="notion-form needs-validation" novalidate>
@@ -28,9 +28,9 @@ $userId = $currentUser;
             <div class="notion-divider flex-grow-1"></div>
         </div>
         
-        <div class="row g-3 stagger-fade-in">
+    <div class="row g-3 stagger-fade-in">
             <!-- Full Name Field -->
-            <div class="col-md-12">
+            <div class="col-12">
                 <div class="notion-form-group interactive-form-field">
                     <input type="text" class="notion-form-control" id="name" name="name"
                         value="<?= htmlspecialchars($editUser['name'] ?? '') ?>" required placeholder=" ">
@@ -40,7 +40,7 @@ $userId = $currentUser;
             </div>
 
             <!-- Email Field -->
-            <div class="col-md-6">
+            <div class="col-12 col-md-6">
                 <div class="notion-form-group interactive-form-field">
                     <input type="email" class="notion-form-control" id="email" name="email"
                         value="<?= htmlspecialchars($editUser['email'] ?? '') ?>" required placeholder=" ">
@@ -50,7 +50,7 @@ $userId = $currentUser;
             </div>
 
             <!-- Phone Field -->
-            <div class="col-md-6">
+            <div class="col-12 col-md-6">
                 <div class="notion-form-group interactive-form-field">
                     <input type="text" class="notion-form-control" id="phone_number" name="phone_number"
                         value="<?= htmlspecialchars($editUser['phone_number'] ?? '') ?>" required pattern="\d{8,15}" placeholder=" ">
@@ -76,7 +76,7 @@ $userId = $currentUser;
                 }
             ?>
             <?php if ($canEditPassword): ?>
-            <div class="col-md-6">
+            <div class="col-12 col-md-6">
                 <div class="notion-form-group interactive-form-field">
                     <div class="input-group">
                         <input type="password" class="notion-form-control" id="password" name="password"
@@ -103,7 +103,7 @@ $userId = $currentUser;
             </div>
 
             <!-- Confirm Password Field -->
-            <div class="col-md-6">
+            <div class="col-12 col-md-6">
                 <div class="notion-form-group interactive-form-field">
                     <input type="password" class="notion-form-control" id="password_confirmation" name="password_confirmation"
                         <?= isset($editUser['id']) ? '' : 'required' ?> placeholder=" ">
@@ -113,7 +113,7 @@ $userId = $currentUser;
             </div>
             <?php else: ?>
                 <!-- Password change not allowed for this user -->
-                <div class="col-md-12">
+                <div class="col-12">
                     <div class="alert alert-info">
                         <i data-feather="info"></i>
                         <?php if (isset($editUser['role']) && $editUser['role'] === 'super-admin'): ?>
@@ -126,52 +126,54 @@ $userId = $currentUser;
             <?php endif; ?>
 
             <!-- Role & Account Status Dropdowns in the same row -->
-            <div class="row g-3">
-                <?php if (in_array($userRole, ['super-admin', 'admin'])): ?>
-                    <?php if ($userId !== ($user['id'] ?? null)): ?>
-                        <div class="col-md-6">
-                            <div class="notion-form-group">
-                                <label for="role" class="notion-form-label">Role</label>
-                                <select class="notion-form-select form-select" id="role" name="role" required>
-                                    <option value="">Select role...</option>
-                                    <?php 
-                                        $selectedRole = strtolower(trim($editUser['role'] ?? ''));
-                                    ?>
-                                    <?php if ($userRole === 'super-admin'): ?>
-                                        <option value="super-admin" <?= $selectedRole === 'super-admin' ? 'selected' : '' ?>>Super Admin</option>
-                                        <option value="admin" <?= $selectedRole === 'admin' ? 'selected' : '' ?>>Admin</option>
-                                    <?php endif; ?>
-                                    <option value="manager" <?= $selectedRole === 'manager' ? 'selected' : '' ?>>Manager</option>
-                                    <option value="cashier" <?= $selectedRole === 'cashier' ? 'selected' : '' ?>>Cashier</option>
-                                    <option value="account-officer" <?= $selectedRole === 'account-officer' ? 'selected' : '' ?>>Account Officer</option>
-                                </select>
-                                <div class="invalid-feedback">Please select a role.</div>
-                                <?php if ($userRole === 'admin'): ?>
-                                    <small class="form-text text-muted">Admins can only add operational staff accounts (Manager, Cashier, or Account Officer).</small>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    <?php else: ?>
-                        <input type="hidden" name="role" value="<?= htmlspecialchars($userRole) ?>">
-                    <?php endif; ?>
-                <?php endif; ?>
+            <?php
+                $isEditing = isset($editUser['id']);
+                $isEditingSelf = $isEditing && (($editUser['id'] ?? null) == $currentUserId);
+                $currentRole = strtolower($currentUser['role'] ?? '');
+                $selectedRole = strtolower(trim($editUser['role'] ?? ''));
+            ?>
 
-                <!-- Account Status Dropdown -->
-                <div class="col-md-6">
-                    <div class="notion-form-group">
-                        <label for="status" class="notion-form-label">Account Status</label>
-                        <?php if (in_array($currentUser['role'], ['super-admin', 'admin'])): ?>
-                            <select class="notion-form-select form-select" id="status" name="status" required>
-                                <option value="">Select status...</option>
-                                <option value="active" <?= ($editUser['status'] ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
-                                <option value="inactive" <?= ($editUser['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+            <?php if (in_array($currentRole, ['super-admin', 'admin'])): ?>
+                <?php if (!$isEditingSelf): ?>
+                    <div class="col-12 col-md-6">
+                        <div class="notion-form-group">
+                            <label for="role" class="notion-form-label">Role</label>
+                            <select class="notion-form-select form-select" id="role" name="role" required>
+                                <option value="">Select role...</option>
+                                <?php if ($currentRole === 'super-admin'): ?>
+                                    <option value="super-admin" <?= $selectedRole === 'super-admin' ? 'selected' : '' ?>>Super Admin</option>
+                                    <option value="admin" <?= $selectedRole === 'admin' ? 'selected' : '' ?>>Admin</option>
+                                <?php endif; ?>
+                                <option value="manager" <?= $selectedRole === 'manager' ? 'selected' : '' ?>>Manager</option>
+                                <option value="cashier" <?= $selectedRole === 'cashier' ? 'selected' : '' ?>>Cashier</option>
+                                <option value="account-officer" <?= $selectedRole === 'account-officer' ? 'selected' : '' ?>>Account Officer</option>
                             </select>
-                        <?php else: ?>
-                            <input type="text" class="form-control" value="<?= ucfirst($editUser['status'] ?? '') ?>" disabled>
-                            <input type="hidden" name="status" value="<?= htmlspecialchars($editUser['status'] ?? '') ?>">
-                        <?php endif; ?>
-                        <div class="invalid-feedback">Please select account status.</div>
+                            <div class="invalid-feedback">Please select a role.</div>
+                            <?php if ($currentRole === 'admin'): ?>
+                                <small class="form-text text-muted">Admins can only add operational staff accounts (Manager, Cashier, or Account Officer).</small>
+                            <?php endif; ?>
+                        </div>
                     </div>
+                <?php else: ?>
+                    <input type="hidden" name="role" value="<?= htmlspecialchars($editUser['role'] ?? ($currentUser['role'] ?? '')) ?>">
+                <?php endif; ?>
+            <?php endif; ?>
+
+            <!-- Account Status Dropdown -->
+            <div class="col-12 col-md-6">
+                <div class="notion-form-group">
+                    <label for="status" class="notion-form-label">Account Status</label>
+                    <?php if (in_array($currentRole, ['super-admin', 'admin'])): ?>
+                        <select class="notion-form-select form-select" id="status" name="status" required>
+                            <option value="">Select status...</option>
+                            <option value="active" <?= ($editUser['status'] ?? '') === 'active' ? 'selected' : '' ?>>Active</option>
+                            <option value="inactive" <?= ($editUser['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                        </select>
+                    <?php else: ?>
+                        <input type="text" class="form-control" value="<?= ucfirst($editUser['status'] ?? '') ?>" disabled>
+                        <input type="hidden" name="status" value="<?= htmlspecialchars($editUser['status'] ?? '') ?>">
+                    <?php endif; ?>
+                    <div class="invalid-feedback">Please select account status.</div>
                 </div>
             </div>
         </div>
@@ -244,6 +246,21 @@ $userId = $currentUser;
 </div>
 
 <script>
+    // Password visibility toggle
+    function togglePasswordVisibility(inputId) {
+        const passwordInput = document.getElementById(inputId);
+        const toggleIcon = document.getElementById(inputId + '-toggle-icon');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.setAttribute('data-feather', 'eye-off');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.setAttribute('data-feather', 'eye');
+        }
+        feather.replace();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.querySelector('.notion-form');
         const passwordInput = document.getElementById('password');
@@ -255,11 +272,11 @@ $userId = $currentUser;
                 let valid = true;
 
                 if (passwordInput && confirmPasswordInput) {
-                    if(passwordInput.value !== confirmPasswordInput.value) {
-                        confirmPasswordInput.setCustomValidity("Passwords do not match.");
+                    if (passwordInput.value !== confirmPasswordInput.value) {
+                        confirmPasswordInput.setCustomValidity('Passwords do not match.');
                         valid = false;
                     } else {
-                        confirmPasswordInput.setCustomValidity("");
+                        confirmPasswordInput.setCustomValidity('');
                     }
                 }
 
@@ -281,107 +298,100 @@ $userId = $currentUser;
                 form.classList.add('was-validated');
             });
 
-            if(passwordInput && confirmPasswordInput) {
+            if (passwordInput && confirmPasswordInput) {
                 confirmPasswordInput.addEventListener('input', function() {
-                    if(passwordInput.value !== confirmPasswordInput.value) {
-                        confirmPasswordInput.setCustomValidity("Passwords do not match.");
+                    if (passwordInput.value !== confirmPasswordInput.value) {
+                        confirmPasswordInput.setCustomValidity('Passwords do not match.');
                     } else {
-                        confirmPasswordInput.setCustomValidity("");
+                        confirmPasswordInput.setCustomValidity('');
                     }
                 });
             }
         }
-    });
 
-    // Password visibility toggle
-    function togglePasswordVisibility(inputId) {
-        const passwordInput = document.getElementById(inputId);
-        const toggleIcon = document.getElementById(inputId + '-toggle-icon');
-
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            toggleIcon.setAttribute('data-feather', 'eye-off');
-        } else {
-            passwordInput.type = 'password';
-            toggleIcon.setAttribute('data-feather', 'eye');
-        }
-        feather.replace();
-    }
-
-    // Add ripple effect to buttons
-    document.addEventListener('DOMContentLoaded', function() {
+        // Add ripple effect to buttons
         const buttons = document.querySelectorAll('.ripple-effect');
         buttons.forEach(button => {
             button.addEventListener('click', function(e) {
-                const x = e.clientX - e.target.getBoundingClientRect().left;
-                const y = e.clientY - e.target.getBoundingClientRect().top;
+                const rect = e.target.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
                 const ripple = document.createElement('span');
                 ripple.className = 'ripple-animation';
                 ripple.style.left = `${x}px`;
                 ripple.style.top = `${y}px`;
                 this.appendChild(ripple);
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
+                setTimeout(() => ripple.remove(), 600);
             });
         });
-        
+
         // Modal confirmation functionality
         const nameInput = document.getElementById('name');
         const emailInput = document.getElementById('email');
         const phoneInput = document.getElementById('phone_number');
         const roleSelect = document.getElementById('role');
         const statusSelect = document.getElementById('status');
-        
+
         function updateModalContent() {
-            if (nameInput) document.getElementById('modalUserName').textContent = nameInput.value || 'Not specified';
-            if (emailInput) document.getElementById('modalUserEmail').textContent = emailInput.value || 'Not specified';
-            if (phoneInput) document.getElementById('modalUserPhone').textContent = phoneInput.value || 'Not specified';
-            
+            const safe = (v, fallback = 'Not specified') => (v && v.trim()) ? v : fallback;
+            const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+            setText('modalUserName', safe(nameInput ? nameInput.value : ''));
+            setText('modalUserEmail', safe(emailInput ? emailInput.value : ''));
+            setText('modalUserPhone', safe(phoneInput ? phoneInput.value : ''));
+
             // Update role badge
-            if (roleSelect) {
-                const role = roleSelect.value;
-                document.getElementById('modalUserRole').innerHTML = `<span class="badge text-bg-primary">${role.charAt(0).toUpperCase() + role.slice(1)}</span>`;
+            const roleContainer = document.getElementById('modalUserRole');
+            if (roleContainer) {
+                const role = roleSelect ? roleSelect.value : '';
+                const roleText = role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Not specified';
+                roleContainer.innerHTML = `<span class="badge text-bg-primary">${roleText}</span>`;
             }
-            
+
             // Update status badge if editing
-            if (statusSelect) {
-                const statusElement = document.getElementById('modalUserStatus');
-                if (statusElement) {
-                    const status = statusSelect.value;
-                    const badgeClass = status === 'active' ? 'success' : 'secondary';
-                    statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
-                }
+            const statusElement = document.getElementById('modalUserStatus');
+            if (statusElement && statusSelect) {
+                const status = statusSelect.value || '';
+                const badgeClass = status === 'active' ? 'success' : 'secondary';
+                const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Not specified';
+                statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${statusText}</span>`;
             }
         }
-        
-        // Update modal when inputs change
+
         [nameInput, emailInput, phoneInput, roleSelect, statusSelect].forEach(input => {
             if (input) {
                 input.addEventListener('input', updateModalContent);
                 input.addEventListener('change', updateModalContent);
             }
         });
-        
+
+        // Ensure modal content is fresh when it opens
+        const confirmModalEl = document.getElementById('confirmUserSaveModal');
+        if (confirmModalEl) {
+            confirmModalEl.addEventListener('show.bs.modal', updateModalContent);
+        }
+
         // Confirm save button handler
-        document.getElementById('confirmUserSave').addEventListener('click', function() {
-            // Validate form before submitting
-            if (form.checkValidity()) {
-                // Additional password validation
-                if (passwordInput && confirmPasswordInput) {
-                    if (passwordInput.value !== confirmPasswordInput.value) {
-                        bootstrap.Modal.getInstance(document.getElementById('confirmUserSaveModal')).hide();
+        const confirmBtn = document.getElementById('confirmUserSave');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', function() {
+                if (!form) return;
+                if (form.checkValidity()) {
+                    if (passwordInput && confirmPasswordInput && passwordInput.value !== confirmPasswordInput.value) {
+                        const modalEl = document.getElementById('confirmUserSaveModal');
+                        const inst = bootstrap.Modal.getInstance(modalEl);
+                        if (inst) inst.hide();
                         confirmPasswordInput.focus();
                         return;
                     }
+                    form.submit();
+                } else {
+                    const modalEl = document.getElementById('confirmUserSaveModal');
+                    const inst = bootstrap.Modal.getInstance(modalEl);
+                    if (inst) inst.hide();
+                    form.reportValidity();
                 }
-                form.submit();
-            } else {
-                // Close modal and show validation errors
-                bootstrap.Modal.getInstance(document.getElementById('confirmUserSaveModal')).hide();
-                form.reportValidity();
-            }
-        });
+            });
+        }
     });
 </script>
 
