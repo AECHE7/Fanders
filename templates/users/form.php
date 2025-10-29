@@ -352,15 +352,10 @@ $currentUserId = $currentUser['id'] ?? null;
             // Update status badge if editing
             const statusElement = document.getElementById('modalUserStatus');
             if (statusElement && statusSelect) {
-                const status = statusSelect.value || '';
+                const status = statusSelect.value || 'active';
                 const badgeClass = status === 'active' ? 'success' : 'secondary';
-                const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Not specified';
+                const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Active';
                 statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${statusText}</span>`;
-            }
-            
-            // Re-render feather icons in modal
-            if (typeof feather !== 'undefined') {
-                feather.replace();
             }
         }
 
@@ -376,7 +371,7 @@ $currentUserId = $currentUser['id'] ?? null;
         const confirmModalEl = document.getElementById('confirmUserSaveModal');
         const openModalBtn = document.getElementById('openConfirmModal');
         
-        if (openModalBtn) {
+        if (openModalBtn && confirmModalEl) {
             openModalBtn.addEventListener('click', function(e) {
                 e.preventDefault();
                 
@@ -417,14 +412,14 @@ $currentUserId = $currentUser['id'] ?? null;
                 
                 // Form is valid, update modal content and show it
                 updateModalContent();
-                const modal = new bootstrap.Modal(confirmModalEl);
+                
+                // Use Bootstrap 5 modal method with proper options
+                const modal = new bootstrap.Modal(confirmModalEl, {
+                    backdrop: 'static',
+                    keyboard: true,
+                    focus: true
+                });
                 modal.show();
-            });
-        }
-        
-        if (confirmModalEl) {
-            confirmModalEl.addEventListener('show.bs.modal', function() {
-                updateModalContent();
             });
         }
 
@@ -459,6 +454,26 @@ $currentUserId = $currentUser['id'] ?? null;
     }
     @keyframes ripple {
         to { transform: scale(2.5); opacity: 0; }
+    }
+    
+    /* Prevent modal shake/jitter */
+    #confirmUserSaveModal .modal-dialog {
+        transform: none !important;
+        transition: none;
+    }
+    
+    #confirmUserSaveModal.modal.fade .modal-dialog {
+        transition: transform 0.3s ease-out;
+    }
+    
+    #confirmUserSaveModal.modal.show .modal-dialog {
+        transform: none;
+    }
+    
+    /* Ensure feather icons don't cause reflow */
+    #confirmUserSaveModal i[data-feather] {
+        display: inline-block;
+        vertical-align: middle;
     }
 </style>
 
