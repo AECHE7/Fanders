@@ -176,7 +176,7 @@ $currentUserId = $currentUser['id'] ?? null;
     <!-- Form Actions -->
     <div class="d-flex justify-content-end mt-4">
         <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
-        <button type="button" class="btn btn-primary px-4 ripple-effect" data-bs-toggle="modal" data-bs-target="#confirmUserSaveModal">
+        <button type="button" class="btn btn-primary px-4 ripple-effect" id="openConfirmModal">
             <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
             <?= isset($editUser['id']) ? 'Update Account' : 'Create Account' ?>
         </button>
@@ -207,16 +207,21 @@ $currentUserId = $currentUser['id'] ?? null;
                             <dd class="col-sm-8" id="modalUserPhone"><?= htmlspecialchars($editUser['phone_number'] ?? '') ?></dd>
                             <dt class="col-sm-4">Role:</dt>
                             <dd class="col-sm-8" id="modalUserRole">
-                                <span class="badge text-bg-primary"><?= ucfirst($editUser['role'] ?? '') ?></span>
+                                <span class="badge text-bg-primary">
+                                    <?php 
+                                        $roleDisplay = $editUser['role'] ?? '';
+                                        if ($roleDisplay) {
+                                            echo ucwords(str_replace('-', ' ', $roleDisplay));
+                                        }
+                                    ?>
+                                </span>
                             </dd>
-                            <?php if (isset($editUser['id'])): ?>
                             <dt class="col-sm-4">Status:</dt>
                             <dd class="col-sm-8" id="modalUserStatus">
                                 <span class="badge text-bg-<?= ($editUser['status'] ?? 'active') === 'active' ? 'success' : 'secondary' ?>">
                                     <?= ucfirst($editUser['status'] ?? 'active') ?>
                                 </span>
                             </dd>
-                            <?php endif; ?>
                         </dl>
                     </div>
                 </div>
@@ -369,6 +374,54 @@ $currentUserId = $currentUser['id'] ?? null;
 
         // Ensure modal content is fresh when it opens
         const confirmModalEl = document.getElementById('confirmUserSaveModal');
+        const openModalBtn = document.getElementById('openConfirmModal');
+        
+        if (openModalBtn) {
+            openModalBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Check form validity before opening modal
+                let isValid = true;
+                
+                // Validate password matching
+                if (passwordInput && confirmPasswordInput) {
+                    if (passwordInput.value && confirmPasswordInput.value && 
+                        passwordInput.value !== confirmPasswordInput.value) {
+                        isValid = false;
+                        confirmPasswordInput.setCustomValidity('Passwords do not match.');
+                    } else {
+                        confirmPasswordInput.setCustomValidity('');
+                    }
+                }
+                
+                // Check HTML5 validation
+                if (!form.checkValidity() || !isValid) {
+                    // Show validation errors
+                    form.classList.add('was-validated');
+                    form.reportValidity();
+                    
+                    // Focus first invalid field
+                    const invalidField = form.querySelector(':invalid');
+                    if (invalidField) {
+                        invalidField.focus();
+                        const fieldGroup = invalidField.closest('.notion-form-group');
+                        if (fieldGroup) {
+                            fieldGroup.classList.add('shake-animation');
+                            setTimeout(() => {
+                                fieldGroup.classList.remove('shake-animation');
+                            }, 820);
+                        }
+                    }
+                    return; // Don't open modal
+                }
+                
+                // Form is valid, update modal content and show it
+                updateModalContent();
+                const modal = new bootstrap.Modal(confirmModalEl);
+                modal.show();
+            });
+        }
+        
         if (confirmModalEl) {
             confirmModalEl.addEventListener('show.bs.modal', function() {
                 updateModalContent();
@@ -384,51 +437,8 @@ $currentUserId = $currentUser['id'] ?? null;
                     return;
                 }
                 
-                // Check form validity
-                let isValid = true;
-                
-                // Additional password validation
-                if (passwordInput && confirmPasswordInput) {
-                    if (passwordInput.value && confirmPasswordInput.value && 
-                        passwordInput.value !== confirmPasswordInput.value) {
-                        isValid = false;
-                        confirmPasswordInput.setCustomValidity('Passwords do not match.');
-                    } else {
-                        confirmPasswordInput.setCustomValidity('');
-                    }
-                }
-                
-                // Trigger HTML5 validation
-                if (!form.checkValidity() || !isValid) {
-                    // Close modal
-                    const modalEl = document.getElementById('confirmUserSaveModal');
-                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
-                    if (modalInstance) {
-                        modalInstance.hide();
-                    }
-                    
-                    // Show validation errors
-                    form.classList.add('was-validated');
-                    form.reportValidity();
-                    
-                    // Focus first invalid field
-                    const invalidField = form.querySelector(':invalid');
-                    if (invalidField) {
-                        setTimeout(() => {
-                            invalidField.focus();
-                            const fieldGroup = invalidField.closest('.notion-form-group');
-                            if (fieldGroup) {
-                                fieldGroup.classList.add('shake-animation');
-                                setTimeout(() => {
-                                    fieldGroup.classList.remove('shake-animation');
-                                }, 820);
-                            }
-                        }, 300);
-                    }
-                } else {
-                    // Form is valid, submit it
-                    form.submit();
-                }
+                // Form was already validated before modal opened, just submit
+                form.submit();
             });
         }
     });
