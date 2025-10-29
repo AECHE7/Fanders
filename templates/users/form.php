@@ -374,14 +374,6 @@ $currentUserId = $currentUser['id'] ?? null;
         if (openModalBtn && confirmModalEl) {
             openModalBtn.addEventListener('click', function(e) {
                 e.preventDefault();
-                e.stopPropagation();
-                
-                // Force complete any running animations on the page
-                document.querySelectorAll('.stagger-fade-in > *, .animate-on-scroll').forEach(el => {
-                    el.style.animation = 'none';
-                    el.style.opacity = '1';
-                    el.style.transform = 'none';
-                });
                 
                 // Check form validity before opening modal
                 let isValid = true;
@@ -421,15 +413,39 @@ $currentUserId = $currentUser['id'] ?? null;
                 // Form is valid, update modal content and show it
                 updateModalContent();
                 
-                // Show modal instantly without fade animation
-                const modal = new bootstrap.Modal(confirmModalEl, {
-                    backdrop: 'static',
-                    keyboard: true,
-                    focus: true
-                });
-                modal.show();
+                // Show modal directly using Bootstrap data attributes method
+                confirmModalEl.classList.add('show');
+                confirmModalEl.style.display = 'block';
+                confirmModalEl.setAttribute('aria-modal', 'true');
+                confirmModalEl.removeAttribute('aria-hidden');
+                
+                // Add backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop show';
+                backdrop.id = 'userModalBackdrop';
+                document.body.appendChild(backdrop);
+                document.body.classList.add('modal-open');
             });
         }
+
+        // Modal close handler function
+        function closeModal() {
+            confirmModalEl.classList.remove('show');
+            confirmModalEl.style.display = 'none';
+            confirmModalEl.removeAttribute('aria-modal');
+            const backdrop = document.getElementById('userModalBackdrop');
+            if (backdrop) {
+                backdrop.remove();
+            }
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        }
+
+        // Close button handlers
+        document.querySelectorAll('#confirmModal [data-bs-dismiss="modal"]').forEach(btn => {
+            btn.addEventListener('click', closeModal);
+        });
 
         // Confirm save button handler
         const confirmBtn = document.getElementById('confirmUserSave');
