@@ -430,27 +430,6 @@ $currentUserId = $currentUser['id'] ?? null;
         document.querySelectorAll('#confirmUserSaveModal [data-dismiss="modal"]').forEach(btn => {
             btn.addEventListener('click', closeModal);
         });
-            });
-        }
-
-        // Modal close handler function
-        function closeModal() {
-            confirmModalEl.classList.remove('show');
-            confirmModalEl.style.display = 'none';
-            confirmModalEl.removeAttribute('aria-modal');
-            const backdrop = document.getElementById('userModalBackdrop');
-            if (backdrop) {
-                backdrop.remove();
-            }
-            document.body.classList.remove('modal-open');
-            document.body.style.removeProperty('overflow');
-            document.body.style.removeProperty('padding-right');
-        }
-
-        // Close button handlers
-        document.querySelectorAll('#confirmModal [data-bs-dismiss="modal"]').forEach(btn => {
-            btn.addEventListener('click', closeModal);
-        });
 
         // Confirm save button handler
         const confirmBtn = document.getElementById('confirmUserSave');
