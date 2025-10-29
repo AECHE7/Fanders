@@ -81,8 +81,7 @@ $currentUserId = $currentUser['id'] ?? null;
                     <div class="input-group">
                         <input type="password" class="notion-form-control" id="password" name="password"
                             <?= isset($editUser['id']) ? '' : 'required' ?> placeholder=" ">
-                        <button class="btn btn-outline-secondary" type="button" id="toggle-password"
-                            onclick="togglePasswordVisibility('password')">
+                        <button class="btn btn-outline-secondary" type="button" id="toggle-password">
                             <i data-feather="eye" id="password-toggle-icon"></i>
                         </button>
                     </div>
@@ -246,25 +245,31 @@ $currentUserId = $currentUser['id'] ?? null;
 </div>
 
 <script>
-    // Password visibility toggle
-    function togglePasswordVisibility(inputId) {
-        const passwordInput = document.getElementById(inputId);
-        const toggleIcon = document.getElementById(inputId + '-toggle-icon');
-
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            toggleIcon.setAttribute('data-feather', 'eye-off');
-        } else {
-            passwordInput.type = 'password';
-            toggleIcon.setAttribute('data-feather', 'eye');
-        }
-        feather.replace();
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
         const form = document.querySelector('.notion-form');
         const passwordInput = document.getElementById('password');
         const confirmPasswordInput = document.getElementById('password_confirmation');
+        const togglePasswordBtn = document.getElementById('toggle-password');
+
+        // Password visibility toggle
+        if (togglePasswordBtn && passwordInput) {
+            togglePasswordBtn.addEventListener('click', function() {
+                const toggleIcon = document.getElementById('password-toggle-icon');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    toggleIcon.setAttribute('data-feather', 'eye-off');
+                } else {
+                    passwordInput.type = 'password';
+                    toggleIcon.setAttribute('data-feather', 'eye');
+                }
+                
+                // Re-render feather icons
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
+                }
+            });
+        }
 
         // Form validation
         if (form) {
@@ -335,6 +340,7 @@ $currentUserId = $currentUser['id'] ?? null;
         function updateModalContent() {
             const safe = (v, fallback = 'Not specified') => (v && v.trim()) ? v : fallback;
             const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+            
             setText('modalUserName', safe(nameInput ? nameInput.value : ''));
             setText('modalUserEmail', safe(emailInput ? emailInput.value : ''));
             setText('modalUserPhone', safe(phoneInput ? phoneInput.value : ''));
@@ -342,8 +348,25 @@ $currentUserId = $currentUser['id'] ?? null;
             // Update role badge
             const roleContainer = document.getElementById('modalUserRole');
             if (roleContainer) {
-                const role = roleSelect ? roleSelect.value : '';
-                const roleText = role ? role.charAt(0).toUpperCase() + role.slice(1) : 'Not specified';
+                let role = '';
+                if (roleSelect && roleSelect.value) {
+                    role = roleSelect.value;
+                } else if (roleSelect) {
+                    // Try to get from selected option text
+                    const selectedOption = roleSelect.options[roleSelect.selectedIndex];
+                    if (selectedOption && selectedOption.value) {
+                        role = selectedOption.value;
+                    }
+                }
+                
+                // Format role text with proper capitalization and spacing
+                let roleText = 'Not specified';
+                if (role) {
+                    roleText = role.split('-').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                }
+                
                 roleContainer.innerHTML = `<span class="badge text-bg-primary">${roleText}</span>`;
             }
 
@@ -355,8 +378,14 @@ $currentUserId = $currentUser['id'] ?? null;
                 const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Not specified';
                 statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${statusText}</span>`;
             }
+            
+            // Re-render feather icons in modal
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
         }
 
+        // Update modal on input changes
         [nameInput, emailInput, phoneInput, roleSelect, statusSelect].forEach(input => {
             if (input) {
                 input.addEventListener('input', updateModalContent);
@@ -367,28 +396,64 @@ $currentUserId = $currentUser['id'] ?? null;
         // Ensure modal content is fresh when it opens
         const confirmModalEl = document.getElementById('confirmUserSaveModal');
         if (confirmModalEl) {
-            confirmModalEl.addEventListener('show.bs.modal', updateModalContent);
+            confirmModalEl.addEventListener('show.bs.modal', function() {
+                updateModalContent();
+            });
         }
 
         // Confirm save button handler
         const confirmBtn = document.getElementById('confirmUserSave');
         if (confirmBtn) {
             confirmBtn.addEventListener('click', function() {
-                if (!form) return;
-                if (form.checkValidity()) {
-                    if (passwordInput && confirmPasswordInput && passwordInput.value !== confirmPasswordInput.value) {
-                        const modalEl = document.getElementById('confirmUserSaveModal');
-                        const inst = bootstrap.Modal.getInstance(modalEl);
-                        if (inst) inst.hide();
-                        confirmPasswordInput.focus();
-                        return;
+                if (!form) {
+                    console.error('Form not found');
+                    return;
+                }
+                
+                // Check form validity
+                let isValid = true;
+                
+                // Additional password validation
+                if (passwordInput && confirmPasswordInput) {
+                    if (passwordInput.value && confirmPasswordInput.value && 
+                        passwordInput.value !== confirmPasswordInput.value) {
+                        isValid = false;
+                        confirmPasswordInput.setCustomValidity('Passwords do not match.');
+                    } else {
+                        confirmPasswordInput.setCustomValidity('');
                     }
-                    form.submit();
-                } else {
+                }
+                
+                // Trigger HTML5 validation
+                if (!form.checkValidity() || !isValid) {
+                    // Close modal
                     const modalEl = document.getElementById('confirmUserSaveModal');
-                    const inst = bootstrap.Modal.getInstance(modalEl);
-                    if (inst) inst.hide();
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                    
+                    // Show validation errors
+                    form.classList.add('was-validated');
                     form.reportValidity();
+                    
+                    // Focus first invalid field
+                    const invalidField = form.querySelector(':invalid');
+                    if (invalidField) {
+                        setTimeout(() => {
+                            invalidField.focus();
+                            const fieldGroup = invalidField.closest('.notion-form-group');
+                            if (fieldGroup) {
+                                fieldGroup.classList.add('shake-animation');
+                                setTimeout(() => {
+                                    fieldGroup.classList.remove('shake-animation');
+                                }, 820);
+                            }
+                        }, 300);
+                    }
+                } else {
+                    // Form is valid, submit it
+                    form.submit();
                 }
             });
         }
