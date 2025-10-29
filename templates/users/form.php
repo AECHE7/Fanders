@@ -469,8 +469,30 @@ $currentUserId = $currentUser['id'] ?? null;
     }
     
     /* ========================================
-       CUSTOM MODAL - NO ANIMATIONS, NO TRANSITIONS, NO HOVER EFFECTS
+       CUSTOM MODAL - MINIMAL ANIMATIONS & HOVER EFFECTS
        ======================================== */
+    
+    /* Fade in animation for modal */
+    @keyframes modalFadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+    
+    /* Slide down animation for modal content */
+    @keyframes modalSlideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
     
     .custom-modal {
         position: fixed;
@@ -480,6 +502,7 @@ $currentUserId = $currentUser['id'] ?? null;
         height: 100%;
         z-index: 9999;
         overflow-y: auto;
+        animation: modalFadeIn 0.15s ease-out;
     }
     
     .custom-modal-overlay {
@@ -499,6 +522,7 @@ $currentUserId = $currentUser['id'] ?? null;
         margin: 1.75rem auto;
         z-index: 2;
         pointer-events: none;
+        animation: modalSlideDown 0.2s ease-out;
     }
     
     .custom-modal-content {
@@ -548,6 +572,12 @@ $currentUserId = $currentUser['id'] ?? null;
         color: #fff;
         opacity: 0.8;
         cursor: pointer;
+        transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    
+    .custom-modal-close:hover {
+        opacity: 1;
+        transform: scale(1.1);
     }
     
     .custom-modal-body {
@@ -584,6 +614,7 @@ $currentUserId = $currentUser['id'] ?? null;
         font-size: 1rem;
         border-radius: 0.375rem;
         margin-left: 0.5rem;
+        transition: all 0.15s ease-in-out;
     }
     
     .custom-btn-secondary {
@@ -592,19 +623,28 @@ $currentUserId = $currentUser['id'] ?? null;
         border-color: #6c757d;
     }
     
+    .custom-btn-secondary:hover {
+        background-color: #5c636a;
+        border-color: #565e64;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
     .custom-btn-primary {
         color: #fff;
         background-color: #0d6efd;
         border-color: #0d6efd;
     }
     
-    /* CRITICAL: Disable ALL transitions, animations, and transforms */
-    .custom-modal *,
-    .custom-modal *::before,
-    .custom-modal *::after {
-        transition: none !important;
-        animation: none !important;
-        transform: none !important;
+    .custom-btn-primary:hover {
+        background-color: #0b5ed7;
+        border-color: #0a58ca;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+    
+    .custom-btn:active {
+        transform: translateY(0);
     }
     
     /* Responsive adjustments */
