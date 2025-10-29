@@ -78,13 +78,8 @@ $currentUserId = $currentUser['id'] ?? null;
             <?php if ($canEditPassword): ?>
             <div class="col-12 col-md-6">
                 <div class="notion-form-group interactive-form-field">
-                    <div class="input-group">
-                        <input type="password" class="notion-form-control" id="password" name="password"
-                            <?= isset($editUser['id']) ? '' : 'required' ?> placeholder=" ">
-                        <button class="btn btn-outline-secondary" type="button" id="toggle-password">
-                            <i data-feather="eye" id="password-toggle-icon"></i>
-                        </button>
-                    </div>
+                    <input type="password" class="notion-form-control" id="password" name="password"
+                        <?= isset($editUser['id']) ? '' : 'required' ?> placeholder=" ">
                     <label for="password" class="notion-form-label">Password</label>
                     <div class="invalid-feedback">Please enter a password.</div>
                     <small class="form-text text-muted">
@@ -249,27 +244,6 @@ $currentUserId = $currentUser['id'] ?? null;
         const form = document.querySelector('.notion-form');
         const passwordInput = document.getElementById('password');
         const confirmPasswordInput = document.getElementById('password_confirmation');
-        const togglePasswordBtn = document.getElementById('toggle-password');
-
-        // Password visibility toggle
-        if (togglePasswordBtn && passwordInput) {
-            togglePasswordBtn.addEventListener('click', function() {
-                const toggleIcon = document.getElementById('password-toggle-icon');
-                
-                if (passwordInput.type === 'password') {
-                    passwordInput.type = 'text';
-                    toggleIcon.setAttribute('data-feather', 'eye-off');
-                } else {
-                    passwordInput.type = 'password';
-                    toggleIcon.setAttribute('data-feather', 'eye');
-                }
-                
-                // Re-render feather icons
-                if (typeof feather !== 'undefined') {
-                    feather.replace();
-                }
-            });
-        }
 
         // Form validation
         if (form) {
