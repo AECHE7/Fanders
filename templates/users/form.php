@@ -374,6 +374,14 @@ $currentUserId = $currentUser['id'] ?? null;
         if (openModalBtn && confirmModalEl) {
             openModalBtn.addEventListener('click', function(e) {
                 e.preventDefault();
+                e.stopPropagation();
+                
+                // Force complete any running animations on the page
+                document.querySelectorAll('.stagger-fade-in > *, .animate-on-scroll').forEach(el => {
+                    el.style.animation = 'none';
+                    el.style.opacity = '1';
+                    el.style.transform = 'none';
+                });
                 
                 // Check form validity before opening modal
                 let isValid = true;
@@ -413,13 +421,18 @@ $currentUserId = $currentUser['id'] ?? null;
                 // Form is valid, update modal content and show it
                 updateModalContent();
                 
-                // Use Bootstrap 5 modal method with proper options
-                const modal = new bootstrap.Modal(confirmModalEl, {
-                    backdrop: 'static',
-                    keyboard: true,
-                    focus: true
+                // Use requestAnimationFrame to ensure DOM is stable before showing modal
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        // Use Bootstrap 5 modal method with proper options
+                        const modal = new bootstrap.Modal(confirmModalEl, {
+                            backdrop: 'static',
+                            keyboard: true,
+                            focus: true
+                        });
+                        modal.show();
+                    });
                 });
-                modal.show();
             });
         }
 
@@ -440,18 +453,6 @@ $currentUserId = $currentUser['id'] ?? null;
 </script>
 
 <style>
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-        20%, 40%, 60%, 80% { transform: translateX(5px); }
-    }
-    .shake-animation { animation: shake 0.8s ease; }
-    .ripple-effect { position: relative; overflow: hidden; }
-    .ripple-animation {
-        position: absolute; border-radius: 50%; background-color: rgba(255,255,255,0.7);
-        width: 100px; height: 100px; margin-top: -50px; margin-left: -50px;
-        animation: ripple 0.6s linear; transform: scale(0); opacity: 1;
-    }
     @keyframes ripple {
         to { transform: scale(2.5); opacity: 0; }
     }
@@ -474,6 +475,31 @@ $currentUserId = $currentUser['id'] ?? null;
     #confirmUserSaveModal i[data-feather] {
         display: inline-block;
         vertical-align: middle;
+    }
+    
+    /* Prevent form animations from re-triggering when modal opens */
+    .notion-form .stagger-fade-in > * {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    
+    /* Disable animate-on-scroll inside form to prevent conflicts */
+    .notion-form .animate-on-scroll {
+        animation: none !important;
+    }
+    
+    /* Ensure modal backdrop doesn't cause page reflow */
+    .modal-backdrop {
+        position: fixed;
+        will-change: opacity;
+    }
+    
+    /* Stabilize modal content to prevent layout shifts */
+    #confirmUserSaveModal .modal-content {
+        will-change: auto;
+        backface-visibility: hidden;
+        transform: translateZ(0);
     }
 </style>
 
