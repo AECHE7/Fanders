@@ -492,5 +492,22 @@ $currentUserId = $currentUser['id'] ?? null;
         backface-visibility: hidden;
         transform: translateZ(0);
     }
+    
+    /* Remove all hover effects from modal */
+    #confirmUserSaveModal .btn:hover,
+    #confirmUserSaveModal .btn:focus,
+    #confirmUserSaveModal .btn:active {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    #confirmUserSaveModal .btn-close:hover {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    
+    #confirmUserSaveModal * {
+        transition: none !important;
+    }
 </style>
 
