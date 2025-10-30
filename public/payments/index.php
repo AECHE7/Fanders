@@ -39,34 +39,6 @@ $filters = FilterUtility::validateDateRange($filters);
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 20;
 
-// --- 2. Handle PDF Export ---
-if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
-    try {
-        $reportService = new ReportService();
-        $exportData = $paymentService->getAllPayments($filters, 1, 10000); // Get all data without pagination
-        $reportService->exportPaymentReportPDF($exportData, $filters);
-    } catch (Exception $e) {
-        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
-        header('Location: ' . APP_URL . '/public/payments/index.php?' . http_build_query($filters));
-        exit;
-    }
-    exit;
-}
-
-// --- 2B. Handle Excel Export ---
-if (isset($_GET['export']) && $_GET['export'] === 'excel') {
-    try {
-        $reportService = new ReportService();
-        $exportData = $paymentService->getAllPayments($filters, 1, 10000); // Get all data without pagination
-        $reportService->exportPaymentReportExcel($exportData, $filters);
-    } catch (Exception $e) {
-        $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
-        header('Location: ' . APP_URL . '/public/payments/index.php?' . http_build_query($filters));
-        exit;
-    }
-    exit;
-}
-
 // --- 3. Fetch Payments Data ---
 try {
     $payments = $paymentService->getAllPayments($filters, $page, $limit);
@@ -278,14 +250,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Payments List</h5>
-                <div class="btn-group">
-                    <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
-                        <i data-feather="download"></i> Export PDF
-                    </a>
-                    <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'excel'])) ?>" class="btn btn-sm btn-outline-success">
-                        <i data-feather="file"></i> Export Excel
-                    </a>
-                </div>
+                <a href="<?= APP_URL ?>/public/reports/index.php?type=payments" class="btn btn-sm btn-outline-primary">
+                    <i data-feather="file-text"></i> View Reports
+                </a>
             </div>
         </div>
         <div class="card-body">

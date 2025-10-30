@@ -33,53 +33,7 @@ if (empty($filters['date_to'])) {
 
 $filters = FilterUtility::validateDateRange($filters);
 
-// --- 2. Handle PDF Export ---
-if (isset($_GET['export']) && $_GET['export'] === 'pdf') {
-    // Clear and end output buffering to prevent "data already output" error
-    while (ob_get_level()) {
-        ob_end_clean();
-    }
-    
-    try {
-        require_once '../../app/services/ReportService.php';
-        $reportService = new ReportService();
-        $blotterData = $cashBlotterService->getBlotterRange($filters['date_from'], $filters['date_to']);
-        $currentBalance = $cashBlotterService->getCurrentBalance();
-        $summary = $cashBlotterService->getCashFlowSummary($filters['date_from'], $filters['date_to']);
-        $reportService->exportCashBlotterPDF($blotterData, $summary, $currentBalance, $filters);
-    } catch (Exception $e) {
-        // Restart output buffering for error handling
-        ob_start();
-        $session->setFlash('error', 'Error exporting PDF: ' . $e->getMessage());
-        header('Location: ' . APP_URL . '/public/cash-blotter/index.php?' . http_build_query($filters));
-        exit;
-    }
-    exit;
-}
 
-// --- 3. Handle Excel Export ---
-if (isset($_GET['export']) && $_GET['export'] === 'excel') {
-    // Clear and end output buffering to prevent "data already output" error
-    while (ob_get_level()) {
-        ob_end_clean();
-    }
-    
-    try {
-        require_once '../../app/services/ReportService.php';
-        $reportService = new ReportService();
-        $blotterData = $cashBlotterService->getBlotterRange($filters['date_from'], $filters['date_to']);
-        $currentBalance = $cashBlotterService->getCurrentBalance();
-        $summary = $cashBlotterService->getCashFlowSummary($filters['date_from'], $filters['date_to']);
-        $reportService->exportCashBlotterExcel($blotterData, $summary, $currentBalance, $filters);
-    } catch (Exception $e) {
-        // Restart output buffering for error handling
-        ob_start();
-        $session->setFlash('error', 'Error exporting Excel: ' . $e->getMessage());
-        header('Location: ' . APP_URL . '/public/cash-blotter/index.php?' . http_build_query($filters));
-        exit;
-    }
-    exit;
-}
 
 // --- 4. Fetch Cash Blotter Data ---
 try {
@@ -253,14 +207,9 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
         <div class="card-header">
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Cash Blotter Transactions</h5>
-                <div class="btn-group">
-                    <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'pdf'])) ?>" class="btn btn-sm btn-success">
-                        <i data-feather="download"></i> Export PDF
-                    </a>
-                    <a href="?<?= http_build_query(array_merge($_GET, ['export' => 'excel'])) ?>" class="btn btn-sm btn-outline-success">
-                        <i data-feather="file"></i> Export Excel
-                    </a>
-                </div>
+                <a href="<?= APP_URL ?>/public/reports/index.php?type=cash-blotter" class="btn btn-sm btn-outline-primary">
+                    <i data-feather="file-text"></i> View Reports
+                </a>
             </div>
         </div>
         <div class="card-body">
