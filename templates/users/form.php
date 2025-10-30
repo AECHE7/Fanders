@@ -183,19 +183,18 @@ $currentUserId = $currentUser['id'] ?? null;
     </div>
 </form>
 
-<!-- User Save Confirmation Modal - Custom Static Implementation -->
-<div id="confirmUserSaveModal" class="custom-modal" style="display: none;">
-    <div class="custom-modal-overlay"></div>
-    <div class="custom-modal-dialog">
-        <div class="custom-modal-content">
-            <div class="custom-modal-header">
-                <h5 class="custom-modal-title">
+<!-- User Save Confirmation Modal -->
+<div class="modal fade" id="confirmUserSaveModal" tabindex="-1" aria-labelledby="confirmUserSaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="confirmUserSaveModalLabel">
                     <i data-feather="alert-circle" class="me-2" style="width:20px;height:20px;"></i>
                     <?= isset($editUser['id']) ? 'Confirm Staff Update' : 'Confirm Staff Creation' ?>
                 </h5>
-                <button type="button" class="custom-modal-close" data-dismiss="modal" aria-label="Close">&times;</button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="custom-modal-body">
+            <div class="modal-body">
                 <p class="mb-3">You are about to <?= isset($editUser['id']) ? 'update the information for' : 'create a new staff account for' ?>:</p>
                 <div class="card bg-light">
                     <div class="card-body">
@@ -231,12 +230,12 @@ $currentUserId = $currentUser['id'] ?? null;
                     <?= isset($editUser['id']) ? 'This action will update the staff member information and permissions.' : 'This will create a new staff account with system access.' ?>
                 </p>
             </div>
-            <div class="custom-modal-footer">
-                <button type="button" class="custom-btn custom-btn-secondary" data-dismiss="modal">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
                     Cancel
                 </button>
-                <button type="button" class="custom-btn custom-btn-primary" id="confirmUserSave">
+                <button type="button" class="btn btn-primary" id="confirmUserSave">
                     <i data-feather="check" class="me-1" style="width:16px;height:16px;"></i>
                     <?= isset($editUser['id']) ? 'Confirm Update' : 'Confirm Creation' ?>
                 </button>
@@ -411,25 +410,14 @@ $currentUserId = $currentUser['id'] ?? null;
                     return; // Don't open modal
                 }
                 
-                                // Form is valid, update modal content and show it
+                // Form is valid, update modal content and show it
                 updateModalContent();
                 
-                // Show custom modal (no animations, no transitions)
-                confirmModalEl.style.display = 'block';
-                document.body.style.overflow = 'hidden';
+                // Show modal using Bootstrap Modal API
+                const modal = new bootstrap.Modal(confirmModalEl);
+                modal.show();
             });
         }
-
-        // Modal close handler function
-        function closeModal() {
-            confirmModalEl.style.display = 'none';
-            document.body.style.overflow = '';
-        }
-
-        // Close button handlers
-        document.querySelectorAll('#confirmUserSaveModal [data-dismiss="modal"]').forEach(btn => {
-            btn.addEventListener('click', closeModal);
-        });
 
         // Confirm save button handler
         const confirmBtn = document.getElementById('confirmUserSave');
@@ -469,190 +457,49 @@ $currentUserId = $currentUser['id'] ?? null;
     }
     
     /* ========================================
-       CUSTOM MODAL - MINIMAL ANIMATIONS & HOVER EFFECTS
+       MODAL ENHANCEMENTS - MINIMAL & SMOOTH
        ======================================== */
     
-    /* Fade in animation for modal */
-    @keyframes modalFadeIn {
-        from {
-            opacity: 0;
-        }
-        to {
-            opacity: 1;
-        }
+    /* Smooth fade transition for Bootstrap modals */
+    #confirmUserSaveModal.modal.fade .modal-dialog {
+        transition: transform 0.2s ease-out, opacity 0.2s ease-out;
     }
     
-    /* Slide down animation for modal content */
-    @keyframes modalSlideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    #confirmUserSaveModal.modal.show .modal-dialog {
+        transform: none;
     }
     
-    .custom-modal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 9999;
-        overflow-y: auto;
-        animation: modalFadeIn 0.15s ease-out;
+    /* Enhanced modal styling */
+    #confirmUserSaveModal .modal-content {
+        border: none;
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2);
     }
     
-    .custom-modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1;
+    #confirmUserSaveModal .modal-header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
     
-    .custom-modal-dialog {
-        position: relative;
-        width: auto;
-        max-width: 600px;
-        margin: 1.75rem auto;
-        z-index: 2;
-        pointer-events: none;
-        animation: modalSlideDown 0.2s ease-out;
-    }
-    
-    .custom-modal-content {
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        width: 100%;
-        pointer-events: auto;
-        background-color: #fff;
-        background-clip: padding-box;
-        border: 1px solid rgba(0, 0, 0, 0.2);
-        border-radius: 0.5rem;
-        outline: 0;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    }
-    
-    .custom-modal-header {
-        display: flex;
-        flex-shrink: 0;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1rem 1rem;
-        border-bottom: 1px solid #dee2e6;
-        border-top-left-radius: calc(0.5rem - 1px);
-        border-top-right-radius: calc(0.5rem - 1px);
-        background-color: #0d6efd;
-        color: #fff;
-    }
-    
-    .custom-modal-title {
-        margin: 0;
-        line-height: 1.5;
-        font-size: 1.25rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-    }
-    
-    .custom-modal-close {
-        padding: 0.5rem 0.5rem;
-        margin: -0.5rem -0.5rem -0.5rem auto;
-        background-color: transparent;
-        border: 0;
-        font-size: 1.5rem;
-        font-weight: 700;
-        line-height: 1;
-        color: #fff;
-        opacity: 0.8;
-        cursor: pointer;
-        transition: opacity 0.15s ease, transform 0.15s ease;
-    }
-    
-    .custom-modal-close:hover {
-        opacity: 1;
-        transform: scale(1.1);
-    }
-    
-    .custom-modal-body {
-        position: relative;
-        flex: 1 1 auto;
-        padding: 1rem;
-    }
-    
-    .custom-modal-footer {
-        display: flex;
-        flex-wrap: wrap;
-        flex-shrink: 0;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 0.75rem;
-        border-top: 1px solid #dee2e6;
-        border-bottom-right-radius: calc(0.5rem - 1px);
-        border-bottom-left-radius: calc(0.5rem - 1px);
-    }
-    
-    .custom-btn {
-        display: inline-block;
-        font-weight: 400;
-        line-height: 1.5;
-        color: #212529;
-        text-align: center;
-        text-decoration: none;
-        vertical-align: middle;
-        cursor: pointer;
-        user-select: none;
-        background-color: transparent;
-        border: 1px solid transparent;
-        padding: 0.375rem 0.75rem;
-        font-size: 1rem;
-        border-radius: 0.375rem;
-        margin-left: 0.5rem;
+    /* Smooth button hover effects */
+    #confirmUserSaveModal .btn {
         transition: all 0.15s ease-in-out;
     }
     
-    .custom-btn-secondary {
-        color: #fff;
-        background-color: #6c757d;
-        border-color: #6c757d;
-    }
-    
-    .custom-btn-secondary:hover {
-        background-color: #5c636a;
-        border-color: #565e64;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    
-    .custom-btn-primary {
-        color: #fff;
-        background-color: #0d6efd;
-        border-color: #0d6efd;
-    }
-    
-    .custom-btn-primary:hover {
-        background-color: #0b5ed7;
-        border-color: #0a58ca;
+    #confirmUserSaveModal .btn:hover {
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     }
     
-    .custom-btn:active {
+    #confirmUserSaveModal .btn:active {
         transform: translateY(0);
     }
     
-    /* Responsive adjustments */
-    @media (max-width: 576px) {
-        .custom-modal-dialog {
-            margin: 0.5rem;
-            max-width: calc(100% - 1rem);
-        }
+    #confirmUserSaveModal .btn-close:hover {
+        transform: scale(1.1);
+    }
+    
+    /* Smooth badge transitions */
+    #confirmUserSaveModal .badge {
+        transition: all 0.15s ease;
     }
 </style>
 
