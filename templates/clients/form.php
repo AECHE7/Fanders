@@ -1,9 +1,15 @@
 <?php
 /**
- * Client Account Creation/Edit Form (templates/clients/form.php)
+ * Client Account Creation/Edit Form - REFACTORED (templates/clients/form.php)
  * Used by public/clients/add.php (uses $newClient as $clientData) and 
  * public/clients/edit.php (uses $editClient as $clientData).
- * * Assumes the following variables are available from the controller:
+ * 
+ * REFACTORED PATTERN: Form is INSIDE modal (Option A - View Pages Pattern)
+ * - Zero jittering guaranteed
+ * - Minimal JavaScript
+ * - Uses native Bootstrap
+ * - Simplest code
+ * 
  * @var array $clientData Contains client data (new or existing)
  * @var AuthService $auth The authenticated user service
  * @var CSRF $csrf The CSRF utility object
@@ -19,327 +25,333 @@ $currentStatus = $clientData['status'] ?? 'active';
 $currentIdType = $clientData['identification_type'] ?? '';
 ?>
 
-<form action="" method="post" class="notion-form needs-validation" novalidate>
-    <?= $csrf->getTokenField() ?>
-
-    <!-- Form Title with Icon -->
-    <div class="notion-form-header mb-4">
-        <div class="d-flex align-items-center">
-            <div class="rounded d-flex align-items-center justify-content-center me-3" style="width: 38px; height: 38px; background-color: #eaf8f6;">
-                <i data-feather="user" style="width: 20px; height: 20px; color: #0ca789;"></i>
-            </div>
-            <h5 class="mb-0"><?= $isEditing ? 'Edit Client Information (ID: ' . $clientData['id'] . ')' : 'Create New Client Account' ?></h5>
+<!-- Page Header (outside modal) -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex align-items-center">
+        <div class="rounded d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; background-color: #eaf8f6;">
+            <i data-feather="user" style="width: 24px; height: 24px; color: #0ca789;"></i>
+        </div>
+        <div>
+            <h4 class="mb-0"><?= $isEditing ? 'Edit Client Information' : 'Create New Client Account' ?></h4>
+            <?php if ($isEditing): ?>
+                <p class="text-muted small mb-0">Client ID: <?= $clientData['id'] ?></p>
+            <?php endif; ?>
         </div>
     </div>
+    <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-outline-secondary">
+        <i data-feather="arrow-left" class="me-1" style="width: 16px; height: 16px;"></i>
+        Back to Clients
+    </a>
+</div>
 
-    <!-- Basic Information Section -->
-    <div class="mb-4 animate-on-scroll">
-        <div class="d-flex align-items-center mb-3">
-            <h6 class="mb-0 me-2 text-primary">Personal Details</h6>
-            <div class="notion-divider flex-grow-1"></div>
-        </div>
-
-        <div class="row g-3 stagger-fade-in">
-            <!-- Full Name Field (Required) -->
-            <div class="col-md-12">
-                <div class="notion-form-group interactive-form-field">
-                    <input type="text" class="notion-form-control" id="name" name="name"
-                        value="<?= htmlspecialchars($clientData['name'] ?? '') ?>" required placeholder=" ">
-                    <label for="name" class="notion-form-label">Full Name</label>
-                    <div class="invalid-feedback">Please enter the client's full name.</div>
-                </div>
+<!-- Info Card: Click button to open form modal -->
+<div class="card shadow-sm">
+    <div class="card-body text-center py-5">
+        <div class="mb-4">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                 style="width: 80px; height: 80px; background-color: #eaf8f6;">
+                <i data-feather="user-plus" style="width: 40px; height: 40px; color: #0ca789;"></i>
             </div>
-
-            <!-- Phone Field (Required & Unique) -->
-            <div class="col-md-6">
-                <div class="notion-form-group interactive-form-field">
-                    <input type="text" class="notion-form-control" id="phone_number" name="phone_number"
-                        value="<?= htmlspecialchars($clientData['phone_number'] ?? '') ?>" required pattern="\d{8,15}" placeholder=" ">
-                    <label for="phone_number" class="notion-form-label">Phone Number (Required)</label>
-                    <div class="invalid-feedback">Please enter a valid, unique phone number (8-15 digits).</div>
-                </div>
-            </div>
-
-            <!-- Email Field (Optional but Unique) -->
-            <div class="col-md-6">
-                <div class="notion-form-group interactive-form-field">
-                    <input type="email" class="notion-form-control" id="email" name="email"
-                        value="<?= htmlspecialchars($clientData['email'] ?? '') ?>" placeholder=" ">
-                    <label for="email" class="notion-form-label">Email Address (Optional)</label>
-                    <div class="invalid-feedback">Please enter a valid and unique email address.</div>
-                </div>
-            </div>
-            
-             <!-- Date of Birth Field -->
-            <div class="col-md-6">
-                <div class="notion-form-group interactive-form-field">
-                    <input type="date" class="notion-form-control" id="date_of_birth" name="date_of_birth"
-                        value="<?= htmlspecialchars($clientData['date_of_birth'] ?? '') ?>" placeholder=" " max="<?= date('Y-m-d', strtotime('-18 years')) ?>">
-                    <label for="date_of_birth" class="notion-form-label">Date of Birth (Optional, must be 18+)</label>
-                    <div class="invalid-feedback">Client must be at least 18 years old.</div>
-                </div>
-            </div>
-            
-            <!-- Address Field -->
-            <div class="col-md-6">
-                <div class="notion-form-group interactive-form-field">
-                    <textarea class="notion-form-control" id="address" name="address" rows="1" required placeholder=" "><?= htmlspecialchars($clientData['address'] ?? '') ?></textarea>
-                    <label for="address" class="notion-form-label">Residential Address (Required)</label>
-                    <div class="invalid-feedback">Please enter the client's residential address.</div>
-                </div>
-            </div>
-            
-        </div>
-    </div>
-    
-    <!-- Identification Section -->
-    <div class="mb-4 animate-on-scroll">
-        <div class="d-flex align-items-center mb-3">
-            <h6 class="mb-0 me-2 text-primary">Identification & Status</h6>
-            <div class="notion-divider flex-grow-1"></div>
         </div>
         
-        <div class="row g-3 stagger-fade-in">
-
-            <!-- Identification Type Field -->
-            <div class="col-md-6">
-                <div class="notion-form-group">
-                    <label for="identification_type" class="form-label">Primary ID Type (Required)</label>
-                    <select class="form-select" id="identification_type" name="identification_type" required>
-                        <option value="">Select ID type...</option>
-                        <option value="passport" <?= $currentIdType === 'passport' ? 'selected' : '' ?>>Passport</option>
-                        <option value="drivers_license" <?= $currentIdType === 'drivers_license' ? 'selected' : '' ?>>Driver's License</option>
-                        <option value="national_id" <?= $currentIdType === 'national_id' ? 'selected' : '' ?>>National ID</option>
-                        <option value="philhealth" <?= $currentIdType === 'philhealth' ? 'selected' : '' ?>>PhilHealth ID</option>
-                        <option value="sss" <?= $currentIdType === 'sss' ? 'selected' : '' ?>>SSS/GSIS ID</option>
-                        <option value="other" <?= $currentIdType === 'other' ? 'selected' : '' ?>>Other</option>
-                    </select>
-                    <div class="invalid-feedback">Please select an identification type.</div>
-                </div>
-            </div>
-
-            <!-- Identification Number Field -->
-            <div class="col-md-6">
-                <div class="notion-form-group interactive-form-field">
-                    <input type="text" class="notion-form-control" id="identification_number" name="identification_number"
-                        value="<?= htmlspecialchars($clientData['identification_number'] ?? '') ?>" required placeholder=" ">
-                    <label for="identification_number" class="notion-form-label">ID Number (Required & Unique)</label>
-                    <div class="invalid-feedback">ID number is required and must be unique.</div>
-                </div>
-            </div>
-
-            <!-- Account Status Dropdown (Only editable by Super Admin/Admin) -->
-            <div class="col-md-6">
-                <div class="notion-form-group">
-                    <label for="status" class="form-label">Account Status</label>
-                    <?php if ($auth->hasRole(['super-admin', 'admin'])): ?>
-                        <select class="form-select" id="status" name="status" required>
-                            <option value="active" <?= $currentStatus === 'active' ? 'selected' : '' ?>>Active</option>
-                            <option value="inactive" <?= $currentStatus === 'inactive' ? 'selected' : '' ?>>Inactive</option>
-                            <option value="blacklisted" <?= $currentStatus === 'blacklisted' ? 'selected' : '' ?>>Blacklisted</option>
-                        </select>
-                    <?php else: ?>
-                        <input type="text" class="form-control" value="<?= ucfirst($currentStatus) ?>" disabled>
-                        <input type="hidden" name="status" value="<?= htmlspecialchars($currentStatus) ?>">
-                    <?php endif; ?>
-                    <div class="invalid-feedback">Please select account status.</div>
-                </div>
-            </div>
-            
-            <?php if ($isEditing && $clientData['created_at']): ?>
-                <div class="col-md-6 d-flex align-items-center">
-                     <p class="text-muted small mb-0">Client Record created on: <?= date('M d, Y H:i A', strtotime($clientData['created_at'])) ?></p>
-                </div>
-            <?php endif; ?>
-
-        </div>
-    </div>
-
-    <!-- Form Actions -->
-    <div class="d-flex justify-content-end mt-4">
-        <a href="<?= APP_URL ?>/public/clients/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
-        <button type="button" class="btn btn-primary px-4 ripple-effect" data-bs-toggle="modal" data-bs-target="#confirmClientSaveModal">
-            <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
-            <?= $isEditing ? 'Update Client' : 'Create Client' ?>
+        <h5 class="mb-2">
+            <?= $isEditing ? 'Update Client Information' : 'Add a New Client to the System' ?>
+        </h5>
+        <p class="text-muted mb-4">
+            <?= $isEditing 
+                ? 'Click the button below to update this client\'s details, identification, and status.'
+                : 'Click the button below to create a new client account with their personal information, contact details, and identification.' 
+            ?>
+        </p>
+        
+        <?php if ($isEditing && $clientData['created_at']): ?>
+            <p class="text-muted small mb-3">
+                <i data-feather="clock" class="me-1" style="width: 14px; height: 14px;"></i>
+                Client created on: <?= date('F d, Y \a\t h:i A', strtotime($clientData['created_at'])) ?>
+            </p>
+        <?php endif; ?>
+        
+        <!-- Button to open modal with form inside -->
+        <button type="button" class="btn btn-primary btn-lg px-5" 
+                data-bs-toggle="modal" 
+                data-bs-target="#clientFormModal">
+            <i data-feather="<?= $isEditing ? 'edit' : 'plus' ?>" class="me-2" style="width: 18px; height: 18px;"></i>
+            <?= $isEditing ? 'Open Edit Form' : 'Open Client Form' ?>
         </button>
     </div>
-</form>
+</div>
 
-<!-- Client Save Confirmation Modal -->
-<div class="modal fade" id="confirmClientSaveModal" tabindex="-1" aria-labelledby="confirmClientSaveModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+<!-- Client Form Modal (Form is INSIDE) -->
+<div class="modal fade" id="clientFormModal" tabindex="-1" 
+     aria-labelledby="clientFormModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
+            <!-- Modal Header -->
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="confirmClientSaveModalLabel">
-                    <i data-feather="alert-circle" class="me-2" style="width:20px;height:20px;"></i>
-                    <?= $isEditing ? 'Confirm Client Update' : 'Confirm Client Creation' ?>
+                <h5 class="modal-title" id="clientFormModalLabel">
+                    <i data-feather="user" class="me-2" style="width: 20px; height: 20px;"></i>
+                    <?= $isEditing ? 'Edit Client Information (ID: ' . $clientData['id'] . ')' : 'Create New Client Account' ?>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p class="mb-3">You are about to <?= $isEditing ? 'update the information for' : 'create a new client account for' ?>:</p>
-                <div class="card bg-light">
-                    <div class="card-body">
-                        <dl class="row mb-0">
-                            <dt class="col-sm-4">Full Name:</dt>
-                            <dd class="col-sm-8 fw-bold" id="modalClientName"><?= htmlspecialchars($clientData['name'] ?? '') ?></dd>
-                            <dt class="col-sm-4">Email:</dt>
-                            <dd class="col-sm-8" id="modalClientEmail"><?= htmlspecialchars($clientData['email'] ?? '') ?></dd>
-                            <dt class="col-sm-4">Phone:</dt>
-                            <dd class="col-sm-8" id="modalClientPhone"><?= htmlspecialchars($clientData['phone_number'] ?? '') ?></dd>
-                            <?php if ($isEditing): ?>
-                            <dt class="col-sm-4">Status:</dt>
-                            <dd class="col-sm-8" id="modalClientStatus">
-                                <span class="badge text-bg-<?= $currentStatus === 'active' ? 'success' : ($currentStatus === 'inactive' ? 'secondary' : 'danger') ?>">
-                                    <?= ucfirst($currentStatus) ?>
-                                </span>
-                            </dd>
-                            <?php endif; ?>
-                        </dl>
+            
+            <!-- FORM STARTS HERE - Inside Modal Body -->
+            <form action="" method="post" class="needs-validation" novalidate id="clientForm">
+                <?= $csrf->getTokenField() ?>
+                
+                <div class="modal-body">
+                    <!-- Basic Information Section -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <h6 class="mb-0 me-2 text-primary">
+                                <i data-feather="user" class="me-1" style="width: 18px; height: 18px;"></i>
+                                Personal Details
+                            </h6>
+                            <div style="flex-grow: 1; height: 1px; background-color: #e0e0e0; margin-left: 1rem;"></div>
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Full Name Field (Required) -->
+                            <div class="col-md-12">
+                                <label for="name" class="form-label">
+                                    Full Name <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="name" name="name"
+                                    value="<?= htmlspecialchars($clientData['name'] ?? '') ?>" 
+                                    required
+                                    placeholder="Enter client's full name">
+                                <div class="invalid-feedback">Please enter the client's full name.</div>
+                            </div>
+
+                            <!-- Phone Field (Required & Unique) -->
+                            <div class="col-md-6">
+                                <label for="phone_number" class="form-label">
+                                    Phone Number <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="phone_number" name="phone_number"
+                                    value="<?= htmlspecialchars($clientData['phone_number'] ?? '') ?>" 
+                                    required 
+                                    pattern="\d{8,15}"
+                                    placeholder="e.g., 09123456789">
+                                <div class="invalid-feedback">Please enter a valid phone number (8-15 digits).</div>
+                            </div>
+
+                            <!-- Email Field (Optional but Unique) -->
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">
+                                    Email Address <span class="text-muted small">(Optional)</span>
+                                </label>
+                                <input type="email" class="form-control" id="email" name="email"
+                                    value="<?= htmlspecialchars($clientData['email'] ?? '') ?>"
+                                    placeholder="client@example.com">
+                                <div class="invalid-feedback">Please enter a valid email address.</div>
+                            </div>
+                            
+                            <!-- Date of Birth Field -->
+                            <div class="col-md-6">
+                                <label for="date_of_birth" class="form-label">
+                                    Date of Birth <span class="text-muted small">(Must be 18+)</span>
+                                </label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth"
+                                    value="<?= htmlspecialchars($clientData['date_of_birth'] ?? '') ?>" 
+                                    max="<?= date('Y-m-d', strtotime('-18 years')) ?>">
+                                <div class="invalid-feedback">Client must be at least 18 years old.</div>
+                            </div>
+                            
+                            <!-- Address Field -->
+                            <div class="col-md-6">
+                                <label for="address" class="form-label">
+                                    Residential Address <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="address" name="address" 
+                                          rows="2" required
+                                          placeholder="Enter complete residential address"><?= htmlspecialchars($clientData['address'] ?? '') ?></textarea>
+                                <div class="invalid-feedback">Please enter the client's residential address.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Identification Section -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <h6 class="mb-0 me-2 text-primary">
+                                <i data-feather="credit-card" class="me-1" style="width: 18px; height: 18px;"></i>
+                                Identification & Status
+                            </h6>
+                            <div style="flex-grow: 1; height: 1px; background-color: #e0e0e0; margin-left: 1rem;"></div>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <!-- Identification Type Field -->
+                            <div class="col-md-6">
+                                <label for="identification_type" class="form-label">
+                                    Primary ID Type <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="identification_type" name="identification_type" required>
+                                    <option value="">Select ID type...</option>
+                                    <option value="passport" <?= $currentIdType === 'passport' ? 'selected' : '' ?>>Passport</option>
+                                    <option value="drivers_license" <?= $currentIdType === 'drivers_license' ? 'selected' : '' ?>>Driver's License</option>
+                                    <option value="national_id" <?= $currentIdType === 'national_id' ? 'selected' : '' ?>>National ID</option>
+                                    <option value="philhealth" <?= $currentIdType === 'philhealth' ? 'selected' : '' ?>>PhilHealth ID</option>
+                                    <option value="sss" <?= $currentIdType === 'sss' ? 'selected' : '' ?>>SSS/GSIS ID</option>
+                                    <option value="other" <?= $currentIdType === 'other' ? 'selected' : '' ?>>Other</option>
+                                </select>
+                                <div class="invalid-feedback">Please select an identification type.</div>
+                            </div>
+
+                            <!-- Identification Number Field -->
+                            <div class="col-md-6">
+                                <label for="identification_number" class="form-label">
+                                    ID Number <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="identification_number" name="identification_number"
+                                    value="<?= htmlspecialchars($clientData['identification_number'] ?? '') ?>" 
+                                    required
+                                    placeholder="Enter unique ID number">
+                                <div class="invalid-feedback">ID number is required and must be unique.</div>
+                            </div>
+
+                            <!-- Account Status Dropdown (Only editable by Super Admin/Admin) -->
+                            <div class="col-md-6">
+                                <label for="status" class="form-label">Account Status</label>
+                                <?php if ($auth->hasRole(['super-admin', 'admin'])): ?>
+                                    <select class="form-select" id="status" name="status" required>
+                                        <option value="active" <?= $currentStatus === 'active' ? 'selected' : '' ?>>Active</option>
+                                        <option value="inactive" <?= $currentStatus === 'inactive' ? 'selected' : '' ?>>Inactive</option>
+                                        <option value="blacklisted" <?= $currentStatus === 'blacklisted' ? 'selected' : '' ?>>Blacklisted</option>
+                                    </select>
+                                    <div class="form-text">Active clients can apply for loans</div>
+                                <?php else: ?>
+                                    <input type="text" class="form-control" value="<?= ucfirst($currentStatus) ?>" disabled>
+                                    <input type="hidden" name="status" value="<?= htmlspecialchars($currentStatus) ?>">
+                                    <div class="form-text text-muted">Only admins can change status</div>
+                                <?php endif; ?>
+                                <div class="invalid-feedback">Please select account status.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Alert -->
+                    <div class="alert alert-info d-flex align-items-start">
+                        <i data-feather="info" class="me-2 mt-1" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
+                        <div>
+                            <strong>Important:</strong> 
+                            <?= $isEditing 
+                                ? 'Changes will be saved immediately. Make sure all information is accurate before submitting.'
+                                : 'Phone number and identification number must be unique. The client will be able to apply for loans once the account is created.' 
+                            ?>
+                        </div>
                     </div>
                 </div>
-                <p class="mt-3 mb-0 text-muted small">
-                    <i data-feather="info" class="me-1" style="width:14px;height:14px;"></i>
-                    <?= $isEditing ? 'This action will update the client information in the system.' : 'This will create a new client account that can apply for loans.' ?>
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
-                    Cancel
-                </button>
-                <button type="button" class="btn btn-primary" id="confirmClientSave">
-                    <i data-feather="check" class="me-1" style="width:16px;height:16px;"></i>
-                    <?= $isEditing ? 'Confirm Update' : 'Confirm Creation' ?>
-                </button>
-            </div>
+                
+                <!-- Modal Footer with Submit Button -->
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i data-feather="x" class="me-1" style="width: 16px; height: 16px;"></i>
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="<?= $isEditing ? 'save' : 'check' ?>" class="me-1" style="width: 16px; height: 16px;"></i>
+                        <?= $isEditing ? 'Save Changes' : 'Create Client' ?>
+                    </button>
+                </div>
+            </form>
+            <!-- FORM ENDS HERE -->
         </div>
     </div>
 </div>
 
 <script>
+// Bootstrap form validation on submit
 document.addEventListener('DOMContentLoaded', function() {
-    // Update modal content when form values change
-    const form = document.querySelector('.notion-form');
-    const nameInput = document.getElementById('name');
-    const emailInput = document.getElementById('email');
-    const phoneInput = document.getElementById('phone_number');
-    const statusSelect = document.getElementById('status');
+    const form = document.getElementById('clientForm');
     
-    function updateModalContent() {
-        if (nameInput) document.getElementById('modalClientName').textContent = nameInput.value || 'Not specified';
-        if (emailInput) document.getElementById('modalClientEmail').textContent = emailInput.value || 'Not specified';
-        if (phoneInput) document.getElementById('modalClientPhone').textContent = phoneInput.value || 'Not specified';
-        
-        // Update status badge if editing
-        if (statusSelect) {
-            const statusElement = document.getElementById('modalClientStatus');
-            if (statusElement) {
-                const status = statusSelect.value;
-                const badgeClass = status === 'active' ? 'success' : (status === 'inactive' ? 'secondary' : 'danger');
-                statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Focus on first invalid field
+                const firstInvalid = form.querySelector(':invalid');
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                    
+                    // Optional: Scroll to first invalid field within modal
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             }
-        }
+            form.classList.add('was-validated');
+        }, false);
     }
     
-    // Update modal when inputs change
-    [nameInput, emailInput, phoneInput, statusSelect].forEach(input => {
-        if (input) {
-            input.addEventListener('input', updateModalContent);
-            input.addEventListener('change', updateModalContent);
-        }
-    });
-    
-    // Confirm save button handler
-    document.getElementById('confirmClientSave').addEventListener('click', function() {
-        // Validate form before submitting
-        if (form.checkValidity()) {
-            form.submit();
-        } else {
-            // Close modal and show validation errors
-            bootstrap.Modal.getInstance(document.getElementById('confirmClientSaveModal')).hide();
-            form.reportValidity();
-        }
-    });
+    // Re-initialize Feather icons when modal is shown
+    const clientModal = document.getElementById('clientFormModal');
+    if (clientModal) {
+        clientModal.addEventListener('shown.bs.modal', function() {
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        });
+    }
 });
 </script>
 
 <style>
-/* Notion Form Styles and Animations (Copied from existing code) */
-.notion-form-group { position: relative; margin-bottom: 1.5rem; }
-.notion-form-control, .form-select {
-    padding: 0.75rem 1rem; border: 1px solid #e0e0e0; border-radius: 8px;
-    transition: all 0.3s ease; width: 100%; font-size: 1rem; line-height: 1.5;
-    background-color: #fff;
+/* Modal form enhancements */
+.modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
 }
-.notion-form-control:focus, .form-select:focus {
-    border-color: #0ca789; box-shadow: 0 0 0 0.2rem rgba(12, 167, 137, 0.25); outline: none;
+
+/* Smooth scrollbar for modal */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
 }
-.notion-form-label, .form-label {
-    font-weight: 500;
-    color: #495057;
-    margin-bottom: 0.5rem;
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Form styling */
+.form-control:focus,
+.form-select:focus {
+    border-color: #0ca789;
+    box-shadow: 0 0 0 0.2rem rgba(12, 167, 137, 0.25);
+}
+
+.text-primary {
+    color: #0ca789 !important;
+}
+
+/* Required field indicator */
+.form-label .text-danger {
+    font-size: 0.875rem;
+}
+
+/* Better spacing for form sections */
+.modal-body > .mb-4:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Improve alert appearance in modal */
+.modal-body .alert {
     font-size: 0.9rem;
 }
-/* Floating labels for text inputs */
-.interactive-form-field .notion-form-label {
-    position: absolute; top: 0.75rem; left: 1rem; padding: 0 0.25rem;
-    pointer-events: none; transition: all 0.3s ease; background-color: white;
-    color: #6c757d; font-size: 1rem;
-}
-.notion-form-group input:focus ~ .notion-form-label,
-.notion-form-group input:not(:placeholder-shown) ~ .notion-form-label,
-.notion-form-group textarea:focus ~ .notion-form-label,
-.notion-form-group textarea:not(:placeholder-shown) ~ .notion-form-label {
-    top: -0.65rem; font-size: 0.8rem; color: #0ca789;
-}
-.notion-form-group input:required:invalid:not(:placeholder-shown) { border-color: #dc3545; }
-.notion-form-group input:required:invalid:not(:placeholder-shown) ~ .notion-form-label { color: #dc3545; }
-.notion-divider { height: 1px; background-color: #e0e0e0; margin-left: 1rem; }
-.text-primary { color: #0ca789 !important; }
 
-/* Custom animations and effects */
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
-}
-.shake-animation { animation: shake 0.8s ease; }
-.ripple-effect { position: relative; overflow: hidden; }
-.ripple-animation {
-    position: absolute; border-radius: 50%; background-color: rgba(255,255,255,0.7);
-    width: 100px; height: 100px; margin-top: -50px; margin-left: -50px;
-    animation: ripple 0.6s linear; transform: scale(0); opacity: 1;
-}
-@keyframes ripple {
-    to { transform: scale(2.5); opacity: 0; }
+/* Make modal backdrop stronger */
+.modal-backdrop.show {
+    opacity: 0.7;
 }
 </style>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.querySelector('.notion-form');
-
-        // Form validation and shake effect
-        if (form) {
-            form.addEventListener('submit', function(event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const invalidField = form.querySelector(':invalid');
-                    if (invalidField) {
-                        invalidField.focus();
-                        const fieldGroup = invalidField.closest('.notion-form-group');
-                        if (fieldGroup) {
-                            fieldGroup.classList.add('shake-animation');
-                            setTimeout(() => {
-                                fieldGroup.classList.remove('shake-animation');
-                            }, 820);
-                        }
-                    }
-                }
-                form.classList.add('was-validated');
-            });
-        }
-    });
-</script>
