@@ -176,7 +176,7 @@ $currentUserId = $currentUser['id'] ?? null;
     <!-- Form Actions -->
     <div class="d-flex justify-content-end mt-4">
         <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
-        <button type="button" class="btn btn-primary px-4 ripple-effect" id="openConfirmModal">
+        <button type="button" class="btn btn-primary px-4 ripple-effect" id="openConfirmModal" data-bs-toggle="modal" data-bs-target="#confirmUserSaveModal">
             <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
             <?= isset($editUser['id']) ? 'Update Account' : 'Create Account' ?>
         </button>
@@ -367,14 +367,12 @@ $currentUserId = $currentUser['id'] ?? null;
             }
         });
 
-        // Ensure modal content is fresh when it opens
+        // Handle modal open with validation
         const confirmModalEl = document.getElementById('confirmUserSaveModal');
-        const openModalBtn = document.getElementById('openConfirmModal');
         
-        if (openModalBtn && confirmModalEl) {
-            openModalBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                
+        if (confirmModalEl) {
+            // Bootstrap modal event - fires before modal is shown
+            confirmModalEl.addEventListener('show.bs.modal', function(e) {
                 // Check form validity before opening modal
                 let isValid = true;
                 
@@ -391,6 +389,9 @@ $currentUserId = $currentUser['id'] ?? null;
                 
                 // Check HTML5 validation
                 if (!form.checkValidity() || !isValid) {
+                    // Prevent modal from opening
+                    e.preventDefault();
+                    
                     // Show validation errors
                     form.classList.add('was-validated');
                     form.reportValidity();
@@ -407,15 +408,11 @@ $currentUserId = $currentUser['id'] ?? null;
                             }, 820);
                         }
                     }
-                    return; // Don't open modal
+                    return;
                 }
                 
-                // Form is valid, update modal content and show it
+                // Form is valid, update modal content
                 updateModalContent();
-                
-                // Show modal using Bootstrap Modal API
-                const modal = new bootstrap.Modal(confirmModalEl);
-                modal.show();
             });
         }
 
