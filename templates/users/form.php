@@ -175,318 +175,65 @@ $currentUserId = $currentUser['id'] ?? null;
     
     <!-- Form Actions -->
     <div class="d-flex justify-content-end mt-4">
-        <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-outline-secondary me-2 ripple-effect">Cancel</a>
-        <button type="button" class="btn btn-primary px-4 ripple-effect" id="openConfirmModal" data-bs-toggle="modal" data-bs-target="#confirmUserSaveModal">
+        <a href="<?= APP_URL ?>/public/users/index.php" class="btn btn-outline-secondary me-2">
+            <i data-feather="arrow-left" class="me-1" style="width: 16px; height: 16px;"></i>
+            Back to Users
+        </a>
+        <button type="submit" class="btn btn-primary px-4" onclick="return confirm('Are you sure you want to <?= isset($editUser['id']) ? 'update this user account' : 'create this user account' ?>?');">
             <i data-feather="save" class="me-1" style="width: 16px; height: 16px;"></i>
             <?= isset($editUser['id']) ? 'Update Account' : 'Create Account' ?>
         </button>
     </div>
 </form>
 
-<!-- User Save Confirmation Modal -->
-<div class="modal fade" id="confirmUserSaveModal" tabindex="-1" aria-labelledby="confirmUserSaveModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="confirmUserSaveModalLabel">
-                    <i data-feather="alert-circle" class="me-2" style="width:20px;height:20px;"></i>
-                    <?= isset($editUser['id']) ? 'Confirm Staff Update' : 'Confirm Staff Creation' ?>
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-3">You are about to <?= isset($editUser['id']) ? 'update the information for' : 'create a new staff account for' ?>:</p>
-                <div class="card bg-light">
-                    <div class="card-body">
-                        <dl class="row mb-0">
-                            <dt class="col-sm-4">Full Name:</dt>
-                            <dd class="col-sm-8 fw-bold" id="modalUserName"><?= htmlspecialchars($editUser['name'] ?? '') ?></dd>
-                            <dt class="col-sm-4">Email:</dt>
-                            <dd class="col-sm-8" id="modalUserEmail"><?= htmlspecialchars($editUser['email'] ?? '') ?></dd>
-                            <dt class="col-sm-4">Phone:</dt>
-                            <dd class="col-sm-8" id="modalUserPhone"><?= htmlspecialchars($editUser['phone_number'] ?? '') ?></dd>
-                            <dt class="col-sm-4">Role:</dt>
-                            <dd class="col-sm-8" id="modalUserRole">
-                                <span class="badge text-bg-primary">
-                                    <?php 
-                                        $roleDisplay = $editUser['role'] ?? '';
-                                        if ($roleDisplay) {
-                                            echo ucwords(str_replace('-', ' ', $roleDisplay));
-                                        }
-                                    ?>
-                                </span>
-                            </dd>
-                            <dt class="col-sm-4">Status:</dt>
-                            <dd class="col-sm-8" id="modalUserStatus">
-                                <span class="badge text-bg-<?= ($editUser['status'] ?? 'active') === 'active' ? 'success' : 'secondary' ?>">
-                                    <?= ucfirst($editUser['status'] ?? 'active') ?>
-                                </span>
-                            </dd>
-                        </dl>
-                    </div>
-                </div>
-                <p class="mt-3 mb-0 text-muted small">
-                    <i data-feather="info" class="me-1" style="width:14px;height:14px;"></i>
-                    <?= isset($editUser['id']) ? 'This action will update the staff member information and permissions.' : 'This will create a new staff account with system access.' ?>
-                </p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i data-feather="x" class="me-1" style="width:16px;height:16px;"></i>
-                    Cancel
-                </button>
-                <button type="button" class="btn btn-primary" id="confirmUserSave">
-                    <i data-feather="check" class="me-1" style="width:16px;height:16px;"></i>
-                    <?= isset($editUser['id']) ? 'Confirm Update' : 'Confirm Creation' ?>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.querySelector('.notion-form');
-        const passwordInput = document.getElementById('password');
-        const confirmPasswordInput = document.getElementById('password_confirmation');
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.notion-form');
+    const passwordInput = document.getElementById('password');
+    const confirmPasswordInput = document.getElementById('password_confirmation');
 
-        // Form validation
-        if (form) {
-            form.addEventListener('submit', function(event) {
-                let valid = true;
+    // Simple form validation
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            let valid = true;
 
-                if (passwordInput && confirmPasswordInput) {
-                    if (passwordInput.value !== confirmPasswordInput.value) {
-                        confirmPasswordInput.setCustomValidity('Passwords do not match.');
-                        valid = false;
-                    } else {
-                        confirmPasswordInput.setCustomValidity('');
-                    }
-                }
-
-                if (!form.checkValidity() || !valid) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const invalidField = form.querySelector(':invalid');
-                    if (invalidField) {
-                        invalidField.focus();
-                        const fieldGroup = invalidField.closest('.notion-form-group');
-                        if (fieldGroup) {
-                            fieldGroup.classList.add('shake-animation');
-                            setTimeout(() => {
-                                fieldGroup.classList.remove('shake-animation');
-                            }, 820);
-                        }
-                    }
-                }
-                form.classList.add('was-validated');
-            });
-
+            // Password matching validation
             if (passwordInput && confirmPasswordInput) {
-                confirmPasswordInput.addEventListener('input', function() {
-                    if (passwordInput.value !== confirmPasswordInput.value) {
-                        confirmPasswordInput.setCustomValidity('Passwords do not match.');
-                    } else {
-                        confirmPasswordInput.setCustomValidity('');
-                    }
-                });
+                if (passwordInput.value !== confirmPasswordInput.value) {
+                    confirmPasswordInput.setCustomValidity('Passwords do not match.');
+                    valid = false;
+                } else {
+                    confirmPasswordInput.setCustomValidity('');
+                }
             }
-        }
-    });
 
-    // Password visibility toggle
-    function togglePasswordVisibility(inputId) {
-        const passwordInput = document.getElementById(inputId);
-        const toggleIcon = document.getElementById(inputId + '-toggle-icon');
+            // Basic HTML5 validation
+            if (!form.checkValidity() || !valid) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Focus on first invalid field
+                const invalidField = form.querySelector(':invalid');
+                if (invalidField) {
+                    invalidField.focus();
+                }
+            }
+            
+            form.classList.add('was-validated');
+        });
 
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            toggleIcon.setAttribute('data-feather', 'eye-off');
-        } else {
-            passwordInput.type = 'password';
-            toggleIcon.setAttribute('data-feather', 'eye');
+        // Real-time password confirmation validation
+        if (passwordInput && confirmPasswordInput) {
+            confirmPasswordInput.addEventListener('input', function() {
+                if (passwordInput.value !== confirmPasswordInput.value) {
+                    confirmPasswordInput.setCustomValidity('Passwords do not match.');
+                } else {
+                    confirmPasswordInput.setCustomValidity('');
+                }
+            });
         }
-        feather.replace();
     }
-
-    // Add ripple effect to buttons (consolidated into main DOMContentLoaded)
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.querySelector('.notion-form');
-        const nameInput = document.getElementById('name');
-        const emailInput = document.getElementById('email');
-        const phoneInput = document.getElementById('phone_number');
-        const roleSelect = document.getElementById('role');
-        const statusSelect = document.getElementById('status');
-        const passwordInput = document.getElementById('password');
-        const confirmPasswordInput = document.getElementById('password_confirmation');
-
-        // Ripple effect for buttons
-        const buttons = document.querySelectorAll('.ripple-effect');
-        buttons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                const rect = e.target.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const ripple = document.createElement('span');
-                ripple.className = 'ripple-animation';
-                ripple.style.left = `${x}px`;
-                ripple.style.top = `${y}px`;
-                this.appendChild(ripple);
-                setTimeout(() => ripple.remove(), 600);
-            });
-        });
-
-        // Initialize enhanced anti-jitter confirmation modal
-        const initUserModal = () => {
-            const triggerButton = document.getElementById('openConfirmModal');
-            const modalElement = document.getElementById('confirmUserSaveModal');
-            const confirmButton = document.getElementById('confirmUserSave');
-            
-            if (!triggerButton || !modalElement || !confirmButton) return;
-            
-            // Remove default Bootstrap attributes to prevent conflicts
-            triggerButton.removeAttribute('data-bs-toggle');
-            triggerButton.removeAttribute('data-bs-target');
-            
-            // Enhanced validation function
-            const validateForm = () => {
-                let isValid = true;
-                
-                // Password validation
-                if (passwordInput && confirmPasswordInput) {
-                    if (passwordInput.value && confirmPasswordInput.value) {
-                        if (passwordInput.value !== confirmPasswordInput.value) {
-                            confirmPasswordInput.setCustomValidity('Passwords do not match.');
-                            isValid = false;
-                        } else {
-                            confirmPasswordInput.setCustomValidity('');
-                        }
-                    }
-                }
-                
-                // HTML5 validation
-                if (!form.checkValidity()) {
-                    isValid = false;
-                }
-                
-                return isValid;
-            };
-            
-            // Anti-jitter modal trigger
-            triggerButton.addEventListener('click', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                // Validate first
-                if (!validateForm()) {
-                    form.classList.add('was-validated');
-                    form.reportValidity();
-                    
-                    // Gentle error indication without jittering
-                    const invalidField = form.querySelector(':invalid');
-                    if (invalidField) {
-                        invalidField.focus();
-                        const fieldGroup = invalidField.closest('.notion-form-group');
-                        if (fieldGroup) {
-                            fieldGroup.classList.add('form-validation-error');
-                            setTimeout(() => {
-                                fieldGroup.classList.remove('form-validation-error');
-                            }, 300);
-                        }
-                    }
-                    return;
-                }
-                
-                // Update modal content
-                updateModalContent();
-                
-                // Show modal with anti-jitter system
-                try {
-                    await ModalUtils.showModal('confirmUserSaveModal');
-                } catch (error) {
-                    console.warn('Modal show failed, falling back:', error);
-                    // Fallback to direct Bootstrap if ModalUtils fails
-                    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-                    modal.show();
-                }
-            });
-            
-            // Confirm button handler
-            confirmButton.addEventListener('click', async () => {
-                if (validateForm()) {
-                    try {
-                        await ModalUtils.hideModal('confirmUserSaveModal');
-                        setTimeout(() => form.submit(), 100);
-                    } catch (error) {
-                        // Fallback
-                        const modal = bootstrap.Modal.getInstance(modalElement);
-                        if (modal) modal.hide();
-                        setTimeout(() => form.submit(), 150);
-                    }
-                }
-            });
-        };
-        
-        // Enhanced modal content updater
-        const updateModalContent = () => {
-            const safe = (v, fallback = 'Not specified') => (v && v.trim()) ? v : fallback;
-            const setText = (id, text) => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = text;
-            };
-            
-            setText('modalUserName', safe(nameInput ? nameInput.value : ''));
-            setText('modalUserEmail', safe(emailInput ? emailInput.value : ''));
-            setText('modalUserPhone', safe(phoneInput ? phoneInput.value : ''));
-
-            // Update role badge
-            const roleContainer = document.getElementById('modalUserRole');
-            if (roleContainer && roleSelect) {
-                let role = roleSelect.value;
-                let roleText = 'Not specified';
-                if (role) {
-                    roleText = role.split('-').map(word => 
-                        word.charAt(0).toUpperCase() + word.slice(1)
-                    ).join(' ');
-                }
-                roleContainer.innerHTML = `<span class="badge text-bg-primary">${roleText}</span>`;
-            }
-
-            // Update status badge
-            const statusElement = document.getElementById('modalUserStatus');
-            if (statusElement && statusSelect) {
-                const status = statusSelect.value || 'active';
-                const badgeClass = status === 'active' ? 'success' : 'secondary';
-                const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Active';
-                statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${statusText}</span>`;
-            }
-        };
-        
-        // Initialize the modal system
-        initUserModal();
-
-        // Keep input fields synced with modal in real-time
-        [nameInput, emailInput, phoneInput, roleSelect, statusSelect].forEach(input => {
-            if (input) {
-                input.addEventListener('input', function() {
-                    // Update modal if it's visible
-                    const modalElement = document.getElementById('confirmUserSaveModal');
-                    if (modalElement && modalElement.classList.contains('show')) {
-                        // Modal is open, update content
-                        const safe = (v, fallback = 'Not specified') => (v && v.trim()) ? v : fallback;
-                        const setText = (id, text) => {
-                            const el = document.getElementById(id);
-                            if (el) el.textContent = text;
-                        };
-                        
-                        setText('modalUserName', safe(nameInput ? nameInput.value : ''));
-                        setText('modalUserEmail', safe(emailInput ? emailInput.value : ''));
-                        setText('modalUserPhone', safe(phoneInput ? phoneInput.value : ''));
-                    }
-                });
-            }
-        });
-    });
+});
 </script>
 
 <style>
@@ -556,3 +303,15 @@ $currentUserId = $currentUser['id'] ?? null;
     }
 </style>
 
+<style>
+/* Simple form validation styling */
+.notion-form .was-validated .form-control:invalid,
+.notion-form .was-validated .form-select:invalid {
+    border-color: #dc3545;
+}
+
+.notion-form .was-validated .form-control:valid,
+.notion-form .was-validated .form-select:valid {
+    border-color: #198754;
+}
+</style>

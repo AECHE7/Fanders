@@ -224,14 +224,22 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <div class="card-body">
             <?php if ($viewUser['status'] === UserModel::$STATUS_ACTIVE): ?>
                 <p class="card-text">This staff member is currently active. You can deactivate this account.</p>
-                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#deactivateUserModal">
-                    <i data-feather="user-x"></i> Deactivate Staff
-                </button>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" style="display:inline;">
+                    <?= $csrf->getTokenField() ?>
+                    <input type="hidden" name="action" value="deactivate">
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to deactivate <?= htmlspecialchars($viewUser['name']) ?>? This will revoke their system access.');">
+                        <i data-feather="user-x"></i> Deactivate Staff
+                    </button>
+                </form>
             <?php else: ?>
                 <p class="card-text">This staff member is currently inactive. You can activate this account.</p>
-                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#activateUserModal">
-                    <i data-feather="user-check"></i> Activate Staff
-                </button>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" style="display:inline;">
+                    <?= $csrf->getTokenField() ?>
+                    <input type="hidden" name="action" value="activate">
+                    <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to activate <?= htmlspecialchars($viewUser['name']) ?>? This will restore their system access.');">
+                        <i data-feather="user-check"></i> Activate Staff
+                    </button>
+                </form>
             <?php endif; ?>
             </div>
         </div>
@@ -244,9 +252,13 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
             <div class="card-body">
             <?php if ($userRole === 'super-admin' || $userRole === 'admin'): ?>
                 <p class="card-text">Deleting this user is irreversible. Please be certain.</p>
-                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal">
-                    <i data-feather="trash-2"></i> Delete User
-                </button>
+                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" style="display:inline;">
+                    <?= $csrf->getTokenField() ?>
+                    <input type="hidden" name="action" value="delete">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('⚠️ DANGER: Are you sure you want to permanently delete user <?= htmlspecialchars($viewUser['name']) ?>? This action CANNOT be undone and will remove all associated data!');">
+                        <i data-feather="trash-2"></i> Delete User
+                    </button>
+                </form>
             <?php endif; ?>
             </div>
         </div>
@@ -254,112 +266,7 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
     </div>
 </main>
 
-<!-- Activate User Modal -->
-<div class="modal fade" id="activateUserModal" tabindex="-1" aria-labelledby="activateUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="activateUserModalLabel">
-                    <i data-feather="user-check"></i> Confirm Staff Activation
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>You are about to activate staff account:</p>
-                <ul class="list-unstyled ms-3">
-                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['name']) ?></li>
-                    <li><strong>Email:</strong> <?= htmlspecialchars($viewUser['email']) ?></li>
-                    <li><strong>Role:</strong> <span class="badge text-bg-primary"><?= ucfirst($viewUser['role']) ?></span></li>
-                </ul>
-                <div class="alert alert-info mt-3">
-                    <i data-feather="info"></i> Activating this account will restore system access.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" style="display:inline;">
-                    <?= $csrf->getTokenField() ?>
-                    <input type="hidden" name="action" value="activate">
-                    <button type="submit" class="btn btn-success">
-                        <i data-feather="user-check"></i> Confirm Activation
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Deactivate User Modal -->
-<div class="modal fade" id="deactivateUserModal" tabindex="-1" aria-labelledby="deactivateUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-white">
-                <h5 class="modal-title" id="deactivateUserModalLabel">
-                    <i data-feather="user-x"></i> Confirm Staff Deactivation
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warning">
-                    <i data-feather="alert-triangle"></i> <strong>Warning:</strong> Deactivating this staff account will revoke system access.
-                </div>
-                <p>Staff to deactivate:</p>
-                <ul class="list-unstyled ms-3">
-                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['name']) ?></li>
-                    <li><strong>Email:</strong> <?= htmlspecialchars($viewUser['email']) ?></li>
-                    <li><strong>Role:</strong> <span class="badge text-bg-primary"><?= ucfirst($viewUser['role']) ?></span></li>
-                </ul>
-                <p class="text-muted small">This staff member will no longer be able to log in to the system.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" style="display:inline;">
-                    <?= $csrf->getTokenField() ?>
-                    <input type="hidden" name="action" value="deactivate">
-                    <button type="submit" class="btn btn-warning">
-                        <i data-feather="user-x"></i> Confirm Deactivation
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Delete User Modal -->
-<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteUserModalLabel">
-                    <i data-feather="trash-2"></i> Confirm User Deletion
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-danger">
-                    <i data-feather="alert-triangle"></i> <strong>Danger:</strong> Deleting this user account is irreversible and will permanently remove all associated data.
-                </div>
-                <p>User to delete:</p>
-                <ul class="list-unstyled ms-3">
-                    <li><strong>Name:</strong> <?= htmlspecialchars($viewUser['name']) ?></li>
-                    <li><strong>Email:</strong> <?= htmlspecialchars($viewUser['email']) ?></li>
-                    <li><strong>Role:</strong> <span class="badge text-bg-primary"><?= ucfirst($viewUser['role']) ?></span></li>
-                </ul>
-                <p class="text-muted small">This action cannot be undone. Consider deactivating the account instead if you might need to restore access later.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form action="<?= $_SERVER['PHP_SELF'] ?>?id=<?= $userId ?>" method="post" style="display:inline;">
-                    <?= $csrf->getTokenField() ?>
-                    <input type="hidden" name="action" value="delete">
-                    <button type="submit" class="btn btn-danger">
-                        <i data-feather="trash-2"></i> Confirm Deletion
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 <?php
 // Include footer
