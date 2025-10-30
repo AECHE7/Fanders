@@ -277,12 +277,22 @@ document.addEventListener('DOMContentLoaded', function() {
             return form.checkValidity();
         };
         
-        // Anti-jitter modal opening
+        // Anti-jitter modal opening with operation locking
+        let modalOpening = false;
         openModalButton.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
             
+            // Prevent multiple rapid clicks
+            if (modalOpening) return;
+            modalOpening = true;
+            
             try {
+                // Add visual feedback
+                openModalButton.disabled = true;
+                const originalText = openModalButton.innerHTML;
+                openModalButton.innerHTML = originalText.replace('Open', 'Opening...');
+                
                 // Use enhanced modal system if available
                 if (window.ModalUtils && typeof ModalUtils.showModal === 'function') {
                     await ModalUtils.showModal('clientFormModal', {
@@ -290,22 +300,43 @@ document.addEventListener('DOMContentLoaded', function() {
                         keyboard: true
                     });
                 } else {
-                    // Fallback to direct Bootstrap
-                    const modal = bootstrap.Modal.getOrCreateInstance(clientModal, {
-                        backdrop: 'static',
-                        keyboard: true
+                    // Enhanced fallback with requestAnimationFrame
+                    await new Promise((resolve) => {
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                const modal = bootstrap.Modal.getOrCreateInstance(clientModal, {
+                                    backdrop: 'static',
+                                    keyboard: true
+                                });
+                                modal.show();
+                                resolve();
+                            });
+                        });
                     });
-                    modal.show();
                 }
+                
+                // Restore button state
+                openModalButton.disabled = false;
+                openModalButton.innerHTML = originalText;
+                
             } catch (error) {
                 console.warn('Modal system failed, using fallback:', error);
                 // Direct fallback
                 const modal = new bootstrap.Modal(clientModal);
                 modal.show();
+                
+                // Restore button state
+                openModalButton.disabled = false;
+                openModalButton.innerHTML = originalText;
+            } finally {
+                // Clear operation lock
+                setTimeout(() => {
+                    modalOpening = false;
+                }, 300);
             }
         });
         
-        // Enhanced form submission with validation
+        // Enhanced form submission with anti-jitter validation
         form.addEventListener('submit', function(event) {
             if (!validateClientForm()) {
                 event.preventDefault();
@@ -314,10 +345,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Focus on first invalid field with gentle animation
                 const firstInvalid = form.querySelector(':invalid');
                 if (firstInvalid) {
-                    firstInvalid.focus();
-                    
                     // Gentle error indication without jittering
-                    const fieldGroup = firstInvalid.closest('.mb-3, .form-group');
+                    const fieldGroup = firstInvalid.closest('.mb-3, .form-group, .col-md-6, .col-md-12');
                     if (fieldGroup) {
                         fieldGroup.classList.add('form-validation-error');
                         setTimeout(() => {
@@ -325,12 +354,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         }, 300);
                     }
                     
-                    // Smooth scroll to invalid field within modal
-                    firstInvalid.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'center',
-                        inline: 'nearest'
-                    });
+                    // Enhanced focus with delay to prevent conflicts
+                    setTimeout(() => {
+                        firstInvalid.focus();
+                        
+                        // Smooth scroll to invalid field within modal
+                        firstInvalid.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }, 50);
+                }
+            } else {
+                // Form is valid, show loading state
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn && !submitBtn.disabled) {
+                    submitBtn.disabled = true;
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+                    
+                    // Re-enable after delay in case of issues
+                    setTimeout(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }, 10000);
                 }
             }
             form.classList.add('was-validated');
