@@ -36,6 +36,9 @@
         <script src="<?= APP_URL ?>/public/assets/js/modal-utils.js?v=<?= filemtime(BASE_PATH . '/public/assets/js/modal-utils.js') ?>"></script>
         <script src="<?= APP_URL ?>/public/assets/js/confirmation-modals.js?v=<?= filemtime(BASE_PATH . '/public/assets/js/confirmation-modals.js') ?>"></script>
 
+        <!-- Modal Helper Utility - Consistent modal management -->
+        <script src="<?= APP_URL ?>/assets/js/modal-helper.js?v=<?= filemtime(BASE_PATH . '/assets/js/modal-helper.js') ?>"></script>
+
         <!-- Global variables for JavaScript -->
         <script>
             const APP_URL = "<?= APP_URL ?>";
