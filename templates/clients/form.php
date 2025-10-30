@@ -73,8 +73,7 @@ $currentIdType = $clientData['identification_type'] ?? '';
         
         <!-- Button to open modal with form inside -->
         <button type="button" class="btn btn-primary btn-lg px-5" 
-                data-bs-toggle="modal" 
-                data-bs-target="#clientFormModal">
+                id="openClientFormModal">
             <i data-feather="<?= $isEditing ? 'edit' : 'plus' ?>" class="me-2" style="width: 18px; height: 18px;"></i>
             <?= $isEditing ? 'Open Edit Form' : 'Open Client Form' ?>
         </button>
@@ -263,95 +262,228 @@ $currentIdType = $clientData['identification_type'] ?? '';
 </div>
 
 <script>
-// Bootstrap form validation on submit
+// Enhanced anti-jitter client form system
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('clientForm');
+    const openModalButton = document.getElementById('openClientFormModal');
+    const clientModal = document.getElementById('clientFormModal');
     
-    if (form) {
+    // Initialize anti-jitter modal system
+    const initClientModal = () => {
+        if (!openModalButton || !clientModal || !form) return;
+        
+        // Enhanced form validation
+        const validateClientForm = () => {
+            return form.checkValidity();
+        };
+        
+        // Anti-jitter modal opening
+        openModalButton.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            try {
+                // Use enhanced modal system if available
+                if (window.ModalUtils && typeof ModalUtils.showModal === 'function') {
+                    await ModalUtils.showModal('clientFormModal', {
+                        backdrop: 'static',
+                        keyboard: true
+                    });
+                } else {
+                    // Fallback to direct Bootstrap
+                    const modal = bootstrap.Modal.getOrCreateInstance(clientModal, {
+                        backdrop: 'static',
+                        keyboard: true
+                    });
+                    modal.show();
+                }
+            } catch (error) {
+                console.warn('Modal system failed, using fallback:', error);
+                // Direct fallback
+                const modal = new bootstrap.Modal(clientModal);
+                modal.show();
+            }
+        });
+        
+        // Enhanced form submission with validation
         form.addEventListener('submit', function(event) {
-            if (!form.checkValidity()) {
+            if (!validateClientForm()) {
                 event.preventDefault();
                 event.stopPropagation();
                 
-                // Focus on first invalid field
+                // Focus on first invalid field with gentle animation
                 const firstInvalid = form.querySelector(':invalid');
                 if (firstInvalid) {
                     firstInvalid.focus();
                     
-                    // Optional: Scroll to first invalid field within modal
-                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Gentle error indication without jittering
+                    const fieldGroup = firstInvalid.closest('.mb-3, .form-group');
+                    if (fieldGroup) {
+                        fieldGroup.classList.add('form-validation-error');
+                        setTimeout(() => {
+                            fieldGroup.classList.remove('form-validation-error');
+                        }, 300);
+                    }
+                    
+                    // Smooth scroll to invalid field within modal
+                    firstInvalid.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center',
+                        inline: 'nearest'
+                    });
                 }
             }
             form.classList.add('was-validated');
-        }, false);
-    }
+        });
+    };
     
-    // Re-initialize Feather icons when modal is shown
-    const clientModal = document.getElementById('clientFormModal');
+    // Enhanced modal event handlers
     if (clientModal) {
         clientModal.addEventListener('shown.bs.modal', function() {
+            // Refresh feather icons with error handling
             if (typeof feather !== 'undefined') {
-                feather.replace();
+                try {
+                    feather.replace();
+                } catch (error) {
+                    console.warn('Feather icons refresh failed:', error);
+                }
+            }
+            
+            // Focus on first input for better UX
+            const firstInput = form.querySelector('input[type="text"], input[type="email"], select');
+            if (firstInput) {
+                setTimeout(() => firstInput.focus(), 100);
             }
         });
+        
+        clientModal.addEventListener('hidden.bs.modal', function() {
+            // Clear validation state when modal closes
+            form.classList.remove('was-validated');
+            
+            // Clear custom validation messages
+            const invalidElements = form.querySelectorAll(':invalid');
+            invalidElements.forEach(element => {
+                element.setCustomValidity('');
+            });
+        });
     }
+    
+    // Initialize the system
+    initClientModal();
 });
 </script>
 
 <style>
-/* Modal form enhancements */
-.modal-body {
+/* ================================================
+   ANTI-JITTER CLIENT MODAL ENHANCEMENTS
+   ================================================ */
+
+/* Stabilize modal structure */
+#clientFormModal {
+    --modal-transition-duration: 0.2s;
+}
+
+#clientFormModal .modal-dialog {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    contain: layout style;
+}
+
+#clientFormModal .modal-content {
+    transform: translateZ(0);
+    overflow: hidden;
+}
+
+/* Enhanced modal body with smooth scrolling */
+#clientFormModal .modal-body {
     max-height: 70vh;
     overflow-y: auto;
+    contain: layout style;
+    scrollbar-width: thin;
 }
 
-/* Smooth scrollbar for modal */
-.modal-body::-webkit-scrollbar {
-    width: 8px;
+#clientFormModal .modal-body::-webkit-scrollbar {
+    width: 6px;
 }
 
-.modal-body::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
+#clientFormModal .modal-body::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
 }
 
-.modal-body::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 4px;
+#clientFormModal .modal-body::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
 }
 
-.modal-body::-webkit-scrollbar-thumb:hover {
-    background: #555;
+#clientFormModal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
 }
 
-/* Form styling */
-.form-control:focus,
-.form-select:focus {
+/* Anti-jitter form controls */
+#clientFormModal .form-control,
+#clientFormModal .form-select {
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    transform: translateZ(0);
+}
+
+#clientFormModal .form-control:focus,
+#clientFormModal .form-select:focus {
     border-color: #0ca789;
     box-shadow: 0 0 0 0.2rem rgba(12, 167, 137, 0.25);
+    outline: none;
 }
 
-.text-primary {
+/* Smooth button interactions */
+#clientFormModal .btn {
+    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+    transform: translateZ(0);
+}
+
+#clientFormModal .btn:hover:not(:disabled) {
+    transform: translateY(-1px) translateZ(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+#clientFormModal .btn:active {
+    transform: translateY(0) translateZ(0);
+    transition-duration: 0.05s;
+}
+
+/* Enhanced close button */
+#clientFormModal .btn-close {
+    transition: transform 0.15s ease-in-out;
+}
+
+#clientFormModal .btn-close:hover {
+    transform: scale(1.1) translateZ(0);
+}
+
+/* Prevent validation animation conflicts */
+#clientFormModal .form-validation-error {
+    animation: clientModalShake 0.3s ease-in-out;
+}
+
+@keyframes clientModalShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+/* Improve spacing and typography */
+#clientFormModal .text-primary {
     color: #0ca789 !important;
 }
 
-/* Required field indicator */
-.form-label .text-danger {
+#clientFormModal .form-label .text-danger {
     font-size: 0.875rem;
 }
 
-/* Better spacing for form sections */
-.modal-body > .mb-4:last-child {
+#clientFormModal .modal-body > .mb-4:last-child {
     margin-bottom: 0 !important;
 }
 
-/* Improve alert appearance in modal */
-.modal-body .alert {
+#clientFormModal .alert {
     font-size: 0.9rem;
-}
-
-/* Make modal backdrop stronger */
-.modal-backdrop.show {
-    opacity: 0.7;
 }
 </style>

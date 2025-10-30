@@ -1,17 +1,21 @@
 /**
  * Modal Utility Functions
- * Standardized modal management to prevent jittering and conflicts
- * Created: October 30, 2025
+ * Advanced jittering prevention and smooth modal management
+ * Enhanced: October 30, 2025
  */
 
 (function(global) {
     'use strict';
 
-    // Modal utility namespace
+    // Modal utility namespace with anti-jitter enhancements
     const ModalUtils = {
         
+        // Active modals tracking
+        activeModals: new Set(),
+        animationFrameId: null,
+        
         /**
-         * Safely show a modal with proper instance management
+         * Anti-jitter modal showing with proper timing
          * @param {string} modalId - The modal element ID
          * @param {Object} options - Bootstrap modal options
          * @returns {Object} Modal instance
@@ -23,27 +27,113 @@
                 return null;
             }
             
-            // Use getOrCreateInstance to prevent conflicts
-            const modal = bootstrap.Modal.getOrCreateInstance(modalElement, options);
-            modal.show();
-            return modal;
+            // Prevent showing if already active
+            if (this.activeModals.has(modalId)) {
+                console.warn(`Modal "${modalId}" is already active`);
+                return bootstrap.Modal.getInstance(modalElement);
+            }
+            
+            // Mark as opening to prevent animation conflicts
+            document.body.classList.add('modal-opening');
+            modalElement.classList.add('modal-preparing');
+            
+            // Pause conflicting animations BEFORE showing
+            this._pauseConflictingAnimations(modalElement);
+            
+            // Use requestAnimationFrame for smooth rendering
+            return new Promise((resolve) => {
+                this.animationFrameId = requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        modalElement.classList.remove('modal-preparing');
+                        
+                        const modal = bootstrap.Modal.getOrCreateInstance(modalElement, {
+                            backdrop: options.backdrop !== false,
+                            keyboard: options.keyboard !== false,
+                            focus: options.focus !== false,
+                            ...options
+                        });
+                        
+                        // Track active modal
+                        this.activeModals.add(modalId);
+                        
+                        modal.show();
+                        
+                        // Clean up opening state
+                        setTimeout(() => {
+                            document.body.classList.remove('modal-opening');
+                        }, 200);
+                        
+                        resolve(modal);
+                    });
+                });
+            });
         },
 
         /**
-         * Safely hide a modal
+         * Safely hide a modal with anti-jitter measures
          * @param {string} modalId - The modal element ID
+         * @returns {Promise} Promise that resolves when modal is hidden
          */
         hideModal: function(modalId) {
             const modalElement = document.getElementById(modalId);
             if (!modalElement) {
                 console.warn(`Modal with ID "${modalId}" not found`);
-                return;
+                return Promise.resolve();
             }
             
             const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) {
-                modal.hide();
+            if (!modal) {
+                console.warn(`No modal instance found for "${modalId}"`);
+                return Promise.resolve();
             }
+            
+            return new Promise((resolve) => {
+                // Mark as closing
+                document.body.classList.add('modal-closing');
+                
+                // Listen for hidden event
+                const handleHidden = () => {
+                    modalElement.removeEventListener('hidden.bs.modal', handleHidden);
+                    this.activeModals.delete(modalId);
+                    document.body.classList.remove('modal-closing');
+                    this._resumeConflictingAnimations(modalElement);
+                    resolve();
+                };
+                
+                modalElement.addEventListener('hidden.bs.modal', handleHidden);
+                modal.hide();
+            });
+        },
+        
+        /**
+         * Pause animations that conflict with modal transitions
+         * @private
+         */
+        _pauseConflictingAnimations: function(modalElement) {
+            const conflictingElements = document.querySelectorAll(
+                '.ripple-animation, .shake-animation, .stagger-fade-in > *, .animate-on-scroll'
+            );
+            
+            conflictingElements.forEach(element => {
+                if (!modalElement.contains(element)) {
+                    element.style.animationPlayState = 'paused';
+                    element.style.transitionDelay = '0s';
+                }
+            });
+        },
+        
+        /**
+         * Resume previously paused animations
+         * @private
+         */
+        _resumeConflictingAnimations: function(modalElement) {
+            setTimeout(() => {
+                const pausedElements = document.querySelectorAll('[style*="animation-play-state: paused"]');
+                pausedElements.forEach(element => {
+                    element.style.animationPlayState = '';
+                    element.style.transitionDelay = '';
+                });
+            }, 100);
         },
 
         /**
@@ -167,56 +257,116 @@
         },
 
         /**
-         * Initialize all modals with smooth transitions
+         * Initialize comprehensive anti-jitter modal system
          */
         initializeModalSystem: function() {
-            // Add modal CSS if not already present
-            if (!document.querySelector('link[href*="modals.css"]')) {
-                const link = document.createElement('link');
-                link.rel = 'stylesheet';
-                link.href = '/public/assets/css/modals.css';
-                document.head.appendChild(link);
-            }
-
-            // Enhance all existing modals
+            // Enhanced modal preparation
             document.querySelectorAll('.modal').forEach(modal => {
                 // Ensure proper fade class
                 if (!modal.classList.contains('fade')) {
                     modal.classList.add('fade');
                 }
 
-                // Add smooth transition class
+                // Force hardware acceleration
                 const dialog = modal.querySelector('.modal-dialog');
-                if (dialog && !dialog.classList.contains('modal-smooth')) {
-                    dialog.classList.add('modal-smooth');
+                if (dialog) {
+                    dialog.style.transform = 'translateZ(0)';
+                    dialog.style.backfaceVisibility = 'hidden';
                 }
             });
 
-            // Global modal event handlers
-            document.addEventListener('show.bs.modal', function(e) {
-                // Pause any conflicting animations
+            // Comprehensive global modal event handlers
+            document.addEventListener('show.bs.modal', (e) => {
                 const modal = e.target;
-                const conflictingElements = modal.querySelectorAll('.ripple-animation, .shake-animation');
-                conflictingElements.forEach(el => {
-                    el.style.animationPlayState = 'paused';
-                });
+                const modalId = modal.id;
+                
+                // Add to active tracking
+                this.activeModals.add(modalId);
+                
+                // Prevent body scroll with smooth compensation
+                this._preventBodyScroll();
+                
+                // Pause ALL conflicting animations globally
+                this._pauseConflictingAnimations(modal);
+                
+                // Mark body state
+                document.body.classList.add('modal-opening');
             });
 
-            document.addEventListener('shown.bs.modal', function(e) {
-                // Refresh feather icons in modal
+            document.addEventListener('shown.bs.modal', (e) => {
+                const modal = e.target;
+                
+                // Clean up opening state
+                document.body.classList.remove('modal-opening');
+                document.body.classList.add('modal-active');
+                
+                // Refresh feather icons with error handling
                 if (typeof feather !== 'undefined') {
-                    feather.replace();
+                    try {
+                        feather.replace();
+                    } catch (error) {
+                        console.warn('Feather icons refresh failed:', error);
+                    }
+                }
+                
+                // Focus management for accessibility
+                const focusableElement = modal.querySelector('input, select, textarea, button');
+                if (focusableElement) {
+                    setTimeout(() => focusableElement.focus(), 100);
                 }
             });
 
-            document.addEventListener('hide.bs.modal', function(e) {
-                // Resume animations when modal is hidden
+            document.addEventListener('hide.bs.modal', (e) => {
                 const modal = e.target;
-                const pausedElements = modal.querySelectorAll('.ripple-animation, .shake-animation');
-                pausedElements.forEach(el => {
-                    el.style.animationPlayState = 'running';
-                });
+                document.body.classList.add('modal-closing');
+                document.body.classList.remove('modal-active');
             });
+
+            document.addEventListener('hidden.bs.modal', (e) => {
+                const modal = e.target;
+                const modalId = modal.id;
+                
+                // Remove from active tracking
+                this.activeModals.delete(modalId);
+                
+                // Restore body scroll if no other modals
+                if (this.activeModals.size === 0) {
+                    this._restoreBodyScroll();
+                }
+                
+                // Resume animations
+                setTimeout(() => {
+                    this._resumeConflictingAnimations(modal);
+                    document.body.classList.remove('modal-closing');
+                }, 50);
+            });
+        },
+        
+        /**
+         * Prevent body scroll with smooth scrollbar compensation
+         * @private
+         */
+        _preventBodyScroll: function() {
+            if (document.body.style.overflow === 'hidden') return;
+            
+            // Calculate scrollbar width
+            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+            
+            // Apply styles smoothly
+            document.body.style.paddingRight = scrollbarWidth + 'px';
+            document.body.style.overflow = 'hidden';
+        },
+        
+        /**
+         * Restore body scroll smoothly
+         * @private
+         */
+        _restoreBodyScroll: function() {
+            // Delay removal to prevent flicker
+            setTimeout(() => {
+                document.body.style.paddingRight = '';
+                document.body.style.overflow = '';
+            }, 100);
         },
 
         /**

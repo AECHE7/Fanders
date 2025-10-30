@@ -336,63 +336,134 @@ $currentUserId = $currentUser['id'] ?? null;
             });
         });
 
-        // Initialize confirmation modal using the new system
-        ConfirmationModals.initFormConfirmation({
-            formSelector: '.notion-form',
-            modalId: 'confirmUserSaveModal',
-            triggerButtonSelector: '#openConfirmModal',
-            confirmButtonId: 'confirmUserSave',
+        // Initialize enhanced anti-jitter confirmation modal
+        const initUserModal = () => {
+            const triggerButton = document.getElementById('openConfirmModal');
+            const modalElement = document.getElementById('confirmUserSaveModal');
+            const confirmButton = document.getElementById('confirmUserSave');
             
-            // Custom validation for password matching
-            validateCallback: function(form) {
+            if (!triggerButton || !modalElement || !confirmButton) return;
+            
+            // Remove default Bootstrap attributes to prevent conflicts
+            triggerButton.removeAttribute('data-bs-toggle');
+            triggerButton.removeAttribute('data-bs-target');
+            
+            // Enhanced validation function
+            const validateForm = () => {
+                let isValid = true;
+                
+                // Password validation
                 if (passwordInput && confirmPasswordInput) {
                     if (passwordInput.value && confirmPasswordInput.value) {
                         if (passwordInput.value !== confirmPasswordInput.value) {
                             confirmPasswordInput.setCustomValidity('Passwords do not match.');
-                            return false;
+                            isValid = false;
                         } else {
                             confirmPasswordInput.setCustomValidity('');
                         }
                     }
                 }
-                return true;
-            },
-            
-            // Update modal content before showing
-            updateContentCallback: function(form, modalElement) {
-                const safe = (v, fallback = 'Not specified') => (v && v.trim()) ? v : fallback;
-                const setText = (id, text) => {
-                    const el = document.getElementById(id);
-                    if (el) el.textContent = text;
-                };
                 
-                setText('modalUserName', safe(nameInput ? nameInput.value : ''));
-                setText('modalUserEmail', safe(emailInput ? emailInput.value : ''));
-                setText('modalUserPhone', safe(phoneInput ? phoneInput.value : ''));
-
-                // Update role badge
-                const roleContainer = document.getElementById('modalUserRole');
-                if (roleContainer && roleSelect) {
-                    let role = roleSelect.value;
-                    let roleText = 'Not specified';
-                    if (role) {
-                        roleText = role.split('-').map(word => 
-                            word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ');
+                // HTML5 validation
+                if (!form.checkValidity()) {
+                    isValid = false;
+                }
+                
+                return isValid;
+            };
+            
+            // Anti-jitter modal trigger
+            triggerButton.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Validate first
+                if (!validateForm()) {
+                    form.classList.add('was-validated');
+                    form.reportValidity();
+                    
+                    // Gentle error indication without jittering
+                    const invalidField = form.querySelector(':invalid');
+                    if (invalidField) {
+                        invalidField.focus();
+                        const fieldGroup = invalidField.closest('.notion-form-group');
+                        if (fieldGroup) {
+                            fieldGroup.classList.add('form-validation-error');
+                            setTimeout(() => {
+                                fieldGroup.classList.remove('form-validation-error');
+                            }, 300);
+                        }
                     }
-                    roleContainer.innerHTML = `<span class="badge text-bg-primary">${roleText}</span>`;
+                    return;
                 }
+                
+                // Update modal content
+                updateModalContent();
+                
+                // Show modal with anti-jitter system
+                try {
+                    await ModalUtils.showModal('confirmUserSaveModal');
+                } catch (error) {
+                    console.warn('Modal show failed, falling back:', error);
+                    // Fallback to direct Bootstrap if ModalUtils fails
+                    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                    modal.show();
+                }
+            });
+            
+            // Confirm button handler
+            confirmButton.addEventListener('click', async () => {
+                if (validateForm()) {
+                    try {
+                        await ModalUtils.hideModal('confirmUserSaveModal');
+                        setTimeout(() => form.submit(), 100);
+                    } catch (error) {
+                        // Fallback
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) modal.hide();
+                        setTimeout(() => form.submit(), 150);
+                    }
+                }
+            });
+        };
+        
+        // Enhanced modal content updater
+        const updateModalContent = () => {
+            const safe = (v, fallback = 'Not specified') => (v && v.trim()) ? v : fallback;
+            const setText = (id, text) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            };
+            
+            setText('modalUserName', safe(nameInput ? nameInput.value : ''));
+            setText('modalUserEmail', safe(emailInput ? emailInput.value : ''));
+            setText('modalUserPhone', safe(phoneInput ? phoneInput.value : ''));
 
-                // Update status badge if editing
-                const statusElement = document.getElementById('modalUserStatus');
-                if (statusElement && statusSelect) {
-                    const status = statusSelect.value || 'active';
-                    const badgeClass = status === 'active' ? 'success' : 'secondary';
-                    const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Active';
-                    statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${statusText}</span>`;
+            // Update role badge
+            const roleContainer = document.getElementById('modalUserRole');
+            if (roleContainer && roleSelect) {
+                let role = roleSelect.value;
+                let roleText = 'Not specified';
+                if (role) {
+                    roleText = role.split('-').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
                 }
+                roleContainer.innerHTML = `<span class="badge text-bg-primary">${roleText}</span>`;
             }
-        });
+
+            // Update status badge
+            const statusElement = document.getElementById('modalUserStatus');
+            if (statusElement && statusSelect) {
+                const status = statusSelect.value || 'active';
+                const badgeClass = status === 'active' ? 'success' : 'secondary';
+                const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Active';
+                statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${statusText}</span>`;
+            }
+        };
+        
+        // Initialize the modal system
+        initUserModal();
 
         // Keep input fields synced with modal in real-time
         [nameInput, emailInput, phoneInput, roleSelect, statusSelect].forEach(input => {
@@ -440,49 +511,48 @@ $currentUserId = $currentUser['id'] ?? null;
     }
     
     /* ========================================
-       MODAL ENHANCEMENTS - MINIMAL & SMOOTH
+       ENHANCED ANTI-JITTER MODAL SYSTEM
        ======================================== */
     
-    /* Smooth fade transition for Bootstrap modals */
-    #confirmUserSaveModal.modal.fade .modal-dialog {
-        transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+    /* CRITICAL: Disable all form animations when modal is opening/active */
+    .modal-opening .notion-form .stagger-fade-in > *,
+    .modal-active .notion-form .stagger-fade-in > *,
+    .modal-opening .animate-on-scroll,
+    .modal-active .animate-on-scroll {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
     }
     
-    #confirmUserSaveModal.modal.show .modal-dialog {
-        transform: none;
+    /* Prevent shake animation conflicts */
+    .modal-active .shake-animation {
+        animation: none !important;
     }
     
-    /* Enhanced modal styling */
+    /* Enhanced user modal specific styles */
+    #confirmUserSaveModal {
+        --modal-transition-duration: 0.2s;
+    }
+    
+    /* Stabilize modal content */
     #confirmUserSaveModal .modal-content {
-        border: none;
-        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2);
+        transform: translateZ(0);
+        backface-visibility: hidden;
     }
     
-    #confirmUserSaveModal .modal-header {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    
-    /* Smooth button hover effects */
+    /* Smooth interactive elements */
     #confirmUserSaveModal .btn {
-        transition: all 0.15s ease-in-out;
+        transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+        transform: translateZ(0);
     }
     
-    #confirmUserSaveModal .btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    #confirmUserSaveModal .btn:hover:not(:disabled) {
+        transform: translateY(-1px) translateZ(0);
     }
     
     #confirmUserSaveModal .btn:active {
-        transform: translateY(0);
-    }
-    
-    #confirmUserSaveModal .btn-close:hover {
-        transform: scale(1.1);
-    }
-    
-    /* Smooth badge transitions */
-    #confirmUserSaveModal .badge {
-        transition: all 0.15s ease;
+        transform: translateY(0) translateZ(0);
+        transition-duration: 0.05s;
     }
 </style>
 

@@ -1,13 +1,16 @@
 /**
  * Unified Confirmation Modal System
- * Eliminates jittering by proper validation and timing
- * Created: October 30, 2025
+ * Anti-jitter enhanced with comprehensive timing controls
+ * Enhanced: October 30, 2025
  */
 
 (function(global) {
     'use strict';
 
     const ConfirmationModals = {
+        
+        // Track active operations to prevent conflicts
+        activeOperations: new Set(),
         /**
          * Initialize form confirmation modal
          * @param {Object} config Configuration object
@@ -36,73 +39,124 @@
             triggerButton.removeAttribute('data-bs-toggle');
             triggerButton.removeAttribute('data-bs-target');
 
-            // Handle trigger button click - validate FIRST, then show modal
-            triggerButton.addEventListener('click', function(e) {
+            // Enhanced trigger button with anti-jitter measures
+            triggerButton.addEventListener('click', async function(e) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Run custom validation if provided
-                let isValid = true;
-                if (validateCallback && typeof validateCallback === 'function') {
-                    isValid = validateCallback(form);
-                }
-
-                // Check HTML5 form validity
-                if (!form.checkValidity()) {
-                    isValid = false;
-                }
-
-                // If invalid, show validation errors and stop
-                if (!isValid) {
-                    form.classList.add('was-validated');
-                    form.reportValidity();
-                    
-                    // Focus first invalid field with shake animation
-                    const invalidField = form.querySelector(':invalid');
-                    if (invalidField) {
-                        invalidField.focus();
-                        const fieldGroup = invalidField.closest('.notion-form-group, .form-group, .mb-3');
-                        if (fieldGroup) {
-                            fieldGroup.classList.add('shake-animation');
-                            setTimeout(() => fieldGroup.classList.remove('shake-animation'), 820);
-                        }
-                    }
+                // Prevent multiple rapid clicks
+                const operationId = modalId + '_trigger';
+                if (ConfirmationModals.activeOperations.has(operationId)) {
                     return;
                 }
+                ConfirmationModals.activeOperations.add(operationId);
 
-                // Update modal content if callback provided
-                if (updateContentCallback && typeof updateContentCallback === 'function') {
-                    updateContentCallback(form, modalElement);
-                }
-
-                // Show modal smoothly
-                const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
-                
-                // Use setTimeout to ensure smooth rendering
-                setTimeout(() => {
-                    modal.show();
-                    
-                    // Refresh feather icons in modal
-                    if (typeof feather !== 'undefined') {
-                        feather.replace();
+                try {
+                    // Run custom validation if provided
+                    let isValid = true;
+                    if (validateCallback && typeof validateCallback === 'function') {
+                        isValid = validateCallback(form);
                     }
-                }, 10);
+
+                    // Check HTML5 form validity
+                    if (!form.checkValidity()) {
+                        isValid = false;
+                    }
+
+                    // If invalid, show validation errors and stop
+                    if (!isValid) {
+                        form.classList.add('was-validated');
+                        form.reportValidity();
+                        
+                        // Gentle error indication without jittering
+                        const invalidField = form.querySelector(':invalid');
+                        if (invalidField) {
+                            invalidField.focus();
+                            const fieldGroup = invalidField.closest('.notion-form-group, .form-group, .mb-3');
+                            if (fieldGroup) {
+                                fieldGroup.classList.add('form-validation-error');
+                                setTimeout(() => fieldGroup.classList.remove('form-validation-error'), 300);
+                            }
+                        }
+                        return;
+                    }
+
+                    // Update modal content if callback provided
+                    if (updateContentCallback && typeof updateContentCallback === 'function') {
+                        updateContentCallback(form, modalElement);
+                    }
+
+                    // Use enhanced modal system if available, otherwise fallback
+                    if (window.ModalUtils && typeof ModalUtils.showModal === 'function') {
+                        await ModalUtils.showModal(modalId);
+                    } else {
+                        // Fallback with anti-jitter timing
+                        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                        
+                        requestAnimationFrame(() => {
+                            modal.show();
+                            
+                            // Refresh feather icons in modal
+                            if (typeof feather !== 'undefined') {
+                                try {
+                                    feather.replace();
+                                } catch (error) {
+                                    console.warn('Feather icons refresh failed:', error);
+                                }
+                            }
+                        });
+                    }
+                } finally {
+                    // Clear operation lock after delay
+                    setTimeout(() => {
+                        ConfirmationModals.activeOperations.delete(operationId);
+                    }, 300);
+                }
             });
 
-            // Handle confirm button click
-            confirmButton.addEventListener('click', function() {
-                // Final validation check before submit
-                if (form.checkValidity()) {
-                    // Hide modal first
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    if (modal) {
-                        modal.hide();
+            // Enhanced confirm button with anti-jitter submission
+            confirmButton.addEventListener('click', async function() {
+                // Prevent multiple rapid clicks
+                const operationId = modalId + '_confirm';
+                if (ConfirmationModals.activeOperations.has(operationId)) {
+                    return;
+                }
+                ConfirmationModals.activeOperations.add(operationId);
+                
+                try {
+                    // Final validation check
+                    if (!form.checkValidity()) {
+                        return;
                     }
                     
-                    // Submit form after modal is hidden
+                    // Disable button to prevent double submission
+                    confirmButton.disabled = true;
+                    const originalText = confirmButton.innerHTML;
+                    confirmButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+                    
+                    // Use enhanced modal system if available
+                    if (window.ModalUtils && typeof ModalUtils.hideModal === 'function') {
+                        await ModalUtils.hideModal(modalId);
+                        setTimeout(() => form.submit(), 50);
+                    } else {
+                        // Fallback with smooth hiding
+                        const modal = bootstrap.Modal.getInstance(modalElement);
+                        if (modal) {
+                            modal.hide();
+                        }
+                        
+                        setTimeout(() => form.submit(), 150);
+                    }
+                } catch (error) {
+                    console.warn('Confirm operation failed:', error);
+                    // Restore button state on error
+                    confirmButton.disabled = false;
+                    confirmButton.innerHTML = originalText;
+                } finally {
+                    // Clear operation lock
                     setTimeout(() => {
-                        form.submit();
-                    }, 150);
+                        ConfirmationModals.activeOperations.delete(operationId);
+                    }, 1000);
                 }
             });
         },
@@ -250,38 +304,86 @@
         },
 
         /**
-         * Global modal event handlers to prevent jittering
+         * Enhanced global modal handlers with comprehensive anti-jitter
          */
         initGlobalHandlers: function() {
-            // Prevent backdrop from causing layout shifts
+            // Enhanced body scroll prevention
             document.addEventListener('show.bs.modal', function(e) {
-                // Add class to body to prevent scroll
-                document.body.style.paddingRight = `${window.innerWidth - document.documentElement.clientWidth}px`;
+                const modal = e.target;
+                
+                // Mark body state
+                document.body.classList.add('modal-opening');
+                
+                // Smooth scrollbar compensation (only if ModalUtils not handling it)
+                if (!window.ModalUtils) {
+                    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+                    document.body.style.paddingRight = scrollbarWidth + 'px';
+                    document.body.style.overflow = 'hidden';
+                }
+                
+                // Pause conflicting animations globally
+                const conflictingElements = document.querySelectorAll(
+                    '.ripple-animation, .shake-animation, .stagger-fade-in > *, .animate-on-scroll'
+                );
+                conflictingElements.forEach(element => {
+                    if (!modal.contains(element)) {
+                        element.style.animationPlayState = 'paused';
+                        element.style.transitionDelay = '0s';
+                    }
+                });
             });
 
             document.addEventListener('shown.bs.modal', function(e) {
-                // Refresh feather icons
+                // Clean up opening state
+                document.body.classList.remove('modal-opening');
+                document.body.classList.add('modal-active');
+                
+                // Enhanced feather icons refresh
                 if (typeof feather !== 'undefined') {
-                    feather.replace();
+                    try {
+                        feather.replace();
+                    } catch (error) {
+                        console.warn('Feather icons refresh failed:', error);
+                    }
                 }
             });
 
             document.addEventListener('hide.bs.modal', function(e) {
-                // Delay removing padding to prevent flash
-                setTimeout(() => {
-                    if (!document.querySelector('.modal.show')) {
-                        document.body.style.paddingRight = '';
-                    }
-                }, 150);
+                document.body.classList.add('modal-closing');
+                document.body.classList.remove('modal-active');
             });
 
-            // Handle escape key globally
+            document.addEventListener('hidden.bs.modal', function(e) {
+                const modal = e.target;
+                
+                // Restore scroll only if no other modals (and ModalUtils not handling it)
+                if (!window.ModalUtils && !document.querySelector('.modal.show')) {
+                    setTimeout(() => {
+                        document.body.style.paddingRight = '';
+                        document.body.style.overflow = '';
+                    }, 100);
+                }
+                
+                // Resume animations after delay
+                setTimeout(() => {
+                    const pausedElements = document.querySelectorAll('[style*="animation-play-state: paused"]');
+                    pausedElements.forEach(element => {
+                        element.style.animationPlayState = '';
+                        element.style.transitionDelay = '';
+                    });
+                    
+                    document.body.classList.remove('modal-closing');
+                }, 100);
+            });
+
+            // Enhanced escape key handling
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
+                if (e.key === 'Escape' && !e.defaultPrevented) {
                     const openModal = document.querySelector('.modal.show');
                     if (openModal) {
                         const modal = bootstrap.Modal.getInstance(openModal);
                         if (modal) {
+                            e.preventDefault();
                             modal.hide();
                         }
                     }
