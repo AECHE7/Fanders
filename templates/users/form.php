@@ -311,6 +311,16 @@ $currentUserId = $currentUser['id'] ?? null;
 
     // Add ripple effect to buttons (consolidated into main DOMContentLoaded)
     document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('.notion-form');
+        const nameInput = document.getElementById('name');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone_number');
+        const roleSelect = document.getElementById('role');
+        const statusSelect = document.getElementById('status');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('password_confirmation');
+
+        // Ripple effect for buttons
         const buttons = document.querySelectorAll('.ripple-effect');
         buttons.forEach(button => {
             button.addEventListener('click', function(e) {
@@ -326,126 +336,85 @@ $currentUserId = $currentUser['id'] ?? null;
             });
         });
 
-        // Modal confirmation functionality
-        const nameInput = document.getElementById('name');
-        const emailInput = document.getElementById('email');
-        const phoneInput = document.getElementById('phone_number');
-        const roleSelect = document.getElementById('role');
-        const statusSelect = document.getElementById('status');
-
-        function updateModalContent() {
-            const safe = (v, fallback = 'Not specified') => (v && v.trim()) ? v : fallback;
-            const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+        // Initialize confirmation modal using the new system
+        ConfirmationModals.initFormConfirmation({
+            formSelector: '.notion-form',
+            modalId: 'confirmUserSaveModal',
+            triggerButtonSelector: '#openConfirmModal',
+            confirmButtonId: 'confirmUserSave',
             
-            setText('modalUserName', safe(nameInput ? nameInput.value : ''));
-            setText('modalUserEmail', safe(emailInput ? emailInput.value : ''));
-            setText('modalUserPhone', safe(phoneInput ? phoneInput.value : ''));
-
-            // Update role badge
-            const roleContainer = document.getElementById('modalUserRole');
-            if (roleContainer) {
-                let role = '';
-                if (roleSelect && roleSelect.value) {
-                    role = roleSelect.value;
-                } else if (roleSelect) {
-                    // Try to get from selected option text
-                    const selectedOption = roleSelect.options[roleSelect.selectedIndex];
-                    if (selectedOption && selectedOption.value) {
-                        role = selectedOption.value;
+            // Custom validation for password matching
+            validateCallback: function(form) {
+                if (passwordInput && confirmPasswordInput) {
+                    if (passwordInput.value && confirmPasswordInput.value) {
+                        if (passwordInput.value !== confirmPasswordInput.value) {
+                            confirmPasswordInput.setCustomValidity('Passwords do not match.');
+                            return false;
+                        } else {
+                            confirmPasswordInput.setCustomValidity('');
+                        }
                     }
                 }
+                return true;
+            },
+            
+            // Update modal content before showing
+            updateContentCallback: function(form, modalElement) {
+                const safe = (v, fallback = 'Not specified') => (v && v.trim()) ? v : fallback;
+                const setText = (id, text) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = text;
+                };
                 
-                // Format role text with proper capitalization and spacing
-                let roleText = 'Not specified';
-                if (role) {
-                    roleText = role.split('-').map(word => 
-                        word.charAt(0).toUpperCase() + word.slice(1)
-                    ).join(' ');
+                setText('modalUserName', safe(nameInput ? nameInput.value : ''));
+                setText('modalUserEmail', safe(emailInput ? emailInput.value : ''));
+                setText('modalUserPhone', safe(phoneInput ? phoneInput.value : ''));
+
+                // Update role badge
+                const roleContainer = document.getElementById('modalUserRole');
+                if (roleContainer && roleSelect) {
+                    let role = roleSelect.value;
+                    let roleText = 'Not specified';
+                    if (role) {
+                        roleText = role.split('-').map(word => 
+                            word.charAt(0).toUpperCase() + word.slice(1)
+                        ).join(' ');
+                    }
+                    roleContainer.innerHTML = `<span class="badge text-bg-primary">${roleText}</span>`;
                 }
-                
-                roleContainer.innerHTML = `<span class="badge text-bg-primary">${roleText}</span>`;
-            }
 
-            // Update status badge if editing
-            const statusElement = document.getElementById('modalUserStatus');
-            if (statusElement && statusSelect) {
-                const status = statusSelect.value || 'active';
-                const badgeClass = status === 'active' ? 'success' : 'secondary';
-                const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Active';
-                statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${statusText}</span>`;
-            }
-        }
-
-        // Update modal on input changes
-        [nameInput, emailInput, phoneInput, roleSelect, statusSelect].forEach(input => {
-            if (input) {
-                input.addEventListener('input', updateModalContent);
-                input.addEventListener('change', updateModalContent);
+                // Update status badge if editing
+                const statusElement = document.getElementById('modalUserStatus');
+                if (statusElement && statusSelect) {
+                    const status = statusSelect.value || 'active';
+                    const badgeClass = status === 'active' ? 'success' : 'secondary';
+                    const statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Active';
+                    statusElement.innerHTML = `<span class="badge text-bg-${badgeClass}">${statusText}</span>`;
+                }
             }
         });
 
-        // Handle modal open with validation
-        const confirmModalEl = document.getElementById('confirmUserSaveModal');
-        
-        if (confirmModalEl) {
-            // Bootstrap modal event - fires before modal is shown
-            confirmModalEl.addEventListener('show.bs.modal', function(e) {
-                // Check form validity before opening modal
-                let isValid = true;
-                
-                // Validate password matching
-                if (passwordInput && confirmPasswordInput) {
-                    if (passwordInput.value && confirmPasswordInput.value && 
-                        passwordInput.value !== confirmPasswordInput.value) {
-                        isValid = false;
-                        confirmPasswordInput.setCustomValidity('Passwords do not match.');
-                    } else {
-                        confirmPasswordInput.setCustomValidity('');
+        // Keep input fields synced with modal in real-time
+        [nameInput, emailInput, phoneInput, roleSelect, statusSelect].forEach(input => {
+            if (input) {
+                input.addEventListener('input', function() {
+                    // Update modal if it's visible
+                    const modalElement = document.getElementById('confirmUserSaveModal');
+                    if (modalElement && modalElement.classList.contains('show')) {
+                        // Modal is open, update content
+                        const safe = (v, fallback = 'Not specified') => (v && v.trim()) ? v : fallback;
+                        const setText = (id, text) => {
+                            const el = document.getElementById(id);
+                            if (el) el.textContent = text;
+                        };
+                        
+                        setText('modalUserName', safe(nameInput ? nameInput.value : ''));
+                        setText('modalUserEmail', safe(emailInput ? emailInput.value : ''));
+                        setText('modalUserPhone', safe(phoneInput ? phoneInput.value : ''));
                     }
-                }
-                
-                // Check HTML5 validation
-                if (!form.checkValidity() || !isValid) {
-                    // Prevent modal from opening
-                    e.preventDefault();
-                    
-                    // Show validation errors
-                    form.classList.add('was-validated');
-                    form.reportValidity();
-                    
-                    // Focus first invalid field
-                    const invalidField = form.querySelector(':invalid');
-                    if (invalidField) {
-                        invalidField.focus();
-                        const fieldGroup = invalidField.closest('.notion-form-group');
-                        if (fieldGroup) {
-                            fieldGroup.classList.add('shake-animation');
-                            setTimeout(() => {
-                                fieldGroup.classList.remove('shake-animation');
-                            }, 820);
-                        }
-                    }
-                    return;
-                }
-                
-                // Form is valid, update modal content
-                updateModalContent();
-            });
-        }
-
-        // Confirm save button handler
-        const confirmBtn = document.getElementById('confirmUserSave');
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', function() {
-                if (!form) {
-                    console.error('Form not found');
-                    return;
-                }
-                
-                // Form was already validated before modal opened, just submit
-                form.submit();
-            });
-        }
+                });
+            }
+        });
     });
 </script>
 

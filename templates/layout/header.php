@@ -30,6 +30,9 @@
     <link rel="stylesheet" href="<?= APP_URL ?>/public/assets/css/interactions.css?v=<?= filemtime(BASE_PATH . '/public/assets/css/interactions.css') ?>">
     <link rel="stylesheet" href="<?= APP_URL ?>/public/assets/css/sidebar.css?v=<?= filemtime(BASE_PATH . '/public/assets/css/sidebar.css') ?>">
     <link rel="stylesheet" href="<?= APP_URL ?>/public/assets/css/sidebar-enhanced.css?v=<?= filemtime(BASE_PATH . '/public/assets/css/sidebar-enhanced.css') ?>">
+    
+    <!-- Modal System Enhancement CSS - Fixes jittering and provides smooth transitions -->
+    <link rel="stylesheet" href="<?= APP_URL ?>/public/assets/css/modals.css?v=<?= filemtime(BASE_PATH . '/public/assets/css/modals.css') ?>">
 
     <!-- Favicon -->
     <link rel="icon" href="<?= APP_URL ?>/assets/favicon.png" type="image/png" sizes="32x32">
