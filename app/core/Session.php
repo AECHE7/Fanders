@@ -11,7 +11,7 @@ class Session {
         // Only set session cookie parameters and start session if session is not active
         if (session_status() === PHP_SESSION_NONE) {
             session_set_cookie_params([
-                'lifetime' => 0, // Session cookie, expires when browser closes
+                'lifetime' => 2592000, // 30 days in seconds for persistent sessions
                 'path' => '/',
                 'domain' => '',
                 'secure' => false, // Set to true in production with HTTPS
@@ -57,7 +57,7 @@ class Session {
             session_destroy();
         }
 
-        // Delete the session cookie
+        // Delete the session cookie with proper parameters
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();
             setcookie(

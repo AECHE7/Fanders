@@ -111,7 +111,15 @@ class AuthService extends BaseService {
             ]);
         }
 
+        // Clear all session data and destroy session
+        $this->session->clear();
         $this->session->destroy();
+
+        // Force deletion of session cookie
+        if (isset($_COOKIE[session_name()])) {
+            setcookie(session_name(), '', time() - 3600, '/', '', false, true);
+        }
+
         return true;
     }
 
