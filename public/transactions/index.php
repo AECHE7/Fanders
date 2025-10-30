@@ -77,9 +77,6 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
                 <a href="<?= APP_URL ?>/public/reports/transactions.php" class="btn btn-sm btn-outline-secondary px-3">
                     <i data-feather="file-text" class="me-1" style="width: 14px; height: 14px;"></i> Transaction Report
                 </a>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportTransactions()">
-                    <i data-feather="download" class="me-1" style="width: 14px; height: 14px;"></i> Export
-                </button>
             </div>
         </div>
         <div class="notion-divider my-3"></div>

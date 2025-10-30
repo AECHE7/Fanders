@@ -296,12 +296,7 @@ function toggleView(viewType) {
     }
 }
 
-// Export transactions function
-function exportTransactions() {
-    const filters = new URLSearchParams(window.location.search);
-    const exportUrl = `${window.location.protocol}//${window.location.host}/public/reports/transactions.php?` + filters.toString() + '&export=pdf';
-    window.open(exportUrl, '_blank');
-}
+
 
 // Transaction row click handler - DISABLED (modal functionality removed)
 // document.addEventListener('DOMContentLoaded', function() {

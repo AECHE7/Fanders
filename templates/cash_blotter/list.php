@@ -21,9 +21,7 @@
                 <i data-feather="calendar" class="me-1" style="width: 14px; height: 14px;"></i>
                 <?= date('l, F j, Y') ?>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-secondary px-3" onclick="exportBlotter()">
-                <i data-feather="download" class="me-1" style="width: 14px; height: 14px;"></i> Export
-            </button>
+
             <button type="button" class="btn btn-sm btn-primary px-3" onclick="recalculateBlotter()">
                 <i data-feather="refresh-cw" class="me-1" style="width: 14px; height: 14px;"></i> Recalculate
             </button>
@@ -266,12 +264,7 @@ function recalculateBlotter() {
     }
 }
 
-function exportBlotter() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
 
-    window.location.href = `<?= APP_URL ?>/public/cash-blotter/export.php?start_date=${startDate}&end_date=${endDate}`;
-}
 
 // Auto-update functionality
 document.getElementById('autoUpdate').addEventListener('change', function() {
