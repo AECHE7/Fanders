@@ -333,7 +333,9 @@ function archiveSLR(slrId, documentNumber) {
     document.getElementById('archiveSlrId').value = slrId;
     document.getElementById('archiveDocumentNumber').textContent = documentNumber;
     
-    new bootstrap.Modal(document.getElementById('archiveModal')).show();
+    // Use getOrCreateInstance to prevent modal conflicts
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('archiveModal'));
+    modal.show();
 }
 </script>
 

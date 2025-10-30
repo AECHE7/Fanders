@@ -252,8 +252,9 @@ if (!function_exists('getLoanStatusBadgeClass')) {
         const actionIdInput = document.getElementById('loanActionId');
         const actionTypeInput = document.getElementById('loanActionType');
         
-        const approvalModal = new bootstrap.Modal(document.getElementById('approvalModal'));
-        const cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
+        // Use getOrCreateInstance to avoid modal conflicts and jittering
+        const approvalModalElement = document.getElementById('approvalModal');
+        const cancelModalElement = document.getElementById('cancelModal');
 
         // Handle action buttons
         document.querySelectorAll('.btn-loan-action').forEach(button => {
@@ -272,6 +273,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                     actionIdInput.value = loanId;
                     actionTypeInput.value = action;
                     
+                    const approvalModal = bootstrap.Modal.getOrCreateInstance(approvalModalElement);
                     approvalModal.show();
                 } else if (action === 'cancel') {
                     // Show cancel modal
@@ -281,6 +283,7 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                     actionIdInput.value = loanId;
                     actionTypeInput.value = action;
                     
+                    const cancelModal = bootstrap.Modal.getOrCreateInstance(cancelModalElement);
                     cancelModal.show();
                 }
             });

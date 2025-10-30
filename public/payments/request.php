@@ -195,7 +195,8 @@ include_once BASE_PATH . '/templates/layout/navbar.php';
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const approveButtons = document.querySelectorAll('.btn-approve-request');
-    const modal = new bootstrap.Modal(document.getElementById('approveRequestModal'));
+    // Use getOrCreateInstance to prevent modal conflicts
+    const modalElement = document.getElementById('approveRequestModal');
     
     approveButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -208,6 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modalBorrowerName').textContent = borrowerName;
             document.getElementById('formTransactionId').value = transactionId;
             
+            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
             modal.show();
         });
     });

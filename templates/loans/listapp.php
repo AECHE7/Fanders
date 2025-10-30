@@ -536,18 +536,18 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                     document.getElementById('modalLoanId').textContent = loanId;
                     document.getElementById('modalClientName').textContent = clientName;
                     document.getElementById('modalPrincipal').textContent = principal;
-                    const approvalModal = new bootstrap.Modal(document.getElementById('approvalModal'));
+                    const approvalModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('approvalModal'));
                     approvalModal.show();
                 } else if (action === 'disburse') {
                     document.getElementById('modalDisburseLoanId').textContent = loanId;
                     document.getElementById('modalDisburseClientName').textContent = clientName;
                     document.getElementById('modalDisbursePrincipal').textContent = principal;
-                    const disburseModal = new bootstrap.Modal(document.getElementById('disburseModal'));
+                    const disburseModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('disburseModal'));
                     disburseModal.show();
                 } else if (action === 'cancel') {
                     document.getElementById('modalCancelLoanId').textContent = loanId;
                     document.getElementById('modalCancelClientName').textContent = clientName;
-                    const cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
+                    const cancelModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('cancelModal'));
                     cancelModal.show();
                 }
             });

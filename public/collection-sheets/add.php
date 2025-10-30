@@ -811,13 +811,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     `;
                     
-                    // Add modal to page and show it
-                    document.body.insertAdjacentHTML('beforeend', modalHTML);
-                    const modal = new bootstrap.Modal(document.getElementById('confirmAutoProcess'));
-                    modal.show();
-                    
-                    // Refresh feather icons
-                    feather.replace();
+                    // Use ModalUtils for smooth modal creation and display
+                    if (typeof ModalUtils !== 'undefined') {
+                        ModalUtils.createAndShowModal(modalHTML, 'confirmAutoProcess');
+                    } else {
+                        // Fallback method with proper timing to prevent jittering
+                        document.body.insertAdjacentHTML('beforeend', modalHTML);
+                        requestAnimationFrame(() => {
+                            const modalElement = document.getElementById('confirmAutoProcess');
+                            if (modalElement) {
+                                const modal = new bootstrap.Modal(modalElement);
+                                modal.show();
+                                if (typeof feather !== 'undefined') {
+                                    feather.replace();
+                                }
+                            }
+                        });
+                    }
                 };
             }
             

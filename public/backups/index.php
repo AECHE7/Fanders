@@ -457,7 +457,7 @@ function restoreBackup(backupId, filename) {
     currentAction = 'restore';
     
     document.getElementById('modalRestoreFilename').textContent = filename;
-    const restoreModal = new bootstrap.Modal(document.getElementById('restoreBackupModal'));
+    const restoreModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('restoreBackupModal'));
     restoreModal.show();
 }
 
@@ -467,7 +467,7 @@ function deleteBackup(backupId, filename) {
     currentAction = 'delete';
     
     document.getElementById('modalDeleteFilename').textContent = filename;
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteBackupModal'));
+    const deleteModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('deleteBackupModal'));
     deleteModal.show();
 }
 

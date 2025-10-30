@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Modal System Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/assets/css/modals.css">
+    <style>
+        body { padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Modal Jittering Fix Test Page</h1>
+        
+        <div class="test-section">
+            <h3>Test 1: Static Modal (Should work smoothly)</h3>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticModal">
+                Show Static Modal
+            </button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 2: Dynamic Modal Creation (Should be smooth)</h3>
+            <button type="button" class="btn btn-success" onclick="createDynamicModal()">
+                Create Dynamic Modal
+            </button>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 3: Rapid Modal Triggers (Should not jitter)</h3>
+            <button type="button" class="btn btn-warning" onclick="rapidModalTest()">
+                Rapid Modal Test
+            </button>
+            <p><small>Click multiple times quickly to test for jittering</small></p>
+        </div>
+        
+        <div class="test-section">
+            <h3>Test 4: Multiple Modal Instances (Should not conflict)</h3>
+            <button type="button" class="btn btn-info" onclick="multipleModalTest()">
+                Show Multiple Modals
+            </button>
+        </div>
+    </div>
+
+    <!-- Static Test Modal -->
+    <div class="modal fade" id="staticModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Static Modal Test</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This is a static modal. It should appear smoothly without jittering.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/public/assets/js/modal-utils.js"></script>
+    
+    <script>
+        let testCounter = 0;
+        
+        function createDynamicModal() {
+            const modalHTML = `
+                <div class="modal fade" id="dynamicModal${testCounter}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">Dynamic Modal ${testCounter}</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>This modal was created dynamically. It should appear smoothly without jittering.</p>
+                                <p><strong>Test Counter:</strong> ${testCounter}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (typeof ModalUtils !== 'undefined') {
+                ModalUtils.createAndShowModal(modalHTML, `dynamicModal${testCounter}`);
+            } else {
+                // Fallback with proper timing
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+                requestAnimationFrame(() => {
+                    const modal = new bootstrap.Modal(document.getElementById(`dynamicModal${testCounter}`));
+                    modal.show();
+                });
+            }
+            
+            testCounter++;
+        }
+        
+        function rapidModalTest() {
+            // Create multiple modals quickly to test for jittering
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    if (typeof ModalUtils !== 'undefined') {
+                        ModalUtils.showModal('staticModal');
+                        setTimeout(() => ModalUtils.hideModal('staticModal'), 500);
+                    }
+                }, i * 200);
+            }
+        }
+        
+        function multipleModalTest() {
+            // Test multiple modal instances
+            const modal1 = bootstrap.Modal.getOrCreateInstance(document.getElementById('staticModal'));
+            const modal2 = bootstrap.Modal.getOrCreateInstance(document.getElementById('staticModal'));
+            
+            console.log('Modal instance test:', modal1 === modal2 ? 'PASS - Same instance' : 'FAIL - Different instances');
+            modal1.show();
+        }
+        
+        // Log test results
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Modal System Test Page Loaded');
+            console.log('ModalUtils available:', typeof ModalUtils !== 'undefined');
+            console.log('Bootstrap Modal available:', typeof bootstrap !== 'undefined' && typeof bootstrap.Modal !== 'undefined');
+        });
+    </script>
+</body>
+</html>

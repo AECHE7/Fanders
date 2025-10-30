@@ -231,8 +231,9 @@ if (!function_exists('getClientStatusBadgeClass')) {
                 const confirmBtn = document.getElementById('confirmClientAction');
                 confirmBtn.className = action === 'blacklist' ? 'btn btn-danger' : (action === 'deactivate' ? 'btn btn-warning' : 'btn btn-success');
                 
-                // Show modal
-                new bootstrap.Modal(document.getElementById('clientActionModal')).show();
+                // Show modal with proper instance management
+                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('clientActionModal'));
+                modal.show();
             });
         });
         

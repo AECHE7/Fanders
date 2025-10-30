@@ -326,8 +326,9 @@ if (!function_exists('getLoanStatusBadgeClass')) {
                     confirmBtn.className = 'btn btn-success';
                 }
                 
-                // Show modal
-                new bootstrap.Modal(document.getElementById('loanActionModal')).show();
+                // Show modal with proper instance management
+                const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('loanActionModal'));
+                modal.show();
             });
         });
 

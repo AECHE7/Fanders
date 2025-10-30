@@ -1,0 +1,259 @@
+/**
+ * Modal System CSS Enhancement
+ * Fixes jittering and provides smooth transitions
+ * Created: October 30, 2025
+ */
+
+/* ================================================
+   SMOOTH MODAL TRANSITIONS
+   ================================================ */
+
+/* Enhanced modal fade transitions to prevent jittering */
+.modal.fade .modal-dialog {
+    transition: transform 0.25s ease-out, opacity 0.15s linear;
+    transform: translate(0, -25px);
+}
+
+.modal.show .modal-dialog {
+    transform: translate(0, 0);
+}
+
+/* Smooth backdrop transitions */
+.modal.fade .modal-backdrop {
+    transition: opacity 0.15s linear;
+}
+
+/* Prevent animation conflicts during modal display */
+.modal.show .ripple-animation,
+.modal.show .shake-animation {
+    animation-play-state: paused;
+}
+
+/* ================================================
+   MODAL CONTENT ENHANCEMENT
+   ================================================ */
+
+/* Prevent content jumping during modal initialization */
+.modal-content {
+    transform: translateZ(0); /* Force hardware acceleration */
+    backface-visibility: hidden; /* Smooth rendering */
+}
+
+/* Enhanced modal styling for better visual hierarchy */
+.modal-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    padding: 1rem 1.25rem;
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.125);
+    padding: 1rem 1.25rem;
+}
+
+/* ================================================
+   CONFIRMATION MODAL SPECIFIC STYLES
+   ================================================ */
+
+/* Confirmation modal color coding */
+.modal-header.bg-danger {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-header.bg-warning {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-header.bg-success {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-header.bg-primary {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Enhanced button focus states in modals */
+.modal .btn:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+.modal .btn-danger:focus {
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.modal .btn-warning:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.modal .btn-success:focus {
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* ================================================
+   RESPONSIVE MODAL BEHAVIOR
+   ================================================ */
+
+/* Ensure modals work smoothly on mobile devices */
+@media (max-width: 576px) {
+    .modal-dialog {
+        margin: 1rem;
+        max-width: calc(100% - 2rem);
+    }
+    
+    .modal.fade .modal-dialog {
+        transform: translate(0, -15px);
+    }
+}
+
+/* ================================================
+   PERFORMANCE OPTIMIZATIONS
+   ================================================ */
+
+/* Optimize rendering performance for modals */
+.modal-dialog {
+    will-change: transform, opacity;
+}
+
+/* Prevent layout thrashing during animations */
+.modal.fade {
+    transform: translateZ(0);
+}
+
+/* ================================================
+   DYNAMIC MODAL SUPPORT
+   ================================================ */
+
+/* Support for dynamically created modals */
+.modal[id^="confirmAutoProcess"] .modal-dialog {
+    animation: smoothSlideIn 0.25s ease-out;
+}
+
+@keyframes smoothSlideIn {
+    from {
+        transform: translate(0, -25px);
+        opacity: 0;
+    }
+    to {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+}
+
+/* ================================================
+   MODAL LOADING STATES
+   ================================================ */
+
+/* Loading spinner for modal content */
+.modal-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.modal-loading .spinner-border {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* ================================================
+   ACCESSIBILITY ENHANCEMENTS
+   ================================================ */
+
+/* Improve focus visibility in modals */
+.modal .form-control:focus,
+.modal .form-select:focus {
+    border-color: #0ca789;
+    box-shadow: 0 0 0 0.2rem rgba(12, 167, 137, 0.25);
+}
+
+/* Ensure proper contrast for modal text */
+.modal-body {
+    color: #495057;
+    line-height: 1.6;
+}
+
+.modal-header .modal-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* ================================================
+   MODAL BACKDROP ENHANCEMENTS
+   ================================================ */
+
+/* Improved backdrop styling */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Prevent backdrop flicker */
+.modal-backdrop.show {
+    opacity: 0.6;
+}
+
+/* ================================================
+   FEATHER ICON INTEGRATION
+   ================================================ */
+
+/* Ensure feather icons render correctly in modals */
+.modal .feather {
+    stroke-width: 2;
+    vertical-align: middle;
+}
+
+.modal-header .feather {
+    margin-right: 0.5rem;
+}
+
+.modal .btn .feather {
+    margin-right: 0.25rem;
+    margin-left: 0;
+}
+
+/* ================================================
+   MODAL STACK MANAGEMENT
+   ================================================ */
+
+/* Handle multiple modals gracefully */
+.modal.show ~ .modal.show {
+    z-index: 1060;
+}
+
+.modal.show ~ .modal.show .modal-backdrop {
+    z-index: 1059;
+}
+
+/* ================================================
+   PRINT COMPATIBILITY
+   ================================================ */
+
+/* Hide modals when printing */
+@media print {
+    .modal,
+    .modal-backdrop {
+        display: none !important;
+    }
+}
+
+/* ================================================
+   BROWSER-SPECIFIC FIXES
+   ================================================ */
+
+/* Safari specific fixes */
+@supports (-webkit-appearance: none) {
+    .modal.fade .modal-dialog {
+        transform: translate3d(0, -25px, 0);
+    }
+    
+    .modal.show .modal-dialog {
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+/* Firefox specific optimizations */
+@-moz-document url-prefix() {
+    .modal-content {
+        transform: translateZ(0);
+    }
+}

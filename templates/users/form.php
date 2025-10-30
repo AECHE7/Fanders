@@ -292,8 +292,25 @@ $currentUserId = $currentUser['id'] ?? null;
                 });
             }
         }
+    });
 
-        // Add ripple effect to buttons
+    // Password visibility toggle
+    function togglePasswordVisibility(inputId) {
+        const passwordInput = document.getElementById(inputId);
+        const toggleIcon = document.getElementById(inputId + '-toggle-icon');
+
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.setAttribute('data-feather', 'eye-off');
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.setAttribute('data-feather', 'eye');
+        }
+        feather.replace();
+    }
+
+    // Add ripple effect to buttons (consolidated into main DOMContentLoaded)
+    document.addEventListener('DOMContentLoaded', function() {
         const buttons = document.querySelectorAll('.ripple-effect');
         buttons.forEach(button => {
             button.addEventListener('click', function(e) {
