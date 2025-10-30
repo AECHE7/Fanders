@@ -316,7 +316,7 @@ function exportTransactions() {
 
 // Show transaction details in modal - DISABLED (modal functionality removed)
 /* function showTransactionDetails(transactionId) {
-    const modal = new bootstrap.Modal(document.getElementById('transactionDetailModal'));
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('transactionDetailModal'));
     const content = document.getElementById('transactionDetailContent');
     const modalTitle = document.getElementById('transactionDetailModalLabel');
 

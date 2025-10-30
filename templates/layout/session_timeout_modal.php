@@ -87,7 +87,7 @@ function checkSessionTimeout() {
 }
 
 function showSessionTimeoutModal() {
-    const modal = new bootstrap.Modal(document.getElementById('sessionTimeoutModal'), {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('sessionTimeoutModal'), {
         backdrop: 'static',
         keyboard: false
     });

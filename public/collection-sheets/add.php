@@ -820,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         requestAnimationFrame(() => {
                             const modalElement = document.getElementById('confirmAutoProcess');
                             if (modalElement) {
-                                const modal = new bootstrap.Modal(modalElement);
+                                const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
                                 modal.show();
                                 if (typeof feather !== 'undefined') {
                                     feather.replace();
